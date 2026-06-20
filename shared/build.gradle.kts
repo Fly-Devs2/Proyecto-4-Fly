@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+
+    id("com.google.gms.google-services") version "4.5.0" apply false
+
 }
 
 kotlin {
@@ -39,6 +42,9 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.gitlive.firebase.common)
+            implementation(libs.gitlive.firebase.analytics)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
