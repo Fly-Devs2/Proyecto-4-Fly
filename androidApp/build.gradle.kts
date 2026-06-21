@@ -21,6 +21,8 @@ dependencies {
     implementation(project.dependencies.platform(libs.firebase.bom))
     implementation(libs.gitlive.firebase.common)
     implementation(libs.gitlive.firebase.analytics)
+    implementation(project.dependencies.platform(libs.koin.bom))
+    implementation(libs.koin.android)
     debugImplementation(libs.compose.uiTooling)
 }
 
