@@ -33,11 +33,17 @@ kotlin {
         commonMain.dependencies {
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.gitlive.firebase.firestore)
+            implementation(libs.gitlive.firebase.auth)
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.analytics)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.auth.credentials)
+            implementation(libs.androidx.auth.credentials.play)
+            implementation(libs.androidx.auth.googleid)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
