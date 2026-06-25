@@ -4,5 +4,5 @@ import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 
 interface GameCardRepository {
 
-    suspend fun saveGameCard(gameCard: GameCard)
+    suspend fun saveGameCard(gameCard: GameCard): GameCard
 }
