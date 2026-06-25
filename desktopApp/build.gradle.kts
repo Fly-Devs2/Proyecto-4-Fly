@@ -19,6 +19,8 @@ dependencies {
     implementation(project.dependencies.platform(libs.firebase.bom))
     implementation(libs.gitlive.firebase.common)
     implementation(libs.gitlive.firebase.analytics)
+
+
 }
 
 compose.desktop {
