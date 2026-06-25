@@ -155,19 +155,7 @@ private fun HeaderSection(
         IconButton(onClick = { }) {
             Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary)
         }
-        
-        Surface(
-            color = AccentViolet,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                "USUARIO",
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+
     }
 }
 

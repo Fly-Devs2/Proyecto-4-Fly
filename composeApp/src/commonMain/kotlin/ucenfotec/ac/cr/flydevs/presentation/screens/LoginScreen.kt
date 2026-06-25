@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,6 +30,8 @@ import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
+
+@Preview
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel(),
@@ -132,14 +135,15 @@ fun LoginScreen(
                 )
                 Text("Recordarme", color = TextSecondary, fontSize = 14.sp)
             }
-            Text(
-                "¿Olvidaste tu contraseña?",
-                color = AccentVioletLight,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { /* Forgot Password */ }
-            )
+
         }
+        Text(
+            "¿Olvidaste tu contraseña?",
+            color = AccentVioletLight,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.clickable { /* Forgot Password */ }
+        )
 
         Spacer(Modifier.height(32.dp))
 

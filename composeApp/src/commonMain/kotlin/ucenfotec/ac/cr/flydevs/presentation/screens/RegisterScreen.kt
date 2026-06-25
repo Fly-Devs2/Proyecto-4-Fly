@@ -353,7 +353,7 @@ fun PasswordTextField(state: TextFieldState) {
                 Spacer(Modifier.width(12.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (state.text.isEmpty()) {
-                        Text("Mínimo 8 caracteres", color = TextMuted, fontSize = 14.sp)
+                        Text("Mínimo 12 caracteres", color = TextMuted, fontSize = 14.sp)
                     }
                     innerTextField()
                 }
