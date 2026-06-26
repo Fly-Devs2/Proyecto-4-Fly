@@ -1,9 +1,9 @@
 package ucenfotec.ac.cr.flydevs.presentation.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.SwingUtilities
@@ -11,13 +11,17 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
 
 @Composable
-actual fun rememberImagePicker(onImagePicked: (PickedImage) -> Unit): () -> Unit {
-    val scope = rememberCoroutineScope()
-    return {
-        scope.launch(Dispatchers.IO) {
-            val file = chooseImageFile() ?: return@launch
+actual fun CameraCaptureScreen(
+    onImageCaptured: (PickedImage) -> Unit,
+    onCancel: () -> Unit,
+) {
+    LaunchedEffect(Unit) {
+        val file = withContext(Dispatchers.IO) { chooseImageFile() }
+        if (file == null) {
+            onCancel()
+        } else {
             val extension = file.extension.ifBlank { "jpg" }.lowercase()
-            onImagePicked(
+            onImageCaptured(
                 PickedImage(
                     bytes = file.readBytes(),
                     mimeType = mimeTypeFor(extension),
@@ -29,7 +33,6 @@ actual fun rememberImagePicker(onImagePicked: (PickedImage) -> Unit): () -> Unit
     }
 }
 
-/** Muestra el explorador de archivos */
 private fun chooseImageFile(): File? {
     var selected: File? = null
     val task = Runnable {
