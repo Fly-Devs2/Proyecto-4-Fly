@@ -18,6 +18,9 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.auth.credentials)
+    implementation(libs.androidx.auth.credentials.play)
+    implementation(libs.androidx.auth.googleid)
 
     implementation(libs.compose.uiToolingPreview)
     implementation(project.dependencies.platform(libs.firebase.bom))

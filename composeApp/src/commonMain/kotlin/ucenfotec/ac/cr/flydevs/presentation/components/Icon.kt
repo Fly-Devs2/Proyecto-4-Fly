@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
-enum class FlyIconType { Back, ChevronDown, Minus, Plus, Home, Compass, Package, Profile }
+enum class FlyIconType { Back, ChevronDown, Minus, Plus, Home, Compass, Package, Profile, Eye, EyeOff }
 
 @Composable
 fun Icon(
@@ -63,6 +63,17 @@ fun Icon(
             FlyIconType.Profile -> {
                 drawCircle(color, w * .2f, Offset(w * .5f, h * .32f), style = stroke)
                 drawArc(color, 200f, 140f, false, Offset(w * .18f, h * .48f), Size(w * .64f, h * .45f), style = stroke)
+            }
+            FlyIconType.Eye -> {
+                drawArc(color, 210f, 120f, false, Offset(w * .1f, h * .25f), Size(w * .8f, h * .5f), style = stroke)
+                drawArc(color, 30f, 120f, false, Offset(w * .1f, h * .25f), Size(w * .8f, h * .5f), style = stroke)
+                drawCircle(color, w * .15f, Offset(w * .5f, h * .5f), style = stroke)
+            }
+            FlyIconType.EyeOff -> {
+                drawArc(color, 210f, 120f, false, Offset(w * .1f, h * .25f), Size(w * .8f, h * .5f), style = stroke)
+                drawArc(color, 30f, 120f, false, Offset(w * .1f, h * .25f), Size(w * .8f, h * .5f), style = stroke)
+                drawCircle(color, w * .15f, Offset(w * .5f, h * .5f), style = stroke)
+                drawLine(color, Offset(w * .2f, h * .2f), Offset(w * .8f, h * .8f), strokeWidth = stroke.width)
             }
         }
     }
