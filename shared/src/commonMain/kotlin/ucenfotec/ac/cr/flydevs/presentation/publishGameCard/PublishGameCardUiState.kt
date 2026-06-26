@@ -1,40 +1,43 @@
 package ucenfotec.ac.cr.flydevs.presentation.publishGameCard
 
+import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
+import ucenfotec.ac.cr.flydevs.domain.model.CardExpansion
+import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
+import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
+import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
+
 data class PublishCardUiState(
+    // ── Inputs ──
     val name: String = "",
-    val expansion: String = "",
-    val condition: String = "Near Mint (NM)",
-    val language: String = "Inglés (EN)",
+    val expansion: CardExpansion? = null,
+    val condition: CardCondition = CardCondition.NEAR_MINT,
+    val language: CardLanguage = CardLanguage.EN,
     val price: String = "",
     val quantity: Int = 1,
     val description: String = "",
-    val imageUrl: String? = null,        // URL pública de descarga una vez subida la foto
-    val imageFileName: String? = null,   // nombre del archivo elegido, para feedback
+
+    // ── Imagen ──
+    val imageUrl: String? = null,
     val isUploadingImage: Boolean = false,
+    val imageError: ImageError? = null,
 
-    // ── Errores de validación ──
-    val nameError: String? = null,
-    val priceError: String? = null,
-    val imageError: String? = null,
-
-    // ── Estado del proceso ──
+    // ── Proceso de publicación ──
     val isLoading: Boolean = false,
-    val isPublished: Boolean = false,
-    val publishedCardId: String? = null,
-    val successMessage: String? = null,
-    val errorMessage: String? = null,
+    val feedback: PublishFeedback? = null,
 ) {
-    private val priceValue: Long? get() = price.toLongOrNull()
 
-    /** Lista de obligatorios que aún faltan, para guiar al usuario en vivo. */
-    val missingRequired: List<String>
-        get() = buildList {
-            if (name.isBlank()) add("nombre")
-            if ((priceValue ?: 0L) <= 0L) add("precio")
-            if (imageUrl == null) add("foto")
-        }
+    fun toDraftCard(): GameCard = GameCard(
+        name = name.trim(),
+        expansion = expansion,
+        condition = condition,
+        language = language,
+        price = price.toLongOrNull() ?: 0L,
+        quantity = quantity,
+        description = description.trim(),
+        imageUrl = imageUrl.orEmpty(),
+    )
 
-    /** Habilita el botón solo cuando no falta ningún obligatorio, nada está subiendo ni cargando. */
-    val canPublish: Boolean
-        get() = missingRequired.isEmpty() && !isLoading && !isUploadingImage
+    val validationErrors: List<GameCardValidationError>
+        get() = GameCardValidator.validate(toDraftCard())
 }
