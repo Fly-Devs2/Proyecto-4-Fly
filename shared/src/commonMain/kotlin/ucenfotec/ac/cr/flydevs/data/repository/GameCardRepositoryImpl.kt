@@ -12,7 +12,7 @@ class GameCardRepositoryImpl : GameCardRepository {
     }
 
     override suspend fun saveGameCard(gameCard: GameCard): GameCard {
-        // genera un auto-id único
+        // genera un auto id único
         val doc = gameCardsCollection.document
 
         val cardWithId = gameCard.copy(id = doc.id)

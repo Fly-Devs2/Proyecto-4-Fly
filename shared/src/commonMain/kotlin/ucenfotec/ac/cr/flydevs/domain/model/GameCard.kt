@@ -5,14 +5,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GameCard(
     val id: String = "",
-    val sellerId: String = "",           // vendedor dueño de la publicación
+    val sellerId: String = "",
     val name: String = "",
-    val expansion: String = "",
-    val condition: String = "",
-    val language: String = "",
+    val expansion: CardExpansion? = null,
+    val condition: CardCondition = CardCondition.NEAR_MINT,
+    val language: CardLanguage = CardLanguage.EN,
     val price: Long = 0L,
     val quantity: Int = 1,
     val description: String = "",
     val imageUrl: String = "",
-    val status: String = "available",   // visibilidad en el marketplace
+    val status: CardStatus = CardStatus.AVAILABLE,
 )
