@@ -108,7 +108,7 @@ fun LoginScreen(
                 LoginTextField(
                     value = email,
                     placeholder = "andres@correo.com",
-                    onValueChange = { email = it },
+                    onValueChange = { if (it.length <= 254) email = it },
                     leadingSymbol = "✉",
                     enabled = !uiState.isLoading
                 )
@@ -282,6 +282,11 @@ private fun LoginPasswordTextField(state: TextFieldState) {
             .background(BgCard),
         textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
         cursorBrush = SolidColor(AccentViolet),
+        inputTransformation = {
+            if (asCharSequence().length > 50) {
+                revertAllChanges()
+            }
+        },
         decorator = { innerTextField ->
             Row(
                 modifier = Modifier

@@ -17,19 +17,42 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    private val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
     fun login(email: String, password: String) {
         if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching {
+                if (email.isBlank()) {
+                    throw Exception("El correo electrónico es requerido")
+                }
+                if (email.length > 254) {
+                    throw Exception("El correo electrónico debe tener menos de 254 caracteres")
+                }
+                if (!emailRegex.matches(email)) {
+                    throw Exception("El formato del correo electrónico es inválido")
+                }
+                if (password.length > 50) {
+                    throw Exception("La contraseña debe tener 50 o menos caracteres")
+                }
+                if (password.isBlank()) {
+                    throw Exception("La contraseña es requerida")
+                }
                 authRepository.login(email, password)
             }.onSuccess {
                 _uiState.value = LoginUiState(isLoginSuccessful = true)
             }.onFailure { error ->
+                val displayMessage = when {
+                    error.message?.contains("The supplied auth credential is incorrect", ignoreCase = true) == true ||
+                    error.message?.contains("invalid-credential", ignoreCase = true) == true ->
+                        "El correo electrónico o la contraseña son incorrectos"
+                    else -> error.message ?: "Error al iniciar sesión"
+                }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = error.message ?: "Error al iniciar sesión"
+                    errorMessage = displayMessage
                 )
             }
         }

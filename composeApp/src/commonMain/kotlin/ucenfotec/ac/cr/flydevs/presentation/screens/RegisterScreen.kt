@@ -132,7 +132,7 @@ fun RegisterScreen(
                 RegisterTextField(
                     value = name,
                     placeholder = "Andrés Torres",
-                    onValueChange = { name = it },
+                    onValueChange = { if (it.length <= 50) name = it },
                     leadingSymbol = "👤",
                     enabled = !uiState.isLoading
                 )
@@ -142,7 +142,7 @@ fun RegisterScreen(
                 RegisterTextField(
                     value = email,
                     placeholder = "andres@correo.com",
-                    onValueChange = { email = it },
+                    onValueChange = { if (it.length <= 254) email = it },
                     leadingSymbol = "✉",
                     enabled = !uiState.isLoading
                 )
@@ -342,6 +342,11 @@ fun PasswordTextField(state: TextFieldState) {
             .background(BgCard),
         textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
         cursorBrush = SolidColor(AccentViolet),
+        inputTransformation = {
+            if (asCharSequence().length > 30) {
+                revertAllChanges()
+            }
+        },
         decorator = { innerTextField ->
             Row(
                 modifier = Modifier
