@@ -38,6 +38,7 @@ private val LanguageOptions = listOf("Inglés (EN)", "Español (ES)", "Japonés 
 fun PublishGameCardScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
+    onFilterClick: () -> Unit = {},
     onUploadPhoto: () -> Unit = {},
     onPublish: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
@@ -49,6 +50,7 @@ fun PublishGameCardScreen(
     var price by remember { mutableStateOf("") }
     var quantity by remember { mutableIntStateOf(1) }
     var description by remember { mutableStateOf("") }
+    var showFilters by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -56,7 +58,10 @@ fun PublishGameCardScreen(
             .background(BgDarkest)
             .statusBarsPadding(),
     ) {
-        TopBar(title = "Publicar carta", onBack = onBack)
+        TopBar(title = "Publicar carta", onBack = onBack,onFilterClick = {
+            showFilters = true
+            onFilterClick()
+        })
 
         Column(
             modifier = Modifier

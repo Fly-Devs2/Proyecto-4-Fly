@@ -1,8 +1,6 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +17,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-
-
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,20 +31,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.key.Key.Companion.R
-
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import org.jetbrains.compose.resources.painterResource
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogUiState
-
+import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgDarkest
@@ -54,8 +50,9 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
-@Composable
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun CardMarketplaceScreen(
     uiState: CardCatalogUiState,
     modifier: Modifier = Modifier,
@@ -67,6 +64,17 @@ fun CardMarketplaceScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var sortLowPrice by remember { mutableStateOf(true) }
+    var showFilters by remember { mutableStateOf(false) }
+    val maxCatalogPrice = remember(uiState.cards) {
+        uiState.cards.maxOfOrNull { it.price }?.coerceAtLeast(1L) ?: 1L
+    }
+
+    var selectedPriceRange by remember(maxCatalogPrice) {
+        mutableStateOf(0f..maxCatalogPrice.toFloat())
+    }
+    val filterSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     val filteredCards = uiState.cards
         .filter { card ->
@@ -77,7 +85,10 @@ fun CardMarketplaceScreen(
                         card.condition.contains(searchQuery, ignoreCase = true) ||
                         card.language.contains(searchQuery, ignoreCase = true)
 
-            matchesSearch
+            val matchesPrice =
+                card.price.toFloat() in selectedPriceRange.start..selectedPriceRange.endInclusive
+
+            matchesSearch && matchesPrice
         }
         .let { cards ->
             if (sortLowPrice) {
@@ -95,7 +106,12 @@ fun CardMarketplaceScreen(
     ) {
         TopBar(
             title = "Explorar colección",
-            onBack = onBack
+            onBack = onBack,
+            onFilterClick = {
+                println("DEBUG_FILTER: Filter button clicked")
+                showFilters = true
+                onFilterClick()
+            }
 
         )
 
@@ -212,6 +228,228 @@ fun CardMarketplaceScreen(
         BottomNav(
             selected = FlyNavDestination.Explore,
             onSelect = onNavSelect
+        )
+    }
+    if (showFilters) {
+        ModalBottomSheet(
+            onDismissRequest = { showFilters = false },
+            sheetState = filterSheetState,
+            containerColor = BgCard,
+            contentColor = TextPrimary,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 12.dp, bottom = 8.dp)
+                        .width(42.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(TextMuted.copy(alpha = 0.65f))
+                )
+            }
+        ) {
+            FilterBottomSheetContent(
+                selectedPriceRange = selectedPriceRange,
+                maxPrice = maxCatalogPrice.toFloat(),
+                onPriceRangeChange = { newRange ->
+                    selectedPriceRange = newRange
+                },
+                onClearClick = {
+                    selectedPriceRange = 0f..maxCatalogPrice.toFloat()
+                    // luego limpiamos filtros reales
+                },
+                onCloseClick = {
+                    showFilters = false
+                }
+            )
+        }
+    }
+
+}
+
+@Composable
+private fun CatalogMessage(
+    text: String,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun FilterBottomSheetContent(
+    onClearClick: () -> Unit,
+    onCloseClick: () -> Unit,
+    selectedPriceRange: ClosedFloatingPointRange<Float>,
+    maxPrice: Float,
+    onPriceRangeChange: (ClosedFloatingPointRange<Float>) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgCard)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) {
+
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Filtros",
+                color = TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = "Limpiar",
+                color = AccentViolet,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onClearClick() }
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = "×",
+                color = TextSecondary,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.clickable { onCloseClick() }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "POR SET",
+            color = AccentGold,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        FilterChipGroup(
+            options = listOf(
+                "Pokémon",
+                "Magic",
+                "One Piece"
+
+            )
+        )
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        Text(
+            text = "RANGO DE PRECIO",
+            color = AccentGold,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        androidx.compose.material3.RangeSlider(
+            value = selectedPriceRange,
+            onValueChange = onPriceRangeChange,
+            valueRange = 0f..maxPrice,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "₡${selectedPriceRange.start.toLong()}",
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = "₡${selectedPriceRange.endInclusive.toLong()}",
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+    }
+}
+
+@Composable
+private fun FilterChipGroup(
+    options: List<String>,
+) {
+    var selectedOption by remember { mutableStateOf("Pokémon") }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.take(3).forEach { option ->
+                FilterOptionChip(
+                    text = option,
+                    selected = selectedOption == option,
+                    onClick = { selectedOption = option }
+                )
+            }
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.drop(3).forEach { option ->
+                FilterOptionChip(
+                    text = option,
+                    selected = selectedOption == option,
+                    onClick = { selectedOption = option }
+                )
+            }
+        }
+    }
+}
+@Composable
+private fun FilterOptionChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) AccentViolet else BgSurface)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) TextPrimary else TextSecondary,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
         )
     }
 }
