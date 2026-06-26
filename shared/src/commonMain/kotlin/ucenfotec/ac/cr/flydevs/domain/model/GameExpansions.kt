@@ -3,8 +3,7 @@ package ucenfotec.ac.cr.flydevs.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class CardStatus {
-    AVAILABLE,
-    RESERVED,
-    SOLD,
-}
+data class GameExpansions(
+    val items: List<String> = emptyList(),
+)
+

@@ -26,7 +26,6 @@ actual fun CameraCaptureScreen(
                     bytes = file.readBytes(),
                     mimeType = mimeTypeFor(extension),
                     extension = extension,
-                    fileName = file.name,
                 ),
             )
         }

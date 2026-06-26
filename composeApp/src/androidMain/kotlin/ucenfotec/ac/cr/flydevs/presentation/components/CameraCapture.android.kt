@@ -169,7 +169,6 @@ private fun LifecycleCameraController.captureFramedImage(
                         bytes = bytes,
                         mimeType = "image/jpeg",
                         extension = "jpg",
-                        fileName = "carta_${System.currentTimeMillis()}.jpg",
                     ),
                 )
             }
