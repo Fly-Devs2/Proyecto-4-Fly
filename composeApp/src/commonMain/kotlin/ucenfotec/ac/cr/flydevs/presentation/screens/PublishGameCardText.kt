@@ -17,6 +17,18 @@ internal fun photoSubtitle(state: PublishCardUiState): String = when {
     else -> "Centra la carta en el marco"
 }
 
+internal fun expansionPlaceholder(state: PublishCardUiState): String = when {
+    state.game == null -> "Elige un juego primero"
+    state.isLoadingExpansions -> "Cargando expansiones..."
+    else -> "Seleccionar expansión"
+}
+
+internal fun rarityPlaceholder(state: PublishCardUiState): String = when {
+    state.game == null -> "Elige un juego primero"
+    state.isLoadingRarities -> "Cargando rarezas..."
+    else -> "Seleccionar rareza"
+}
+
 internal fun publishButtonText(state: PublishCardUiState): String = when {
     state.isUploadingImage -> "Subiendo imagen..."
     state.isLoading -> "Publicando..."
@@ -39,6 +51,9 @@ internal fun missingFieldsText(errors: List<GameCardValidationError>): String =
 
 private fun GameCardValidationError.fieldLabel(): String = when (this) {
     GameCardValidationError.NAME_REQUIRED -> "nombre"
+    GameCardValidationError.GAME_REQUIRED -> "tipo de juego"
+    GameCardValidationError.EXPANSION_REQUIRED -> "expansión"
+    GameCardValidationError.RARITY_REQUIRED -> "rareza"
     GameCardValidationError.PRICE_NOT_POSITIVE -> "precio"
     GameCardValidationError.IMAGE_REQUIRED -> "foto"
 }

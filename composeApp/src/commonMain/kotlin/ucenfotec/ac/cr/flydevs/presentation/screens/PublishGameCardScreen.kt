@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
-import ucenfotec.ac.cr.flydevs.domain.model.CardExpansion
+import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
@@ -112,13 +112,31 @@ private fun CardFormFields(state: PublishCardUiState, viewModel: PublishGameCard
         FormField("Nombre de la carta", required = true) {
             TextField(state.name, "Ej: Black Lotus", onValueChange = viewModel::onNameChange)
         }
-        FormField("Expansión / Set") {
+        FormField("Tipo de juego", required = true) {
+            Dropdown(
+                selected = state.game,
+                options = CardGame.entries,
+                label = { it.label },
+                placeholder = "Seleccionar juego",
+                onSelect = viewModel::onGameChange,
+            )
+        }
+        FormField("Expansión / Set", required = true) {
             Dropdown(
                 selected = state.expansion,
-                options = CardExpansion.entries,
-                label = { it.label },
-                placeholder = "Seleccionar expansión",
+                options = state.expansionOptions,
+                label = { it },
+                placeholder = expansionPlaceholder(state),
                 onSelect = viewModel::onExpansionChange,
+            )
+        }
+        FormField("Rareza", required = true) {
+            Dropdown(
+                selected = state.rarity,
+                options = state.rarityOptions,
+                label = { it },
+                placeholder = rarityPlaceholder(state),
+                onSelect = viewModel::onRarityChange,
             )
         }
         FormField("Condición") {

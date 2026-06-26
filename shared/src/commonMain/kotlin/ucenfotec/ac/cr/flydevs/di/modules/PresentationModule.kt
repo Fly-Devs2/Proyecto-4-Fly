@@ -5,5 +5,5 @@ import org.koin.dsl.module
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewModel
 
 val presentationModule = module {
-    viewModel { PublishGameCardViewModel(get(), get()) }
+    viewModel { PublishGameCardViewModel(get(), get(), get(), get()) }
 }

@@ -12,15 +12,12 @@ import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import ucenfotec.ac.cr.flydevs.data.config.FirebaseStorageConfig
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
-import ucenfotec.ac.cr.flydevs.domain.repository.ImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 
-/**
- * Sube imágenes a Firebase Storage usando su API REST sobre Ktor, devuelve la URL pública de descarga
- */
-class FirebaseStorageImageRepository(
+class StorageImageRepository(
     private val httpClient: HttpClient,
     private val bucket: String = FirebaseStorageConfig.BUCKET,
-) : ImageStorageRepository {
+) : IImageStorageRepository {
 
     override suspend fun uploadCardImage(image: PickedImage): String {
         val objectPath = "cards/${randomId()}.${image.extension}"
@@ -51,6 +48,5 @@ class FirebaseStorageImageRepository(
 
 @Serializable
 private data class UploadResponse(
-    val name: String? = null,
     val downloadTokens: String? = null,
 )

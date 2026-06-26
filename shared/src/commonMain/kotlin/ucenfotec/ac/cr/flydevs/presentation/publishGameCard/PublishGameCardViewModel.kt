@@ -8,11 +8,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
-import ucenfotec.ac.cr.flydevs.domain.model.CardExpansion
+import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
-import ucenfotec.ac.cr.flydevs.domain.repository.GameCardRepository
-import ucenfotec.ac.cr.flydevs.domain.repository.ImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
 
@@ -20,8 +22,10 @@ import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
 private const val TEMP_SELLER_ID = "seller-demo"
 
 class PublishGameCardViewModel(
-    private val repository: GameCardRepository,
-    private val imageStorage: ImageStorageRepository,
+    private val repository: IGameCardRepository,
+    private val imageStorage: IImageStorageRepository,
+    private val rarityRepository: IRarityRepository,
+    private val expansionRepository: IExpansionRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublishCardUiState())
@@ -31,7 +35,40 @@ class PublishGameCardViewModel(
         _uiState.update { transform(it).copy(feedback = null) }
 
     fun onNameChange(value: String) = updateForm { it.copy(name = value) }
-    fun onExpansionChange(value: CardExpansion) = updateForm { it.copy(expansion = value) }
+
+    fun onGameChange(value: CardGame) {
+        updateForm {
+            it.copy(
+                game = value,
+                expansion = null, expansionOptions = emptyList(), isLoadingExpansions = true,
+                rarity = null, rarityOptions = emptyList(), isLoadingRarities = true,
+            )
+        }
+
+        viewModelScope.launch {
+            val options = runCatching { expansionRepository.getExpansions(value) }
+                .getOrElse { error ->
+                    println("[PublishGameCard] Falló la carga de expansiones: ${error.message}")
+                    emptyList()
+                }
+            _uiState.update {
+                if (it.game == value) it.copy(expansionOptions = options, isLoadingExpansions = false) else it
+            }
+        }
+        viewModelScope.launch {
+            val options = runCatching { rarityRepository.getRarities(value) }
+                .getOrElse { error ->
+                    println("[PublishGameCard] Falló la carga de rarezas: ${error.message}")
+                    emptyList()
+                }
+            _uiState.update {
+                if (it.game == value) it.copy(rarityOptions = options, isLoadingRarities = false) else it
+            }
+        }
+    }
+
+    fun onRarityChange(value: String) = updateForm { it.copy(rarity = value) }
+    fun onExpansionChange(value: String) = updateForm { it.copy(expansion = value) }
     fun onConditionChange(value: CardCondition) = updateForm { it.copy(condition = value) }
     fun onLanguageChange(value: CardLanguage) = updateForm { it.copy(language = value) }
     fun onPriceChange(value: String) = updateForm { it.copy(price = value.filter(Char::isDigit)) }
