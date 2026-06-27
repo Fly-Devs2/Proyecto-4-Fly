@@ -8,8 +8,8 @@ import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewM
 import ucenfotec.ac.cr.flydevs.presentation.register.RegisterViewModel
 
 val presentationModule = module {
-    viewModel { PublishGameCardViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
     viewModel { HomeViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
+    viewModel { PublishGameCardViewModel(get(), get(), get(), get()) }
 }

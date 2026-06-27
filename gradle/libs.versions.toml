@@ -26,6 +26,8 @@ composeIcons = "1.7.3"
 navigationCompose = "2.8.0-alpha10"
 lifecycleRuntimeKtx = "2.6.1"
 composeBom = "2026.02.01"
+ktor = "3.0.3"
+camerax = "1.4.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -66,6 +68,15 @@ gitlive-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "f
 gitlive-firebase-firestore = { module = "dev.gitlive:firebase-firestore", version.ref = "firebase-gitlive-sdk" }
 gitlive-firebase-messaging = { module = "dev.gitlive:firebase-messaging", version.ref = "firebase-gitlive-sdk" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
@@ -78,7 +89,6 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-auth-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidx-credentials" }
 androidx-auth-credentials-play = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidx-credentials-play-services-auth" }
 androidx-auth-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
-
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
