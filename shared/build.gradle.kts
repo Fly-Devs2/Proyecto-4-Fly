@@ -33,6 +33,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.gitlive.firebase.firestore)
+            implementation(libs.gitlive.firebase.auth)
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.analytics)
             implementation(project.dependencies.platform(libs.koin.bom))
@@ -42,6 +43,11 @@ kotlin {
             implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.serialization.kotlinxJson)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.auth.credentials)
+            implementation(libs.androidx.auth.credentials.play)
+            implementation(libs.androidx.auth.googleid)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
