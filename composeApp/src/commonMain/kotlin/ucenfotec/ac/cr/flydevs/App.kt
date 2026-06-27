@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.*
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
+import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
@@ -22,7 +23,7 @@ fun App(
     FlyAppTheme {
         val navController = rememberNavController()
         val startDestination = if (loginViewModel.isUserLoggedIn()) Home else Login
-        
+
         NavHost(
             navController = navController,
             startDestination = startDestination
@@ -74,6 +75,9 @@ fun App(
                         }
                     }
                 )
+            }
+            composable<CardCatalog> {
+                CardMarketplaceScreen()
             }
         }
     }

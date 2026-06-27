@@ -26,10 +26,15 @@ composeIcons = "1.7.3"
 navigationCompose = "2.8.0-alpha10"
 lifecycleRuntimeKtx = "2.6.1"
 composeBom = "2026.02.01"
-ktor = "3.0.3"
+coil = "3.1.0"
+ktor = "3.1.0"
 camerax = "1.4.1"
 
 [libraries]
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+#coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

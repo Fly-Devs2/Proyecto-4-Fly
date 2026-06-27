@@ -30,6 +30,7 @@ fun BottomNav(
     selected: FlyNavDestination,
     onSelect: (FlyNavDestination) -> Unit,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = { }
 ) {
     Column(modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(BgSurface))
