@@ -1,10 +1,6 @@
 package ucenfotec.ac.cr.flydevs
 
-
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,15 +8,12 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.*
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
+import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
-import ucenfotec.ac.cr.flydevs.data.repository.CardCatalogRepositoryImpl
-import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
-import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
-
 
 @Composable
 @Preview
@@ -30,7 +23,6 @@ fun App(
     FlyAppTheme {
         val navController = rememberNavController()
         val startDestination = if (loginViewModel.isUserLoggedIn()) Home else Login
-
 
         NavHost(
             navController = navController,
@@ -84,19 +76,9 @@ fun App(
                     }
                 )
             }
-            composable<CardCatalog>{
-                CardMarketplaceScreen(
-
-                )
+            composable<CardCatalog> {
+                CardMarketplaceScreen()
             }
-
-
-
-
         }
-
     }
-
 }
-
-
