@@ -1,6 +1,6 @@
 package ucenfotec.ac.cr.flydevs
 
-import androidx.compose.material3.Scaffold
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,7 +26,8 @@ fun App() {
         val uiState by viewModel.uiState.collectAsState()
 
         CardMarketplaceScreen(
-            uiState = uiState
+            uiState = uiState,
+            onRetryClick = { viewModel.loadCards() }
         )
     }
 }

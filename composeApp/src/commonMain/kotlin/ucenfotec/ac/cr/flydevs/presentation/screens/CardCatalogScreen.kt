@@ -51,6 +51,17 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 
+private data class GameFilter(
+    val label: String,
+    val firebaseValue: String?
+)
+
+private val GameFilters = listOf(
+    GameFilter("Todas", null),
+    GameFilter("Pokémon", "POKEMON"),
+    GameFilter("Magic", "MAGIC"),
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardMarketplaceScreen(
@@ -60,6 +71,7 @@ fun CardMarketplaceScreen(
     onFilterClick: () -> Unit = {},
     onCardClick: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onRetryClick: () -> Unit = {},
 ) {
 
     var searchQuery by remember { mutableStateOf("") }
@@ -68,6 +80,7 @@ fun CardMarketplaceScreen(
     val maxCatalogPrice = remember(uiState.cards) {
         uiState.cards.maxOfOrNull { it.price }?.coerceAtLeast(1L) ?: 1L
     }
+    var selectedGameFilter by remember { mutableStateOf<GameFilter>(GameFilters.first()) }
 
     var selectedPriceRange by remember(maxCatalogPrice) {
         mutableStateOf(0f..maxCatalogPrice.toFloat())
@@ -87,8 +100,11 @@ fun CardMarketplaceScreen(
 
             val matchesPrice =
                 card.price.toFloat() in selectedPriceRange.start..selectedPriceRange.endInclusive
+            val matchesGame =
+                selectedGameFilter.firebaseValue == null ||
+                        card.game.equals(selectedGameFilter.firebaseValue, ignoreCase = true)
 
-            matchesSearch && matchesPrice
+            matchesSearch && matchesPrice && matchesGame
         }
         .let { cards ->
             if (sortLowPrice) {
@@ -150,48 +166,22 @@ fun CardMarketplaceScreen(
             }
             when {
                 uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Cargando cartas...",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    CatalogMessage(
+                        text = "Cargando cartas..."
+                    )
                 }
 
                 uiState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = uiState.errorMessage!!,
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    CatalogErrorMessage(
+                        text = uiState.errorMessage ?: "Error desconocido",
+                        onRetryClick = onRetryClick
+                    )
                 }
 
                 filteredCards.isEmpty() -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No se encontraron cartas",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    CatalogMessage(
+                        text = "No se encontraron cartas disponibles."
+                    )
                 }
 
                 else -> {
@@ -249,12 +239,15 @@ fun CardMarketplaceScreen(
             }
         ) {
             FilterBottomSheetContent(
+                selectedGameFilter = selectedGameFilter,
+                onGameFilterSelected = { selectedGameFilter = it },
                 selectedPriceRange = selectedPriceRange,
                 maxPrice = maxCatalogPrice.toFloat(),
                 onPriceRangeChange = { newRange ->
                     selectedPriceRange = newRange
                 },
                 onClearClick = {
+                    selectedGameFilter = GameFilters.first()
                     selectedPriceRange = 0f..maxCatalogPrice.toFloat()
                     // luego limpiamos filtros reales
                 },
@@ -280,8 +273,57 @@ private fun CatalogMessage(
         Text(
             text = text,
             color = TextSecondary,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun CatalogErrorMessage(
+    text: String,
+    onRetryClick: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "No se pudo cargar el catálogo",
+            color = TextPrimary,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = text,
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(AccentViolet)
+                .clickable { onRetryClick() }
+                .padding(horizontal = 18.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Reintentar",
+                color = TextPrimary,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -292,6 +334,8 @@ private fun FilterBottomSheetContent(
     selectedPriceRange: ClosedFloatingPointRange<Float>,
     maxPrice: Float,
     onPriceRangeChange: (ClosedFloatingPointRange<Float>) -> Unit,
+    selectedGameFilter: GameFilter,
+    onGameFilterSelected: (GameFilter) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -346,12 +390,9 @@ private fun FilterBottomSheetContent(
         Spacer(modifier = Modifier.height(10.dp))
 
         FilterChipGroup(
-            options = listOf(
-                "Pokémon",
-                "Magic",
-                "One Piece"
-
-            )
+            options = GameFilters,
+            selectedOption = selectedGameFilter,
+            onOptionSelected = onGameFilterSelected
         )
 
         Spacer(modifier = Modifier.height(22.dp))
@@ -398,9 +439,11 @@ private fun FilterBottomSheetContent(
 
 @Composable
 private fun FilterChipGroup(
-    options: List<String>,
+    options: List<GameFilter>,
+    selectedOption: GameFilter,
+    onOptionSelected: (GameFilter) -> Unit,
 ) {
-    var selectedOption by remember { mutableStateOf("Pokémon") }
+
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -408,11 +451,11 @@ private fun FilterChipGroup(
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.take(3).forEach { option ->
+            options.take(4).forEach { option ->
                 FilterOptionChip(
-                    text = option,
+                    text = option.label,
                     selected = selectedOption == option,
-                    onClick = { selectedOption = option }
+                    onClick = { onOptionSelected(option) }
                 )
             }
         }
@@ -420,11 +463,11 @@ private fun FilterChipGroup(
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.drop(3).forEach { option ->
+            options.drop(4).forEach { option ->
                 FilterOptionChip(
-                    text = option,
+                    text = option.label,
                     selected = selectedOption == option,
-                    onClick = { selectedOption = option }
+                    onClick = { onOptionSelected(option) }
                 )
             }
         }
@@ -533,6 +576,8 @@ private fun SortChip(
         )
     }
 }
+
+
 
 @Composable
 private fun MarketplaceCardItem(

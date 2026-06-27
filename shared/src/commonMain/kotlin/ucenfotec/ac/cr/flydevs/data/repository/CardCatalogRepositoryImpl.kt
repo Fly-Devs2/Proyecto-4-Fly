@@ -31,9 +31,12 @@ class CardCatalogRepositoryImpl : CardCatalogRepository {
                 price = document.get<Long>("price") ?: 0L,
                 quantity = document.get<Long>("quantity") ?: 0L,
                 sellerId = document.get<String>("sellerId") ?: "",
-                status = document.get<String>("status") ?: ""
+                status = document.get<String>("status") ?: "",
+                game = document.get<String>("game") ?: "",
+                rarity = document.get<String>("rarity") ?: ""
             )
-            println("Fetched card: ${card.name}, ID: ${card.id}, Status: ${card.status}, Image URL: ${card.imageUrl}, Price: ${card.price}, Quantity: ${card.quantity}")
+            println("Fetched card: ${card.name}, ID: ${card.id}, Status: ${card.status}," +
+                    " Image URL: ${card.imageUrl}, Price: ${card.price}, Quantity: ${card.quantity}")
 
             card
         }

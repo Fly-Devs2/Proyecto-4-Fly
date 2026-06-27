@@ -14,5 +14,8 @@ data class GameCard(
     val price: Long = 0L,
     val quantity: Long = 0L,
     val sellerId: String = "",
-    val status: String = ""
+    val status: String = "",
+    val game: String = "",
+    val rarity: String = ""
+
 )
