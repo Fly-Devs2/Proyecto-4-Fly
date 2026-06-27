@@ -35,12 +35,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogUiState
+import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
@@ -53,26 +57,29 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 private data class GameFilter(
     val label: String,
-    val firebaseValue: String?
+    val game: CardGame?
 )
 
 private val GameFilters = listOf(
     GameFilter("Todas", null),
-    GameFilter("Pokémon", "POKEMON"),
-    GameFilter("Magic", "MAGIC"),
+    GameFilter("Pokémon", CardGame.POKEMON),
+    GameFilter("Magic", CardGame.MAGIC),
+    GameFilter("One Piece", CardGame.ONE_PIECE)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardMarketplaceScreen(
-    uiState: CardCatalogUiState,
+
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     onFilterClick: () -> Unit = {},
     onCardClick: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onRetryClick: () -> Unit = {},
+    viewModel: CardCatalogViewModel = koinViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var sortLowPrice by remember { mutableStateOf(true) }
@@ -94,15 +101,15 @@ fun CardMarketplaceScreen(
             val matchesSearch =
                 searchQuery.isBlank() ||
                         card.name.contains(searchQuery, ignoreCase = true) ||
-                        card.expansion.contains(searchQuery, ignoreCase = true) ||
-                        card.condition.contains(searchQuery, ignoreCase = true) ||
-                        card.language.contains(searchQuery, ignoreCase = true)
+                        card.expansion?.contains(searchQuery, ignoreCase = true) == true ||
+                        card.condition.label.contains(searchQuery, ignoreCase = true) ||
+                        card.language.label.contains(searchQuery, ignoreCase = true)
 
             val matchesPrice =
                 card.price.toFloat() in selectedPriceRange.start..selectedPriceRange.endInclusive
             val matchesGame =
-                selectedGameFilter.firebaseValue == null ||
-                        card.game.equals(selectedGameFilter.firebaseValue, ignoreCase = true)
+                selectedGameFilter.game == null ||
+                        card.game == selectedGameFilter.game
 
             matchesSearch && matchesPrice && matchesGame
         }
@@ -629,7 +636,7 @@ private fun MarketplaceCardItem(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = card.condition,
+            text = card.condition.toString(),
             color = TextSecondary,
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,

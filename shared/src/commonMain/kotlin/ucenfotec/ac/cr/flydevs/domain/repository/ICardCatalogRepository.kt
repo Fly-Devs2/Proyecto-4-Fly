@@ -2,7 +2,7 @@ package ucenfotec.ac.cr.flydevs.domain.repository
 
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 
-interface GameCardRepository {
+interface ICardCatalogRepository {
 
-    suspend fun saveGameCard(gameCard: GameCard)
+    suspend fun getCardCatalog(): List<GameCard>
 }

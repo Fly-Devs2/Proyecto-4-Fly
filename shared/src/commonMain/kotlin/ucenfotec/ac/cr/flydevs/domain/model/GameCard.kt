@@ -5,17 +5,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GameCard(
     val id: String = "",
-    val name: String = "",
-    val description: String = "",
-    val expansion: String = "",
-    val condition: String = "",
-    val language: String = "",
-    val imageUrl: String = "",
-    val price: Long = 0L,
-    val quantity: Long = 0L,
     val sellerId: String = "",
-    val status: String = "",
-    val game: String = "",
-    val rarity: String = ""
-
+    val name: String = "",
+    val game: CardGame? = null,
+    val expansion: String? = null,
+    val rarity: String? = null,
+    val condition: CardCondition = CardCondition.NEAR_MINT,
+    val language: CardLanguage = CardLanguage.EN,
+    val price: Long = 0L,
+    val quantity: Int = 1,
+    val description: String = "",
+    val imageUrl: String = "",
+    val status: CardStatus = CardStatus.AVAILABLE,
 )
