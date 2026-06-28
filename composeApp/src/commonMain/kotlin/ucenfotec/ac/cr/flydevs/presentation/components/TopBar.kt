@@ -27,6 +27,7 @@ fun TopBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onFilterClick: () -> Unit = {},
+    trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -51,6 +52,8 @@ fun TopBar(
         )
 
         Spacer(modifier = Modifier.weight(1f))
+
+        trailingIcon?.invoke()
 
         Box(
             modifier = Modifier

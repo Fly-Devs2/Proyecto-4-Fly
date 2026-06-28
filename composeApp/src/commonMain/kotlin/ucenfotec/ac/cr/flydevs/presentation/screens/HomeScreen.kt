@@ -32,7 +32,8 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.*
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onSignOutSuccess: () -> Unit = {}
+    onSignOutSuccess: () -> Unit = {},
+    onNavigateToMyCollection: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -104,7 +105,7 @@ fun HomeScreen(
             Spacer(Modifier.height(16.dp))
             
             OutlinedButton(
-                onClick = { },
+                onClick = { onNavigateToMyCollection() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, TextMuted.copy(alpha = 0.3f)),
                 shape = RoundedCornerShape(16.dp)
