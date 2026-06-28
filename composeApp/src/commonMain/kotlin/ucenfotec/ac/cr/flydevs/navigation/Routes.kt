@@ -34,3 +34,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class LaunchDetail(val flightNumber: Int)
 
 @Serializable object CardCatalog
+
+@Serializable object PublishCard

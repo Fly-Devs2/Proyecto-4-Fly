@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.auth.GoogleAuthManager
-import ucenfotec.ac.cr.flydevs.domain.repository.AuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 
 class LoginViewModel(
-    private val authRepository: AuthRepository,
+    private val IAuthRepository: IAuthRepository,
     private val googleAuthManager: GoogleAuthManager
 ) : ViewModel() {
 
@@ -40,7 +40,7 @@ class LoginViewModel(
                 if (password.isBlank()) {
                     throw Exception("La contraseña es requerida")
                 }
-                authRepository.login(email, password)
+                IAuthRepository.login(email, password)
             }.onSuccess {
                 _uiState.value = LoginUiState(isLoginSuccessful = true)
             }.onFailure { error ->
@@ -90,8 +90,8 @@ class LoginViewModel(
 
     private suspend fun performFirebaseGoogleSignIn(idToken: String) {
         runCatching {
-            val uid = authRepository.signInWithGoogle(idToken)
-            val profile = authRepository.getUserProfile(uid)
+            val uid = IAuthRepository.signInWithGoogle(idToken)
+            val profile = IAuthRepository.getUserProfile(uid)
             
             if (profile == null || profile.phone.isBlank()) {
                 _uiState.value = _uiState.value.copy(
@@ -110,6 +110,6 @@ class LoginViewModel(
     }
     
     fun isUserLoggedIn(): Boolean {
-        return authRepository.isUserLoggedIn()
+        return IAuthRepository.isUserLoggedIn()
     }
 }

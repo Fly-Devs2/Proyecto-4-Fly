@@ -7,12 +7,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.*
+import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
-import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.*
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 
 @Composable
@@ -69,6 +66,9 @@ fun App(
             }
             composable<Home> {
                 HomeScreen(
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    },
                     onSignOutSuccess = {
                         navController.navigate(Login) {
                             popUpTo(Home) { inclusive = true }
@@ -77,8 +77,49 @@ fun App(
                 )
             }
             composable<CardCatalog> {
-                CardMarketplaceScreen()
+                CardMarketplaceScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    }
+                )
             }
+            composable<PublishCard> {
+                PublishGameCardScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Función helper centralizada para manejar la navegación desde el BottomNav
+ * en cualquier pantalla que lo use.
+ */
+private fun handleBottomNavNavigation(
+    navController: androidx.navigation.NavController,
+    destination: FlyNavDestination
+) {
+    when (destination) {
+        FlyNavDestination.Home -> {
+            navController.navigate(Home) {
+                popUpTo(Home) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.Explore -> {
+            navController.navigate(CardCatalog) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.Sell -> {
+            navController.navigate(PublishCard) {
+                launchSingleTop = true
+            }
+        }
+        else -> {
+            // TODO: Implement Orders and Profile routes
         }
     }
 }

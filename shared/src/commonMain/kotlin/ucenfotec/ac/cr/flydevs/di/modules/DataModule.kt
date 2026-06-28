@@ -8,7 +8,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.FirestoreRarityRepository
 import ucenfotec.ac.cr.flydevs.data.repository.AuthRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardCatalogRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
-import ucenfotec.ac.cr.flydevs.domain.repository.AuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
@@ -16,7 +16,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 
 val dataModule = module {
-    single<AuthRepository> { AuthRepositoryImpl() }
+    single<IAuthRepository> { AuthRepositoryImpl() }
     single { createHttpClient() }
     single<IGameCardRepository> { GameCardRepositoryImpl() }
     single<IImageStorageRepository> { StorageImageRepository(get()) }

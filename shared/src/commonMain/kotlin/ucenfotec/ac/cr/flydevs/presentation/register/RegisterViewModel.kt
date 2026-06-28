@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.auth.GoogleAuthManager
-import ucenfotec.ac.cr.flydevs.domain.repository.AuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 
 class RegisterViewModel(
-    private val authRepository: AuthRepository,
+    private val AuthRepository: IAuthRepository,
     private val googleAuthManager: GoogleAuthManager
 ) : ViewModel() {
 
@@ -56,7 +56,7 @@ class RegisterViewModel(
                 if (!phoneRegex.matches(phone)) {
                     throw Exception("El formato del teléfono es inválido. Debe ser de Costa Rica y empezar con 5, 6, 7, u 8.")
                 }
-                authRepository.register(name, email, phone, password)
+                AuthRepository.register(name, email, phone, password)
             }.onSuccess {
                 _uiState.value = RegisterUiState(isRegistered = true)
             }.onFailure { error ->
@@ -114,8 +114,8 @@ class RegisterViewModel(
 
     private suspend fun performFirebaseGoogleSignIn(idToken: String) {
         runCatching {
-            val uid = authRepository.signInWithGoogle(idToken)
-            val profile = authRepository.getUserProfile(uid)
+            val uid = AuthRepository.signInWithGoogle(idToken)
+            val profile = AuthRepository.getUserProfile(uid)
             
             if (profile == null || profile.phone.isBlank()) {
                 _uiState.value = _uiState.value.copy(
@@ -138,8 +138,8 @@ class RegisterViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching {
-                val uid = authRepository.getCurrentUserUid() ?: throw Exception("Sesión no encontrada")
-                val email = authRepository.getCurrentUserEmail() ?: ""
+                val uid = AuthRepository.getCurrentUserUid() ?: throw Exception("Sesión no encontrada")
+                val email = AuthRepository.getCurrentUserEmail() ?: ""
                 
                 val user = ucenfotec.ac.cr.flydevs.domain.model.User(
                     uid = uid,
@@ -147,7 +147,7 @@ class RegisterViewModel(
                     email = email,
                     phone = phone
                 )
-                authRepository.saveUserProfile(user)
+                AuthRepository.saveUserProfile(user)
             }.onSuccess {
                 _uiState.value = RegisterUiState(isRegistered = true)
             }.onFailure { error ->
