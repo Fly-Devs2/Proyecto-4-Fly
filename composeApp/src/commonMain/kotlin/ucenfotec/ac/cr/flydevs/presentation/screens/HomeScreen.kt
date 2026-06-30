@@ -32,9 +32,8 @@ import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onSignOutSuccess: () -> Unit = {},
-    onNavigateToMyCollection: () -> Unit = {}
+    onNavigateToMyCollection: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
-    onSignOutSuccess: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()

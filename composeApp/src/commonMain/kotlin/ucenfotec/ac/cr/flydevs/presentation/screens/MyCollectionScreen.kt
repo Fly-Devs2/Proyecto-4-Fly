@@ -155,7 +155,7 @@ fun MyCollectionScreen(
             }
         }
 
-        BottomNav(selected = FlyNavDestination.Explore, onSelect = onNavSelect)
+        BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
     }
 }
 

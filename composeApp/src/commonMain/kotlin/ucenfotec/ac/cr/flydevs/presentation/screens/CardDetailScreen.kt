@@ -212,7 +212,7 @@ fun CardDetailScreen(
                 }
             }
 
-            BottomNav(selected = FlyNavDestination.Explore, onSelect = onNavSelect)
+            BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
         }
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
