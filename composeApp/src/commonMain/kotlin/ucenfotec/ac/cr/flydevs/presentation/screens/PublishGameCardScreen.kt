@@ -76,7 +76,8 @@ fun PublishGameCardScreen(
                 )
             }
 
-            BottomNav(selected = FlyNavDestination.Sell, onSelect = onNavSelect)
+            BottomNav(//selected = FlyNavDestination.Sell, onSelect = onNavSelect)
+            )
         }
 
         if (showCamera) {

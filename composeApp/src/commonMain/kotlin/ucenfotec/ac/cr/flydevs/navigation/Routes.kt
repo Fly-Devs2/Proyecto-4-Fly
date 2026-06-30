@@ -38,3 +38,4 @@ import kotlinx.serialization.Serializable
 @Serializable object MyCollection
 
 @Serializable data class CardDetail(val cardId: String)
+@Serializable object PublishCard

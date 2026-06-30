@@ -223,8 +223,8 @@ fun CardMarketplaceScreen(
         }
 
         BottomNav(
-            selected = FlyNavDestination.Explore,
-            onSelect = onNavSelect
+            currentDestination = FlyNavDestination.Explore,
+            onDestinationSelected = onNavSelect
         )
     }
     if (showFilters) {

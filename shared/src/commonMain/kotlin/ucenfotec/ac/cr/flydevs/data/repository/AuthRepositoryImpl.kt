@@ -5,10 +5,10 @@ import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import ucenfotec.ac.cr.flydevs.domain.model.User
-import ucenfotec.ac.cr.flydevs.domain.repository.AuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
 
-class AuthRepositoryImpl : AuthRepository {
+class AuthRepositoryImpl : IAuthRepository {
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
 
@@ -59,11 +59,11 @@ class AuthRepositoryImpl : AuthRepository {
         firestore.collection("users").document(user.uid).set(User.serializer(), userToSave)
     }
 
-    override suspend fun getCurrentUserUid(): String? {
+    override fun getCurrentUserUid(): String? {
         return auth.currentUser?.uid
     }
 
-    override suspend fun getCurrentUserEmail(): String? {
+    override fun getCurrentUserEmail(): String? {
         return auth.currentUser?.email
     }
 

@@ -1,14 +1,12 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,7 +24,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
-
+import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
+import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 
 @Preview
 @Composable
@@ -34,6 +33,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onSignOutSuccess: () -> Unit = {},
     onNavigateToMyCollection: () -> Unit = {}
+    onNavSelect: (FlyNavDestination) -> Unit = {},
+    onSignOutSuccess: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -47,7 +48,10 @@ fun HomeScreen(
     Scaffold(
         containerColor = BgDarkest,
         bottomBar = {
-            BottomNavigationBar()
+            BottomNav(
+                currentDestination = FlyNavDestination.Home,
+                onDestinationSelected = onNavSelect
+            )
         }
     ) { padding ->
         Column(
@@ -92,7 +96,7 @@ fun HomeScreen(
             
             // Actions
             Button(
-                onClick = { },
+                onClick = { onNavSelect(FlyNavDestination.Sell) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
                 shape = RoundedCornerShape(16.dp)
@@ -156,7 +160,19 @@ private fun HeaderSection(
         IconButton(onClick = { }) {
             Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary)
         }
-
+        
+        Surface(
+            color = AccentViolet,
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                "USUARIO",
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -313,45 +329,5 @@ private fun OrderItem(id: String, desc: String, status: String, statusColor: Col
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun BottomNavigationBar() {
-    Surface(
-        color = BgDark,
-        modifier = Modifier.fillMaxWidth().height(80.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(Icons.Default.Home, "Inicio", isSelected = true)
-            BottomNavItem(Icons.Default.Explore, "Explorar")
-            
-            // Floating Center Button
-            Surface(
-                color = AccentViolet,
-                shape = CircleShape,
-                modifier = Modifier.size(48.dp).offset(y = (-10).dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.padding(12.dp))
-            }
-            
-            BottomNavItem(Icons.AutoMirrored.Filled.ListAlt, "Pedidos")
-            BottomNavItem(Icons.Default.Person, "Perfil")
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, isSelected: Boolean = false) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(top = 8.dp)
-    ) {
-        Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else TextMuted, modifier = Modifier.size(24.dp))
-        Text(label, color = if (isSelected) Color.White else TextMuted, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
     }
 }

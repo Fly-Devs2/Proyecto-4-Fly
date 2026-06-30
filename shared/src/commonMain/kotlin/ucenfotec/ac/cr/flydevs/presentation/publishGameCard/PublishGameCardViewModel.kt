@@ -11,6 +11,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
@@ -26,6 +27,7 @@ class PublishGameCardViewModel(
     private val imageStorage: IImageStorageRepository,
     private val rarityRepository: IRarityRepository,
     private val expansionRepository: IExpansionRepository,
+    private val authRepository: IAuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublishCardUiState())
@@ -121,7 +123,7 @@ class PublishGameCardViewModel(
 
         _uiState.update { it.copy(isLoading = true, feedback = null) }
 
-        val card = draft.copy(sellerId = TEMP_SELLER_ID)
+        val card = draft.copy(sellerId = authRepository.getCurrentUserUid().toString())
 
         viewModelScope.launch {
             runCatching { repository.saveGameCard(card) }
