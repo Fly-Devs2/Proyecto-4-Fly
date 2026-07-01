@@ -2,6 +2,7 @@ package ucenfotec.ac.cr.flydevs
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -13,6 +14,7 @@ import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
 import ucenfotec.ac.cr.flydevs.navigation.Home
 import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
+import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
@@ -22,11 +24,8 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
-import ucenfotec.ac.cr.flydevs.navigation.*
-import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
-import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
-import ucenfotec.ac.cr.flydevs.presentation.screens.*
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 
 @Composable
@@ -61,25 +60,22 @@ fun App(
             composable<Home> {
                 HomeScreen(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
-                    onNavigateToMyCollection = { navController.navigate(MyCollection) }
+                    onNavigateToMyCollection = { navController.navigate(MyCollection) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<CardCatalog> {
                 CardMarketplaceScreen(
-                    onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) }
+                    onBack = { navController.popBackStack() },
+                    onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<MyCollection> {
                 MyCollectionScreen(
                     onBack = { navController.popBackStack() },
                     onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) },
-                    onNavSelect = { dest ->
-                        when (dest) {
-                            FlyNavDestination.Home    -> navController.navigate(Home)
-                            FlyNavDestination.Explore -> navController.navigate(CardCatalog)
-                            else -> {}
-                        }
-                    }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<CardDetail> { backStackEntry ->
@@ -87,30 +83,7 @@ fun App(
                 CardDetailScreen(
                     cardId = route.cardId,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { dest ->
-                        when (dest) {
-                            FlyNavDestination.Home    -> navController.navigate(Home)
-                            FlyNavDestination.Explore -> navController.navigate(CardCatalog)
-                            else -> {}
-                        }
-                    }
-                )
-                    onNavSelect = { destination ->
-                        handleBottomNavNavigation(navController, destination)
-                    },
-                    onSignOutSuccess = {
-                        navController.navigate(Login) {
-                            popUpTo(Home) { inclusive = true }
-                        }
-                    }
-                )
-            }
-            composable<CardCatalog> {
-                CardMarketplaceScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavSelect = { destination ->
-                        handleBottomNavNavigation(navController, destination)
-                    }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<PublishCard> {
@@ -127,7 +100,7 @@ fun App(
  * en cualquier pantalla que lo use.
  */
 private fun handleBottomNavNavigation(
-    navController: androidx.navigation.NavController,
+    navController: NavController,
     destination: FlyNavDestination
 ) {
     when (destination) {

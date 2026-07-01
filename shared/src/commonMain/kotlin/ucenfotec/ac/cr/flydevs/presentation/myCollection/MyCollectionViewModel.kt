@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 
 class MyCollectionViewModel(
     private val repository: ICardCatalogRepository,
+    private val authRepository: IAuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyCollectionUiState())
@@ -20,7 +22,10 @@ class MyCollectionViewModel(
     fun loadCards() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { repository.getCardCatalog() }
+            runCatching {
+                val uid = authRepository.getCurrentUserUid() ?: ""
+                repository.getCardCatalog().filter { it.sellerId == uid }
+            }
                 .onSuccess { cards ->
                     _uiState.value = _uiState.value.copy(isLoading = false, cards = cards)
                 }
