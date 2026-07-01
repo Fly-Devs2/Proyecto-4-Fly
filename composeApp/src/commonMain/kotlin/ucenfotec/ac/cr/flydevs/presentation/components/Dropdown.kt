@@ -26,14 +26,17 @@ import androidx.compose.ui.unit.sp
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
 @Composable
-fun Dropdown(
-    value: String,
-    options: List<String>,
-    onSelect: (String) -> Unit,
+fun <T> Dropdown(
+    selected: T?,
+    options: List<T>,
+    label: (T) -> String,
+    onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
-    isPlaceholder: Boolean = false,
+    placeholder: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val isPlaceholder = selected == null
+    val text = selected?.let(label) ?: placeholder.orEmpty()
     Box(modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(8.dp)).background(BgCard)
@@ -41,7 +44,7 @@ fun Dropdown(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = value,
+                text = text,
                 modifier = Modifier.weight(1f),
                 color = if (isPlaceholder) TextMuted else TextPrimary,
                 fontSize = 13.sp,
@@ -55,7 +58,7 @@ fun Dropdown(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option, color = TextPrimary, fontSize = 13.sp) },
+                    text = { Text(label(option), color = TextPrimary, fontSize = 13.sp) },
                     onClick = {
                         onSelect(option)
                         expanded = false
