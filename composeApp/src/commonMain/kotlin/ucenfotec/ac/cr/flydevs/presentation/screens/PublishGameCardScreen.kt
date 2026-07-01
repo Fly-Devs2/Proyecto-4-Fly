@@ -76,7 +76,9 @@ fun PublishGameCardScreen(
                 )
             }
 
-            BottomNav(//selected = FlyNavDestination.Sell, onSelect = onNavSelect)
+            BottomNav(
+                currentDestination = FlyNavDestination.Sell,
+                onDestinationSelected = onNavSelect
             )
         }
 

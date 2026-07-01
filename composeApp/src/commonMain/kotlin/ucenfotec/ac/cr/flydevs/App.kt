@@ -60,7 +60,8 @@ fun App(
             composable<Home> {
                 HomeScreen(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
-                    onNavigateToMyCollection = { navController.navigate(MyCollection) }
+                    onNavigateToMyCollection = { navController.navigate(MyCollection) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<CardCatalog> {
