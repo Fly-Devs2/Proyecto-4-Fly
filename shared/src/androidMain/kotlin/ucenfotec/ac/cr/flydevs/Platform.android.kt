@@ -7,3 +7,5 @@ class AndroidPlatform : Platform {
 }
 
 actual fun getPlatform(): Platform = AndroidPlatform()
+
+actual fun getEpochMillis(): Long = System.currentTimeMillis()
