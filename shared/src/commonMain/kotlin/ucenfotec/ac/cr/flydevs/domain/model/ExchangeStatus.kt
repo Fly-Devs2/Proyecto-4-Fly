@@ -7,10 +7,10 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class ExchangeStatus {
-    ESPERANDO_ENTREGA_TIENDA, // El vendedor debe entregar el sobre en la tienda y subir una foto como evidencia.
-    ESPERANDO_COMPROBANTE_SINPE, // Si ya existe evidencia del vendedor, se espera el comprobante del comprador.
-    COMPROBANTE_RECIBIDO, // El comprador subió el comprobante SINPE.
-    EN_ENVIO,
-    COMPLETADO,
-    EXPIRADO, // El intercambio expiró por falta de comprobantes.
+    WAITING_STORE_DELIVERY, // El vendedor debe entregar el sobre en la tienda y subir una foto como evidencia.
+    WAITING_SINPE_PROOF,    // Ya existe evidencia del vendedor, se espera el comprobante del comprador.
+    PROOF_RECEIVED,         // El comprador subió el comprobante SINPE.
+    SHIPPING,
+    COMPLETED,
+    EXPIRED,                // El intercambio expiró por falta de comprobante, cartas vuelven a AVAILABLE.
 }

@@ -14,7 +14,7 @@ import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 /**
  * Comprador: subir el comprobante de SINPE Móvil.
- * Al confirmar, el sobre pasa a COMPROBANTE_RECIBIDO.
+ * Al confirmar, el sobre pasa a PROOF_RECEIVED.
  */
 class ExchangeBuyerViewModel(
     private val exchangeRepository: IExchangeRepository,
@@ -51,7 +51,7 @@ class ExchangeBuyerViewModel(
         }
 
         viewModelScope.launch {
-            runCatching { imageStorage.uploadCardImage(image) }
+            runCatching { imageStorage.uploadEvidenceImage(image) }
                 .onSuccess { url ->
                     _uiState.update { it.copy(isUploadingImage = false, proofUrl = url) }
                 }
@@ -68,7 +68,7 @@ class ExchangeBuyerViewModel(
         val current = _uiState.value
         if (current.isSubmitting || current.isUploadingImage) return
 
-        // no se puede subir el comprobante si el vendedor aún no subió su evidencia.
+        // no se puede subir el comprobante si el vendedor no subió su evidencia.
         if (!current.isReadyForSinpe) {
             _uiState.update { it.copy(feedback = SinpeProofFeedback.NOT_READY) }
             return

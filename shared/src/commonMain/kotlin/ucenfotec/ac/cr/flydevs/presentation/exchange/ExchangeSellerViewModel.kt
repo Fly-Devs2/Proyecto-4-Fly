@@ -13,7 +13,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 /**
- * Al confirmar, el sobre pasa a ESPERANDO_COMPROBANTE_SINPE.
+ * Al confirmar, el sobre pasa a WAITING_SINPE_PROOF.
  */
 class ExchangeSellerViewModel(
     private val exchangeRepository: IExchangeRepository,
@@ -50,7 +50,7 @@ class ExchangeSellerViewModel(
         }
 
         viewModelScope.launch {
-            runCatching { imageStorage.uploadCardImage(image) }
+            runCatching { imageStorage.uploadEvidenceImage(image) }
                 .onSuccess { url ->
                     _uiState.update { it.copy(isUploadingImage = false, evidenceUrl = url) }
                 }

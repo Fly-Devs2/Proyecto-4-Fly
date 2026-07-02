@@ -36,7 +36,7 @@ class ExchangeRepositoryImpl : IExchangeRepository {
 
         val updated = current.copy(
             sellerEvidenceUrl = evidenceUrl,
-            status = ExchangeStatus.ESPERANDO_COMPROBANTE_SINPE,
+            status = ExchangeStatus.WAITING_SINPE_PROOF,
         )
         exchangesCollection.document(exchangeId).set(updated)
         return updated
@@ -46,13 +46,13 @@ class ExchangeRepositoryImpl : IExchangeRepository {
         val current = getExchange(exchangeId)
             ?: throw IllegalStateException("Intercambio no encontrado: $exchangeId")
 
-        require(current.status == ExchangeStatus.ESPERANDO_COMPROBANTE_SINPE) {
+        require(current.status == ExchangeStatus.WAITING_SINPE_PROOF) {
             "No se puede subir el comprobante SINPE: falta la evidencia del vendedor."
         }
 
         val updated = current.copy(
             sinpeProofUrl = proofUrl,
-            status = ExchangeStatus.COMPROBANTE_RECIBIDO,
+            status = ExchangeStatus.PROOF_RECEIVED,
         )
         exchangesCollection.document(exchangeId).set(updated)
         return updated

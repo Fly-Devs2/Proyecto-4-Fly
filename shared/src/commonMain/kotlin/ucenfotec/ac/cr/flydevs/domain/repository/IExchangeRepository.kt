@@ -4,7 +4,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.Exchange
 
 interface IExchangeRepository {
 
-    /** Crea el sobre con un id único y su estado inicial: ESPERANDO_ENTREGA_TIENDA. */
+    /** Crea el sobre con un id único y su estado inicial: WAITING_STORE_DELIVERY. */
     suspend fun createExchange(exchange: Exchange): Exchange
 
     /**
@@ -23,13 +23,13 @@ interface IExchangeRepository {
     suspend fun getExchangesForBuyer(buyerId: String): List<Exchange>
 
     /**
-     * El vendedor sube la foto del envío, Pasa a ESPERANDO_COMPROBANTE_SINPE.
+     * El vendedor sube la foto del envío, Pasa a WAITING_SINPE_PROOF.
      * Sin esta evidencia no se le pide el comprobante al comprador.
      */
     suspend fun submitSellerEvidence(exchangeId: String, evidenceUrl: String): Exchange
 
     /**
-     * El comprador sube el comprobante SINPE. Pasa a COMPROBANTE_RECIBIDO.
+     * El comprador sube el comprobante SINPE. Pasa a PROOF_RECEIVED.
      * Solo permitido si ya existe la evidencia del vendedor.
      */
     suspend fun submitSinpeProof(exchangeId: String, proofUrl: String): Exchange
