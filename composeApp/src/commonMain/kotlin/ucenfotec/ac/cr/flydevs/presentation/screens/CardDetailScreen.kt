@@ -64,11 +64,13 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun CardDetailScreen(
+    userId: String,
     cardId: String,
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = koinViewModel(),
     onBack: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onGoToEnvelope: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboardManager.current
@@ -80,6 +82,19 @@ fun CardDetailScreen(
         if (state.idCopied) {
             snackbarHostState.showSnackbar("ID copiado al portapapeles")
             viewModel.clearIdCopied()
+        }
+    }
+    LaunchedEffect(state.actionErrorMessage) {
+        state.actionErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearEnvelopeNavigation()
+        }
+    }
+    LaunchedEffect(state.shouldOpenEnvelope) {
+        if (state.shouldOpenEnvelope) {
+            snackbarHostState.showSnackbar("Carta agregada al sobre correctamente.")
+            viewModel.clearEnvelopeNavigation()
+            onGoToEnvelope()
         }
     }
 
@@ -184,17 +199,26 @@ fun CardDetailScreen(
                     SellerSection(card.sellerId)
 
                     Button(
-                        onClick = { viewModel.addToEnvelope() },
+                        onClick = { viewModel.addToEnvelope(userId = userId, cardId = card.id) },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = !state.addedToEnvelope,
+                        enabled = !state.addedToEnvelope && !state.isAddingToEnvelope
                     ) {
-                        Text(
-                            if (state.addedToEnvelope) "✓ Agregado al sobre" else "✉  Agregar al sobre",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        if(state.isAddingToEnvelope) {
+                            CircularProgressIndicator(
+                                color = TextPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }else{
+                            Text(
+                                if (state.addedToEnvelope) "✓ Agregado al sobre" else "✉  Agregar al sobre",
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+
                     }
 
                     OutlinedButton(

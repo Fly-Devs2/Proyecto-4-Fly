@@ -16,6 +16,8 @@ import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
+
+import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
@@ -24,6 +26,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
@@ -81,15 +84,34 @@ fun App(
             composable<CardDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<CardDetail>()
                 CardDetailScreen(
+                    userId = loginViewModel.getCurrentUserId(),
                     cardId = route.cardId,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onGoToEnvelope = { navController.navigate(MyEnvelope) }
                 )
             }
             composable<PublishCard> {
                 PublishGameCardScreen(
                     onBack = { navController.popBackStack() }
                 )
+            }
+            composable<MyEnvelope> {
+                val uid = loginViewModel.getCurrentUserId()
+                MyEnvelopeScreen(
+                    userId = uid,
+                    onBack = { navController.popBackStack() },
+                    onAddMoreCards = {
+                        navController.navigate(CardCatalog)
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    },
+                )
+
+
+
+
             }
         }
     }
@@ -117,6 +139,12 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.Sell -> {
             navController.navigate(PublishCard) {
+                launchSingleTop = true
+            }
+        }
+
+        FlyNavDestination.Orders -> {
+            navController.navigate(MyEnvelope) {
                 launchSingleTop = true
             }
         }

@@ -10,4 +10,10 @@ data class CardDetailUiState(
     val idCopied: Boolean = false,
     val addedToEnvelope: Boolean = false,
     val reserved: Boolean = false,
+    val isAddingToEnvelope: Boolean = false,
+    val actionErrorMessage: String? = null,
+    val actionSuccessMessage: String? = null,
+    val shouldOpenEnvelope: Boolean = false
+
+
 )
