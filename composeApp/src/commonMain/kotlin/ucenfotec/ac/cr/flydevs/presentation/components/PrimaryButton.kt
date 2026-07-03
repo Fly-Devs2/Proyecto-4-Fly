@@ -21,16 +21,22 @@ fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(AccentViolet)
-            .clickable(onClick = onClick),
+            .background(if (enabled) AccentViolet else AccentViolet.copy(alpha = 0.5f))
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text,
+            color = if (enabled) TextPrimary else TextPrimary.copy(alpha = 0.5f),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

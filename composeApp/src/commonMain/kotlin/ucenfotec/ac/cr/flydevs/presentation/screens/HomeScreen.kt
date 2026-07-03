@@ -1,12 +1,14 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onSignOutSuccess: () -> Unit = {},
     onNavigateToMyCollection: () -> Unit = {},
+    onNavigateToOrder: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,7 +67,7 @@ fun HomeScreen(
             
             // Header
             HeaderSection(
-                userName = uiState.user?.name ?: "Usuario",
+                userName = uiState.user?.uid ?: "Usuario",
                 onSignOutClick = { viewModel.signOut() }
             )
             
@@ -89,7 +92,10 @@ fun HomeScreen(
             
             // Orders
             SectionTitle("MIS PEDIDOS")
-            OrdersSection()
+            OrdersSection(
+                orders = uiState.orders,
+                onOrderClick = onNavigateToOrder
+            )
             
             Spacer(Modifier.height(32.dp))
             
@@ -153,7 +159,7 @@ private fun HeaderSection(
         }
         
         IconButton(onClick = onSignOutClick) {
-            Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
         }
         
         IconButton(onClick = { }) {
@@ -277,20 +283,38 @@ private fun CategoryChip(text: String, isSelected: Boolean = false) {
 }
 
 @Composable
-private fun OrdersSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OrderItem("Pedido #FA-1042", "3 cartas · Vendedor: CardKingCR", "EN RUTA", AccentGold)
-        OrderItem("Pedido #FA-1037", "1 carta · Entregado 08 jun", "ENTREGADO", AccentMint)
-        OrderItem("Pedido #FA-1029", "Disputa abierta · En revisión", "DISPUTA", AccentRed)
+private fun OrdersSection(
+    orders: List<ucenfotec.ac.cr.flydevs.domain.model.Order>,
+    onOrderClick: (String) -> Unit
+) {
+    if (orders.isEmpty()) {
+        Text("No tienes pedidos activos", color = TextMuted, fontSize = 14.sp)
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            orders.forEach { order ->
+                OrderItem(
+                    id = "Pedido #${order.id}",
+                    desc = "${order.cardName} · Vendedor: ${order.sellerName}",
+                    status = order.status.label.uppercase(),
+                    statusColor = when (order.status) {
+                        ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.IN_TRANSIT -> AccentGold
+                        ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.DELIVERED_TO_STORE -> AccentMint
+                        ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.DISPUTED -> AccentRed
+                        else -> AccentViolet
+                    },
+                    onClick = { onOrderClick(order.id) }
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun OrderItem(id: String, desc: String, status: String, statusColor: Color) {
+private fun OrderItem(id: String, desc: String, status: String, statusColor: Color, onClick: () -> Unit) {
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
