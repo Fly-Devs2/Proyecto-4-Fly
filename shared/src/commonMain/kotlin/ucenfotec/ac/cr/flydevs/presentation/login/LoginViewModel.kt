@@ -58,6 +58,11 @@ class LoginViewModel(
         }
     }
 
+    fun getCurrentUserId(): String {
+        val uid = IAuthRepository.getCurrentUserUid()
+        return uid ?: throw Exception("Usuario no autenticado")
+    }
+
     fun onGoogleSignInClicked() {
         if (_uiState.value.isLoading) return
 
