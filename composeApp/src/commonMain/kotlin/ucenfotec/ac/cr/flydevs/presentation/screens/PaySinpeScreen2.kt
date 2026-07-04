@@ -16,16 +16,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ucenfotec.ac.cr.flydevs.presentation.components.*
-import ucenfotec.ac.cr.flydevs.presentation.deliverStore.DeliverStoreViewModel
+import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
+import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
+import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
+import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
+import ucenfotec.ac.cr.flydevs.presentation.paySinpe.PaySinpeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
 @Composable
-fun DeliverStoreScreen(
+fun PaySinpeScreen(
     orderId: String,
     onBack: () -> Unit = {},
     onSuccess: () -> Unit = {},
-    viewModel: DeliverStoreViewModel = koinViewModel(parameters = { parametersOf(orderId) })
+    viewModel: PaySinpeViewModel = koinViewModel(parameters = { parametersOf(orderId) })
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCamera by remember { mutableStateOf(false) }
@@ -41,7 +44,7 @@ fun DeliverStoreScreen(
                 .background(BgDarkest)
                 .statusBarsPadding()
         ) {
-            TopBar(title = "Entregar en tienda", onBack = onBack)
+            TopBar(title = "Pagar con SINPE", onBack = onBack)
 
             Column(
                 modifier = Modifier
@@ -53,41 +56,37 @@ fun DeliverStoreScreen(
                 
                 Surface(color = BgCard, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Sobre #FA-1042 · 2 cartas", color = TextPrimary, fontWeight = FontWeight.Bold)
-                        Text("CardKing CR → Tienda Escazú", color = TextSecondary, fontSize = 13.sp)
+                        Text("Sobre #FA-1042", color = TextPrimary, fontWeight = FontWeight.Bold)
+                        Text("SINPE Móvil a: 8888-8888 · CardKing CR", color = TextSecondary, fontSize = 13.sp)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Surface(color = BgSurface, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("ℹ", color = AccentViolet, modifier = Modifier.padding(end = 12.dp))
+                        Text("Recordá presentar el SINPE Móvil en la tienda destino al retirar.", color = TextPrimary, fontSize = 12.sp)
                     }
                 }
 
                 Spacer(Modifier.height(28.dp))
 
-                Text("FOTO DE LA CARTA + SOBRE · MÍN. 1", color = AccentGold, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("COMPROBANTE SINPE · MÍN. 1", color = AccentGold, fontSize = 12.sp, fontWeight = FontWeight.Black)
                 
                 Spacer(Modifier.height(12.dp))
 
                 PhotoUploadZone(
                     onClick = { showCamera = true },
-                    title = if (state.selectedImage != null) "Foto capturada" else "Añadir foto",
-                    subtitle = "La información del sobre debe quedar visible",
+                    title = if (state.selectedImage != null) "Comprobante seleccionado" else "Añadir comprobante",
                     accentColor = if (state.selectedImage != null) AccentMint else AccentViolet
                 )
 
                 Spacer(Modifier.height(24.dp))
 
-                FormField("NOTA PARA LA TIENDA (OPCIONAL)") {
-                    TextField(
-                        value = state.note,
-                        placeholder = "Ej. Entregado en recepción, recibido por bodega...",
-                        onValueChange = viewModel::onNoteChange,
-                        minHeight = 80,
-                        singleLine = false
-                    )
-                }
-
-                Spacer(Modifier.height(24.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = true, onCheckedChange = {}, colors = CheckboxDefaults.colors(checkedColor = AccentMint))
-                    Text("La información del sobre queda visible en la foto", color = TextSecondary, fontSize = 12.sp)
+                    Text("Confirmo que el comprobante corresponde a este sobre", color = TextSecondary, fontSize = 12.sp)
                 }
 
                 Spacer(Modifier.height(32.dp))
@@ -96,10 +95,19 @@ fun DeliverStoreScreen(
                     CircularProgressIndicator(color = AccentViolet, modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else {
                     PrimaryButton(
-                        text = "Confirmar entrega",
-                        onClick = viewModel::confirmDelivery,
+                        text = "Enviar comprobante",
+                        onClick = viewModel::uploadReceipt,
                         enabled = state.selectedImage != null
                     )
+                }
+                
+                Spacer(Modifier.height(16.dp))
+
+                Surface(color = Color(0xFF352424), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(12.dp)) {
+                        Text("🕒", color = AccentGold, modifier = Modifier.padding(end = 12.dp))
+                        Text("Plazo: jueves 12:00 md. Sin comprobante, el sobre vuelve a estar disponible.", color = AccentGold, fontSize = 12.sp)
+                    }
                 }
             }
         }

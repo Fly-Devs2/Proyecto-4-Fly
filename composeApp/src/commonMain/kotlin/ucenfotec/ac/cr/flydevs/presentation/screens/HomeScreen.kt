@@ -18,11 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
@@ -67,7 +70,7 @@ fun HomeScreen(
             
             // Header
             HeaderSection(
-                userName = uiState.user?.uid ?: "Usuario",
+                userName = uiState.user?.name ?: "Usuario",
                 onSignOutClick = { viewModel.signOut() }
             )
             
@@ -219,6 +222,7 @@ private fun FeaturedCards() {
 
 @Composable
 private fun FeaturedCardItem(name: String, price: String, tag: String) {
+    val displayName = if (name.length > 20) name.take(17) + "..." else name
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(20.dp),
@@ -235,7 +239,7 @@ private fun FeaturedCardItem(name: String, price: String, tag: String) {
                         .background(BgSurface)
                 )
                 Spacer(Modifier.height(12.dp))
-                Text(name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                Text(displayName, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Text(price, color = AccentViolet, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
             }
             
@@ -292,9 +296,12 @@ private fun OrdersSection(
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             orders.forEach { order ->
+                val cardName = if (order.cardName.length > 20) order.cardName.take(17) + "..." else order.cardName
+                val sellerName = if (order.sellerName.length > 20) order.sellerName.take(17) + "..." else order.sellerName
+                
                 OrderItem(
                     id = "Pedido #${order.id}",
-                    desc = "${order.cardName} · Vendedor: ${order.sellerName}",
+                    desc = "$cardName · Vendedor: $sellerName",
                     status = order.status.label.uppercase(),
                     statusColor = when (order.status) {
                         ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.IN_TRANSIT -> AccentGold
@@ -302,6 +309,7 @@ private fun OrdersSection(
                         ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.DISPUTED -> AccentRed
                         else -> AccentViolet
                     },
+                    imageUrl = order.cardImageUrl,
                     onClick = { onOrderClick(order.id) }
                 )
             }
@@ -310,7 +318,7 @@ private fun OrdersSection(
 }
 
 @Composable
-private fun OrderItem(id: String, desc: String, status: String, statusColor: Color, onClick: () -> Unit) {
+private fun OrderItem(id: String, desc: String, status: String, statusColor: Color, imageUrl: String, onClick: () -> Unit) {
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(16.dp),
@@ -324,12 +332,21 @@ private fun OrderItem(id: String, desc: String, status: String, statusColor: Col
                 modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(BgSurface),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (status == "DISPUTA") Icons.Default.Warning else Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (status == "DISPUTA") Icons.Default.Warning else Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             
             Spacer(Modifier.width(16.dp))
@@ -341,14 +358,17 @@ private fun OrderItem(id: String, desc: String, status: String, statusColor: Col
             
             Surface(
                 color = statusColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
+                modifier = Modifier.widthIn(max = 90.dp)
             ) {
                 Text(
-                    status,
+                    text = status,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     color = statusColor,
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 12.sp
                 )
             }
         }

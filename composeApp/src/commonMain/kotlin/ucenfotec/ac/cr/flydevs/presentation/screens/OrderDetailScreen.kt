@@ -28,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ucenfotec.ac.cr.flydevs.domain.model.Order
@@ -147,8 +149,16 @@ private fun OrderCardInfo(order: Order) {
                 modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(BgSurface),
                 contentAlignment = Alignment.Center
             ) {
-                // AsyncImage would go here
-                Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
+                if (order.cardImageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = order.cardImageUrl,
+                        contentDescription = order.cardName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
+                }
             }
             
             Spacer(Modifier.width(16.dp))
@@ -159,7 +169,8 @@ private fun OrderCardInfo(order: Order) {
                     Spacer(Modifier.width(8.dp))
                     Text("✦ " + order.status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
                 }
-                Text(order.cardName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                val cardDisplayName = if (order.cardName.length > 50) order.cardName.take(47) + "..." else order.cardName
+                Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
                 Text("₡${order.cardPrice}", color = AccentGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
             }
         }
