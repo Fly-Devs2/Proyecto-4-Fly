@@ -1,0 +1,23 @@
+{
+  "name": "firebase-backend",
+  "description": "Módulo Firebase centralizado del proyecto Fly App (Cloud Functions)",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

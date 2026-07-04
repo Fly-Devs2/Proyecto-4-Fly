@@ -11,9 +11,11 @@ import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
 import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
+import ucenfotec.ac.cr.flydevs.navigation.DeliverToStore
 import ucenfotec.ac.cr.flydevs.navigation.Home
 import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
+import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
 
@@ -23,9 +25,11 @@ import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
@@ -112,6 +116,20 @@ fun App(
 
 
 
+            }
+            composable<DeliverToStore> { backStackEntry ->
+                val route = backStackEntry.toRoute<DeliverToStore>()
+                DeliverToStoreScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable<PaySinpe> { backStackEntry ->
+                val route = backStackEntry.toRoute<PaySinpe>()
+                PaySinpeScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }
