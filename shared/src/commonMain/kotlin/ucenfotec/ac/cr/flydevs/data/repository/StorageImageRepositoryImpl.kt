@@ -19,6 +19,14 @@ class StorageImageRepository(
     private val bucket: String = FirebaseStorageConfig.BUCKET,
 ) : IImageStorageRepository {
 
+    override suspend fun uploadCardImage(image: PickedImage): String =
+        upload(folder = "cards", image = image)
+
+    override suspend fun uploadEvidenceImage(image: PickedImage): String =
+        upload(folder = "evidence", image = image)
+
+    private suspend fun upload(folder: String, image: PickedImage): String {
+        val objectPath = "$folder/${randomId()}.${image.extension}"
     override suspend fun uploadCardImage(image: PickedImage): String {
         return uploadImage(image, "cards")
     }
