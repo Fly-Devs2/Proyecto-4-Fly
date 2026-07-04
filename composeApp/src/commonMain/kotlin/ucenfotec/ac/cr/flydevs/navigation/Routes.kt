@@ -43,3 +43,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class OrderDetail(val orderId: String)
 @Serializable data class PaySinpe(val orderId: String)
 @Serializable data class DeliverStore(val orderId: String)
+
+@Serializable object MyEnvelope
