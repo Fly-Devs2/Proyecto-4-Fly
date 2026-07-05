@@ -8,12 +8,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
+import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 
 class OrderDetailViewModel(
     private val orderRepository: IOrderRepository,
     private val authRepository: IAuthRepository,
+    private val imageStorage: IImageStorageRepository,
     private val orderId: String
 ) : ViewModel() {
 
@@ -22,6 +27,52 @@ class OrderDetailViewModel(
 
     init {
         loadOrder()
+    }
+
+    fun onImagePicked(image: PickedImage) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            runCatching {
+                val url = imageStorage.uploadEvidenceImage(image)
+                val currentOrder = _uiState.value.order
+                
+                if (_uiState.value.userRole == UserRole.SELLER) {
+                    orderRepository.submitSellerEvidence(orderId, url)
+                } else {
+                    orderRepository.addBuyerEvidence(orderId, url)
+                    
+                    // Si el comprador sube evidencia y ya estaba entregado en tienda, lo cerramos
+                    if (currentOrder?.status == OrderStatus.DELIVERED_TO_STORE) {
+                        orderRepository.updateOrderStatus(orderId, OrderStatus.PICKED_UP)
+                    }
+                }
+            }.onSuccess {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Error al subir evidencia: ${error.message}"
+                )
+            }
+        }
+    }
+
+    fun markAsShipped() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            runCatching { orderRepository.markAsShipped(orderId) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
+    fun markAsDeliveredToStore() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            runCatching { orderRepository.markAsDeliveredToStore(orderId) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
     }
 
     private fun loadOrder() {

@@ -21,14 +21,12 @@ import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
 import ucenfotec.ac.cr.flydevs.navigation.Profile
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
-
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
@@ -36,7 +34,6 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.OrderDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
-import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
@@ -105,8 +102,8 @@ fun App(
             }
             composable<PublishCard> {
                 PublishGameCardScreen(
-                    onBack = { navController.popBackStack() }
-
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<Profile> {
@@ -119,25 +116,9 @@ fun App(
                 OrderDetailScreen(
                     orderId = route.orderId,
                     onBack = { navController.popBackStack() },
-                    onNavigateToPay = { id -> navController.navigate(PaySinpe(id)) },
-                    onNavigateToDeliver = { id -> navController.navigate(DeliverStore(id)) },
+                    onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
+                    onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
-                )
-            }
-            composable<PaySinpe> { backStackEntry ->
-                val route = backStackEntry.toRoute<PaySinpe>()
-                PaySinpeScreen(
-                    orderId = route.orderId,
-                    onBack = { navController.popBackStack() },
-                    onSuccess = { navController.popBackStack() }
-                )
-            }
-            composable<DeliverStore> { backStackEntry ->
-                val route = backStackEntry.toRoute<DeliverStore>()
-                DeliverStoreScreen(
-                    orderId = route.orderId,
-                    onBack = { navController.popBackStack() },
-                    onSuccess = { navController.popBackStack() }
                 )
             }
             composable<MyEnvelope> {
@@ -152,10 +133,6 @@ fun App(
                         handleBottomNavNavigation(navController, destination)
                     },
                 )
-
-
-
-
             }
             composable<DeliverToStore> { backStackEntry ->
                 val route = backStackEntry.toRoute<DeliverToStore>()
@@ -205,14 +182,10 @@ private fun handleBottomNavNavigation(
                 launchSingleTop = true
             }
         }
-
         FlyNavDestination.Orders -> {
             navController.navigate(MyEnvelope) {
                 launchSingleTop = true
             }
-        }
-        else -> {
-            // TODO: Implement Orders route
         }
     }
 }

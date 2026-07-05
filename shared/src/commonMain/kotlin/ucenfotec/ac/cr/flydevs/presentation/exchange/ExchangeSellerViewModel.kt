@@ -5,18 +5,20 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
-import ucenfotec.ac.cr.flydevs.domain.repository.IExchangeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 /**
- * Al confirmar, el sobre pasa a WAITING_SINPE_PROOF.
+ * Al confirmar, el sobre pasa a WAITING_PAYMENT.
  */
 class ExchangeSellerViewModel(
-    private val exchangeRepository: IExchangeRepository,
+    private val orderRepository: IOrderRepository,
     private val imageStorage: IImageStorageRepository,
 ) : ViewModel() {
 
@@ -25,18 +27,12 @@ class ExchangeSellerViewModel(
 
     fun load(exchangeId: String) {
         _uiState.update { it.copy(isLoading = true, feedback = null) }
-        viewModelScope.launch {
-            runCatching { exchangeRepository.getExchange(exchangeId) }
-                .onSuccess { exchange ->
-                    _uiState.update { it.copy(isLoading = false, exchange = exchange) }
-                }
-                .onFailure { error ->
-                    println("[ExchangeSeller] Falló la carga del sobre: ${error.message}")
-                    _uiState.update {
-                        it.copy(isLoading = false, feedback = SellerEvidenceFeedback.SUBMIT_FAILED)
-                    }
-                }
-        }
+        
+        orderRepository.getOrder(exchangeId)
+            .onEach { order ->
+                _uiState.update { it.copy(isLoading = false, order = order) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun onInfoVisibleChange(checked: Boolean) =
@@ -67,9 +63,9 @@ class ExchangeSellerViewModel(
         val current = _uiState.value
         if (current.isSubmitting || current.isUploadingImage) return
 
-        val exchangeId = current.exchange?.id
+        val orderId = current.order?.id
         val evidenceUrl = current.evidenceUrl
-        if (exchangeId == null || evidenceUrl == null || !current.infoVisibleChecked) {
+        if (orderId == null || evidenceUrl == null || !current.infoVisibleChecked) {
             _uiState.update {
                 it.copy(
                     imageError = if (evidenceUrl == null) ImageError.REQUIRED else null,
@@ -81,10 +77,10 @@ class ExchangeSellerViewModel(
 
         _uiState.update { it.copy(isSubmitting = true, feedback = null) }
         viewModelScope.launch {
-            runCatching { exchangeRepository.submitSellerEvidence(exchangeId, evidenceUrl) }
+            runCatching { orderRepository.submitSellerEvidence(orderId, evidenceUrl) }
                 .onSuccess { updated ->
                     _uiState.update {
-                        it.copy(isSubmitting = false, exchange = updated, feedback = SellerEvidenceFeedback.SUCCESS)
+                        it.copy(isSubmitting = false, order = updated, feedback = SellerEvidenceFeedback.SUCCESS)
                     }
                 }
                 .onFailure { error ->

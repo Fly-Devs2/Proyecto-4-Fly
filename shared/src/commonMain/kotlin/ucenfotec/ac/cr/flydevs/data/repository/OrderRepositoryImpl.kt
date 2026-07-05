@@ -6,6 +6,7 @@ import dev.gitlive.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ucenfotec.ac.cr.flydevs.domain.model.Order
+import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
@@ -16,41 +17,44 @@ class OrderRepositoryImpl(
     private val imageStorage: IImageStorageRepository
 ) : IOrderRepository {
     private val firestore = Firebase.firestore
+    private val ordersCollection = firestore.collection("ORDERS")
 
     override fun getOrdersForUser(userId: String): Flow<List<Order>> {
         println("DEBUG_ORDERS: Fetching orders for user: $userId")
-        return firestore.collection("ORDERS")
-            .snapshots.map { snapshot ->
-                println("DEBUG_ORDERS: Received snapshot with ${snapshot.documents.size} documents")
-                snapshot.documents.mapNotNull { doc ->
-                    doc.toOrder()
-                }.filter { 
-                    val match = it.buyerId.trim() == userId.trim() || it.sellerId.trim() == userId.trim()
-                    if (match) println("DEBUG_ORDERS: Match found for order ${it.id}")
-                    match
-                }
+        return ordersCollection.snapshots.map { snapshot ->
+            println("DEBUG_ORDERS: Received snapshot with ${snapshot.documents.size} documents")
+            snapshot.documents.mapNotNull { doc ->
+                doc.toOrder()
+            }.filter { 
+                val match = it.buyerId.trim() == userId.trim() || it.sellerId.trim() == userId.trim()
+                if (match) println("DEBUG_ORDERS: Match found for order ${it.id}")
+                match
             }
+        }
     }
 
     override fun getOrder(orderId: String): Flow<Order?> {
-        return firestore.collection("ORDERS").document(orderId).snapshots.map { snapshot ->
+        return ordersCollection.document(orderId).snapshots.map { snapshot ->
             if (snapshot.exists) {
                 snapshot.toOrder()
             } else null
         }
     }
 
+    private suspend fun fetchOrderOnce(orderId: String): Order? {
+        val snapshot = ordersCollection.document(orderId).get()
+        return if (snapshot.exists) snapshot.toOrder() else null
+    }
+
     private fun DocumentSnapshot.toOrder(): Order? {
         return try {
-            // Intento 1: Deserialización automática
             data(Order.serializer()).copy(id = id)
         } catch (e: Exception) {
             println("DEBUG_ORDERS: Auto-serialization failed for doc $id: ${e.message}")
-            // Intento 2: Acceso manual campo por campo para evitar problemas con Timestamps
             try {
                 Order(
                     id = id,
-                    cardId = safeGet<String>("cardId") ?: "",
+                    cards = safeGetCards("cards") ?: emptyList(),
                     buyerId = safeGet<String>("buyerId") ?: "",
                     sellerId = safeGet<String>("sellerId") ?: "",
                     cardName = safeGet<String>("cardName") ?: "Carta sin nombre",
@@ -59,8 +63,8 @@ class OrderRepositoryImpl(
                     status = OrderStatus.fromString(safeGet<String>("status") ?: ""),
                     sinpePaid = safeGet<Boolean>("sinpePaid") ?: false,
                     sinpeReceiptUrl = safeGet<String>("sinpeReceiptUrl"),
-                    sellerEvidenceUrl = safeGet<String>("sellerEvidenceUrl"),
-                    buyerEvidenceUrl = safeGet<String>("buyerEvidenceUrl"),
+                    sellerEvidenceUrls = safeGetList("sellerEvidenceUrls") ?: emptyList(),
+                    buyerEvidenceUrls = safeGetList("buyerEvidenceUrls") ?: emptyList(),
                     sellerName = safeGet<String>("sellerName") ?: "Vendedor",
                     buyerName = safeGet<String>("buyerName") ?: "Comprador",
                     sobreId = safeGet<String>("sobreId") ?: "",
@@ -82,42 +86,96 @@ class OrderRepositoryImpl(
         }
     }
 
+    private fun DocumentSnapshot.safeGetList(field: String): List<String>? {
+        return try {
+            get<List<String>>(field)
+        } catch (e: Exception) {
+            // Fallback: try to read single string if old data exists
+            try {
+                val single = get<String>(field.removeSuffix("s"))
+                listOf(single)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun DocumentSnapshot.safeGetCards(field: String): List<OrderCardSnapshot>? {
+        return try {
+            get<List<OrderCardSnapshot>>(field)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override suspend fun updateOrderStatus(orderId: String, status: OrderStatus) {
         val updates = mapOf(
             "status" to status.name,
             "modifiedAt" to getEpochMillis()
         )
-        firestore.collection("ORDERS").document(orderId).update(updates)
+        ordersCollection.document(orderId).update(updates)
     }
 
-    override suspend fun uploadSinpeReceipt(orderId: String, image: PickedImage) {
-        val url = imageStorage.uploadImage(image, "receipts")
-        val updates = mapOf(
-            "sinpeReceiptUrl" to url,
-            "sinpePaid" to true,
-            "status" to OrderStatus.WAITING_PAYMENT.name,
-            "modifiedAt" to getEpochMillis()
+    override suspend fun submitSellerEvidence(orderId: String, evidenceUrl: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            sellerEvidenceUrls = current.sellerEvidenceUrls + evidenceUrl,
+            status = OrderStatus.WAITING_PAYMENT,
+            modifiedAt = getEpochMillis()
         )
-        firestore.collection("ORDERS").document(orderId).update(updates)
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
     }
 
-    override suspend fun uploadSellerEvidence(orderId: String, image: PickedImage, note: String?) {
-        val url = imageStorage.uploadImage(image, "evidence/seller")
-        val updates = mutableMapOf<String, Any>(
-            "sellerEvidenceUrl" to url,
-            "status" to OrderStatus.WAITING_PAYMENT.name,
-            "modifiedAt" to getEpochMillis()
+    override suspend fun submitSinpeProof(orderId: String, proofUrl: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            sinpeReceiptUrl = proofUrl,
+            sinpePaid = true,
+            status = OrderStatus.WAITING_STORE_SHIPMENT,
+            modifiedAt = getEpochMillis()
         )
-        firestore.collection("ORDERS").document(orderId).update(updates)
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
     }
 
-    override suspend fun uploadBuyerEvidence(orderId: String, image: PickedImage) {
-        val url = imageStorage.uploadImage(image, "evidence/buyer")
-        val updates = mapOf(
-            "buyerEvidenceUrl" to url,
-            "status" to OrderStatus.PICKED_UP.name,
-            "modifiedAt" to getEpochMillis()
+    override suspend fun addBuyerEvidence(orderId: String, evidenceUrl: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            buyerEvidenceUrls = current.buyerEvidenceUrls + evidenceUrl,
+            modifiedAt = getEpochMillis()
         )
-        firestore.collection("ORDERS").document(orderId).update(updates)
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun markAsShipped(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            status = OrderStatus.IN_TRANSIT,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun markAsDeliveredToStore(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            status = OrderStatus.DELIVERED_TO_STORE,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
     }
 }

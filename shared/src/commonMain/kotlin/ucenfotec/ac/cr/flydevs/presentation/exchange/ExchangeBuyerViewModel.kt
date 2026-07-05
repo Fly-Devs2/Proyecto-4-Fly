@@ -5,19 +5,21 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
-import ucenfotec.ac.cr.flydevs.domain.repository.IExchangeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 /**
  * Comprador: subir el comprobante de SINPE Móvil.
- * Al confirmar, el sobre pasa a PROOF_RECEIVED.
+ * Al confirmar, el sobre pasa a WAITING_STORE_SHIPMENT.
  */
 class ExchangeBuyerViewModel(
-    private val exchangeRepository: IExchangeRepository,
+    private val orderRepository: IOrderRepository,
     private val imageStorage: IImageStorageRepository,
 ) : ViewModel() {
 
@@ -26,18 +28,12 @@ class ExchangeBuyerViewModel(
 
     fun load(exchangeId: String) {
         _uiState.update { it.copy(isLoading = true, feedback = null) }
-        viewModelScope.launch {
-            runCatching { exchangeRepository.getExchange(exchangeId) }
-                .onSuccess { exchange ->
-                    _uiState.update { it.copy(isLoading = false, exchange = exchange) }
-                }
-                .onFailure { error ->
-                    println("[ExchangeBuyer] Falló la carga del sobre: ${error.message}")
-                    _uiState.update {
-                        it.copy(isLoading = false, feedback = SinpeProofFeedback.SUBMIT_FAILED)
-                    }
-                }
-        }
+        
+        orderRepository.getOrder(exchangeId)
+            .onEach { order ->
+                _uiState.update { it.copy(isLoading = false, order = order) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun onConfirmChange(checked: Boolean) =
@@ -74,9 +70,9 @@ class ExchangeBuyerViewModel(
             return
         }
 
-        val exchangeId = current.exchange?.id
+        val orderId = current.order?.id
         val proofUrl = current.proofUrl
-        if (exchangeId == null || proofUrl == null || !current.confirmChecked) {
+        if (orderId == null || proofUrl == null || !current.confirmChecked) {
             _uiState.update {
                 it.copy(
                     imageError = if (proofUrl == null) ImageError.REQUIRED else null,
@@ -88,10 +84,10 @@ class ExchangeBuyerViewModel(
 
         _uiState.update { it.copy(isSubmitting = true, feedback = null) }
         viewModelScope.launch {
-            runCatching { exchangeRepository.submitSinpeProof(exchangeId, proofUrl) }
+            runCatching { orderRepository.submitSinpeProof(orderId, proofUrl) }
                 .onSuccess { updated ->
                     _uiState.update {
-                        it.copy(isSubmitting = false, exchange = updated, feedback = SinpeProofFeedback.SUCCESS)
+                        it.copy(isSubmitting = false, order = updated, feedback = SinpeProofFeedback.SUCCESS)
                     }
                 }
                 .onFailure { error ->

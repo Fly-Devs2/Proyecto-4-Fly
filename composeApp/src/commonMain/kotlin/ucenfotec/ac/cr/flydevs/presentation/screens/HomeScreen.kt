@@ -19,8 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -298,9 +301,10 @@ private fun OrdersSection(
             orders.forEach { order ->
                 val cardName = if (order.cardName.length > 20) order.cardName.take(17) + "..." else order.cardName
                 val sellerName = if (order.sellerName.length > 20) order.sellerName.take(17) + "..." else order.sellerName
+                val shortId = if (order.id.length > 7) order.id.take(7).uppercase() else order.id.uppercase()
                 
                 OrderItem(
-                    id = "Pedido #${order.id}",
+                    id = "Pedido #$shortId",
                     desc = "$cardName · Vendedor: $sellerName",
                     status = order.status.label.uppercase(),
                     statusColor = when (order.status) {
@@ -309,7 +313,7 @@ private fun OrdersSection(
                         ucenfotec.ac.cr.flydevs.domain.model.OrderStatus.DISPUTED -> AccentRed
                         else -> AccentViolet
                     },
-                    imageUrl = order.cardImageUrl,
+                    imageUrl = order.cards.firstOrNull()?.imageUrl ?: order.cardImageUrl,
                     onClick = { onOrderClick(order.id) }
                 )
             }
@@ -352,7 +356,21 @@ private fun OrderItem(id: String, desc: String, status: String, statusColor: Col
             Spacer(Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
-                Text(id, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                val annotatedId = buildAnnotatedString {
+                    val parts = id.split(" ", limit = 2)
+                    if (parts.size == 2) {
+                        withStyle(style = SpanStyle(color = TextPrimary)) {
+                            append(parts[0])
+                        }
+                        append(" ")
+                        withStyle(style = SpanStyle(color = TextMuted)) {
+                            append(parts[1])
+                        }
+                    } else {
+                        append(id)
+                    }
+                }
+                Text(annotatedId, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Text(desc, color = TextSecondary, fontSize = 12.sp)
             }
             

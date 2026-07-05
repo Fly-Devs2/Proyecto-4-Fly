@@ -1,11 +1,11 @@
 package ucenfotec.ac.cr.flydevs.presentation.exchange
 
-import ucenfotec.ac.cr.flydevs.domain.model.Exchange
-import ucenfotec.ac.cr.flydevs.domain.model.ExchangeStatus
+import ucenfotec.ac.cr.flydevs.domain.model.Order
+import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 data class ExchangeBuyerUiState(
-    val exchange: Exchange? = null,
+    val order: Order? = null,
     val isLoading: Boolean = false,
 
     // ── Comprobante SINPE ──
@@ -21,7 +21,7 @@ data class ExchangeBuyerUiState(
     val feedback: SinpeProofFeedback? = null,
 ) {
     val isReadyForSinpe: Boolean
-        get() = exchange?.status == ExchangeStatus.WAITING_SINPE_PROOF
+        get() = order?.status == OrderStatus.WAITING_PAYMENT || order?.status == OrderStatus.WAITING_SELLER_DELIVERY
 
     val canSubmit: Boolean
         get() = isReadyForSinpe && proofUrl != null && confirmChecked && !isUploadingImage && !isSubmitting

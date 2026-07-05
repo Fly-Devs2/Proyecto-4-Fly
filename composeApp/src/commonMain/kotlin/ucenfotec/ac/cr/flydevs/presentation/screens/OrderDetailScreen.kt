@@ -1,8 +1,13 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.FileUpload
@@ -34,9 +40,12 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ucenfotec.ac.cr.flydevs.domain.model.Order
+import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
+import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.UserRole
@@ -52,93 +61,234 @@ fun OrderDetailScreen(
     viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) })
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
+    var showCamera by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = BgDarkest,
-        topBar = {
-            Column {
-                Spacer(Modifier.statusBarsPadding())
-                TopBar(title = "Detalle de compra", onBack = onBack)
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = BgDarkest,
+            topBar = {
+                Column {
+                    Spacer(Modifier.statusBarsPadding())
+                    TopBar(title = "Detalle de compra", onBack = onBack)
+                }
+            },
+            bottomBar = {
+                BottomNav(
+                    currentDestination = FlyNavDestination.Orders,
+                    onDestinationSelected = onNavSelect
+                )
             }
-        },
-        bottomBar = {
-            BottomNav(
-                currentDestination = FlyNavDestination.Orders,
-                onDestinationSelected = onNavSelect
-            )
+        ) { padding ->
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AccentViolet)
+                }
+            } else if (uiState.order != null) {
+                val order = uiState.order!!
+                
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                ) {
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Text(
+                        text = if (uiState.userRole == UserRole.SELLER) 
+                            "Estás viendo la compra como vendedor. Ambas partes ven este detalle en tiempo real."
+                        else 
+                            "Estás viendo la compra como comprador. Ambas partes ven este detalle en tiempo real.",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Card Info List
+                    if (order.cards.isEmpty()) {
+                        // Fallback for legacy data with only one card
+                        LegacyOrderCardInfo(order)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            order.cards.forEach { cardSnapshot ->
+                                OrderCardInfo(cardSnapshot, order.status)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Data Section
+                    OrderDataSection(order, uiState.userRole)
+
+                    Spacer(Modifier.height(28.dp))
+
+                    // Tracking Stepper
+                    TrackingStepper(order.status)
+
+                    Spacer(Modifier.height(32.dp))
+
+                    // Section: COMPROBANTE SINPE
+                    ComprobanteSinpeSection(
+                        order = order,
+                        role = uiState.userRole,
+                        onNavigateToPay = onNavigateToPay,
+                        onViewImage = { url -> fullScreenImageUrl = url }
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // --- Workflow Action Buttons ---
+                    
+                    // 1. Seller Action: WAITING_STORE_SHIPMENT -> Marcar como enviado
+                    if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.WAITING_STORE_SHIPMENT) {
+                        PrimaryButton(
+                            text = "Marcar como enviado",
+                            onClick = { viewModel.markAsShipped() },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                        )
+                    }
+
+                    // 2. Seller Action: IN_TRANSIT -> Confirmar llegada a tienda
+                    if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.IN_TRANSIT) {
+                        PrimaryButton(
+                            text = "Confirmar llegada a tienda",
+                            onClick = { viewModel.markAsDeliveredToStore() },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                        )
+                    }
+
+                    // 3. Buyer Action: DELIVERED_TO_STORE -> Confirmar recolección (triggers camera)
+                    if (uiState.userRole == UserRole.BUYER && order.status == OrderStatus.DELIVERED_TO_STORE) {
+                        PrimaryButton(
+                            text = "Confirmar recolección",
+                            onClick = { showCamera = true },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                        )
+                    }
+
+                    // Legacy Seller-only action: Entregar en tienda
+                    if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.WAITING_SELLER_DELIVERY) {
+                        Button(
+                            onClick = { onNavigateToDeliver(order.id) },
+                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 24.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Entregar en tienda", style = Typography.labelLarge)
+                        }
+                    }
+
+                    // Section: EVIDENCIA
+                    EvidenciaSection(
+                        order = order,
+                        role = uiState.userRole,
+                        onNavigateToDeliver = onNavigateToDeliver,
+                        onAddEvidence = { showCamera = true },
+                        onViewImage = { url -> fullScreenImageUrl = url }
+                    )
+                    
+                    Spacer(Modifier.height(40.dp))
+                }
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(uiState.errorMessage ?: "Error desconocido", color = AccentRed)
+                }
+            }
         }
-    ) { padding ->
-        if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AccentViolet)
-            }
-        } else if (uiState.order != null) {
-            val order = uiState.order!!
-            
-            Column(
+
+        // Full Screen Image Viewer Overlay
+        AnimatedVisibility(
+            visible = fullScreenImageUrl != null,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
+                    .background(Color.Black.copy(alpha = 0.9f))
+                    .clickable { fullScreenImageUrl = null },
+                contentAlignment = Alignment.Center
             ) {
-                Spacer(Modifier.height(16.dp))
-                
-                Text(
-                    text = if (uiState.userRole == UserRole.SELLER) 
-                        "Estás viendo la compra como vendedor. Ambas partes ven este detalle en tiempo real."
-                    else 
-                        "Estás viendo la compra como comprador. Ambas partes ven este detalle en tiempo real.",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                // Card Info Card
-                OrderCardInfo(order)
-
-                Spacer(Modifier.height(24.dp))
-
-                // Data Section
-                OrderDataSection(order, uiState.userRole)
-
-                Spacer(Modifier.height(28.dp))
-
-                // Tracking Stepper
-                TrackingStepper(order.status)
-
-                Spacer(Modifier.height(32.dp))
-
-                // Section: COMPROBANTE SINPE
-                ComprobanteSinpeSection(
-                    order = order,
-                    role = uiState.userRole,
-                    onNavigateToPay = onNavigateToPay
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                // Section: EVIDENCIA
-                EvidenciaSection(
-                    order = order,
-                    onNavigateToDeliver = onNavigateToDeliver
+                AsyncImage(
+                    model = fullScreenImageUrl,
+                    contentDescription = "Evidence Full Screen",
+                    modifier = Modifier.fillMaxSize(0.9f),
+                    contentScale = ContentScale.Fit
                 )
                 
-                Spacer(Modifier.height(40.dp))
+                IconButton(
+                    onClick = { fullScreenImageUrl = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                }
             }
-        } else {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(uiState.errorMessage ?: "Error desconocido", color = AccentRed)
+        }
+
+        if (showCamera) {
+            CameraCaptureScreen(
+                onImageCaptured = { image ->
+                    showCamera = false
+                    viewModel.onImagePicked(image)
+                },
+                onCancel = { showCamera = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
+    Surface(
+        color = BgCard,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(BgSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                if (card.imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = card.imageUrl,
+                        contentDescription = card.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
+                }
+            }
+            
+            Spacer(Modifier.width(16.dp))
+            
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    Text("✦ " + status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                }
+                val cardDisplayName = if (card.name.length > 50) card.name.take(47) + "..." else card.name
+                Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                Text("₡${card.price}", color = AccentGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
             }
         }
     }
 }
 
 @Composable
-private fun OrderCardInfo(order: Order) {
+private fun LegacyOrderCardInfo(order: Order) {
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(20.dp),
@@ -184,6 +334,7 @@ private fun OrderDataSection(order: Order, role: UserRole) {
         DataItem("Vendedor", order.sellerName)
         DataItem("Comprador", if (role == UserRole.BUYER) "Tú (@${order.buyerName})" else order.buyerName)
         DataItem("Sobre", "Sobre #${order.sobreId.take(7).uppercase()}")
+        DataItem("Monto Total", "₡${order.montoTotal}", valueColor = AccentGold)
         DataItem("SINPE pagado", if (order.sinpePaid) "✓ SÍ" else "PENDIENTE", if (order.sinpePaid) AccentMint else AccentRed)
     }
 }
@@ -209,7 +360,9 @@ private fun TrackingStepper(currentStatus: OrderStatus) {
             OrderStatus.RESERVED,
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
+            OrderStatus.WAITING_STORE_SHIPMENT,
             OrderStatus.IN_TRANSIT,
+            OrderStatus.DELIVERED_TO_STORE,
             OrderStatus.PICKED_UP
         )
         
@@ -259,7 +412,8 @@ private fun TrackingStepItem(status: OrderStatus, isCompleted: Boolean, isCurren
 private fun ComprobanteSinpeSection(
     order: Order,
     role: UserRole,
-    onNavigateToPay: (String) -> Unit
+    onNavigateToPay: (String) -> Unit,
+    onViewImage: (String) -> Unit
 ) {
     Surface(
         color = BgCard,
@@ -281,7 +435,7 @@ private fun ComprobanteSinpeSection(
             Spacer(Modifier.height(16.dp))
 
             if (order.sinpePaid) {
-                ComprobanteCardPolished(order)
+                ComprobanteCardPolished(order, onViewImage)
             } else if (role == UserRole.BUYER) {
                 Button(
                     onClick = { onNavigateToPay(order.id) },
@@ -327,11 +481,13 @@ private fun ComprobanteSinpeSection(
 }
 
 @Composable
-private fun ComprobanteCardPolished(order: Order) {
+private fun ComprobanteCardPolished(order: Order, onViewImage: (String) -> Unit) {
     Surface(
         color = BgSurface,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable { 
+            order.sinpeReceiptUrl?.let { onViewImage(it) }
+        }
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -341,13 +497,22 @@ private fun ComprobanteCardPolished(order: Order) {
                     .background(BgDarkest),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Description, contentDescription = null, tint = AccentMint)
+                if (order.sinpeReceiptUrl != null && order.sinpeReceiptUrl!!.isNotBlank()) {
+                    AsyncImage(
+                        model = order.sinpeReceiptUrl,
+                        contentDescription = "SINPE Receipt Thumbnail",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(Icons.Default.Description, contentDescription = null, tint = AccentMint)
+                }
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text("Comprobante adjuntado", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text("Por el comprador · 13 jun 2026 · 09:00", color = TextMuted, fontSize = 12.sp)
-                Text("₡${order.cardPrice}", color = AccentMint, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                Text("₡${order.montoTotal}", color = AccentMint, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
             }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, tint = TextMuted, contentDescription = null)
         }
@@ -357,7 +522,10 @@ private fun ComprobanteCardPolished(order: Order) {
 @Composable
 private fun EvidenciaSection(
     order: Order,
-    onNavigateToDeliver: (String) -> Unit
+    role: UserRole,
+    onNavigateToDeliver: (String) -> Unit,
+    onAddEvidence: () -> Unit,
+    onViewImage: (String) -> Unit
 ) {
     Surface(
         color = BgCard,
@@ -376,16 +544,32 @@ private fun EvidenciaSection(
 
             Spacer(Modifier.height(16.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                EvidencePreviewCard("COMPRADOR", order.buyerEvidenceUrl != null)
-                EvidencePreviewCard("VENDEDOR", order.sellerEvidenceUrl != null)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(order.buyerEvidenceUrls) { url ->
+                    EvidencePreviewCard("COMPRADOR", url, onClick = { onViewImage(url) })
+                }
+                items(order.sellerEvidenceUrls) { url ->
+                    EvidencePreviewCard("VENDEDOR", url, onClick = { onViewImage(url) })
+                }
                 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .aspectRatio(1.5f)
-                ) {
-                    DashedAddButton(onClick = { onNavigateToDeliver(order.id) })
+                item {
+                    Box(
+                        modifier = Modifier
+                            .width(90.dp)
+                            .aspectRatio(1.2f)
+                    ) {
+                        DashedAddButton(onClick = { 
+                            if (role == UserRole.SELLER) {
+                                onNavigateToDeliver(order.id)
+                            } else {
+                                onAddEvidence()
+                            }
+                        })
+                    }
                 }
             }
         }
@@ -393,9 +577,9 @@ private fun EvidenciaSection(
 }
 
 @Composable
-private fun EvidencePreviewCard(label: String, hasImage: Boolean) {
+private fun EvidencePreviewCard(label: String, url: String, onClick: () -> Unit) {
     Column(
-        modifier = Modifier.width(90.dp),
+        modifier = Modifier.width(90.dp).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
@@ -406,7 +590,12 @@ private fun EvidencePreviewCard(label: String, hasImage: Boolean) {
                 .background(BgSurface),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Image, contentDescription = null, tint = if (hasImage) AccentMint else TextMuted)
+            AsyncImage(
+                model = url,
+                contentDescription = label,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         }
         Spacer(Modifier.height(8.dp))
         Surface(
@@ -416,7 +605,7 @@ private fun EvidencePreviewCard(label: String, hasImage: Boolean) {
             Text(
                 label,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                color = if (hasImage) AccentMint else TextSecondary,
+                color = AccentMint,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Black
             )

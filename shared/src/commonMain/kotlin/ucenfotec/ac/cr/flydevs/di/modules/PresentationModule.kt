@@ -10,9 +10,8 @@ import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.myCollection.MyCollectionViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
-import ucenfotec.ac.cr.flydevs.presentation.deliverStore.DeliverStoreViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
-import ucenfotec.ac.cr.flydevs.presentation.paySinpe.PaySinpeViewModel
+
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewModel
 import ucenfotec.ac.cr.flydevs.presentation.register.RegisterViewModel
@@ -29,7 +28,5 @@ val presentationModule = module {
     viewModel { ExchangeBuyerViewModel(get(), get()) }
     viewModel { CardDetailViewModel(get(), get()) }
     viewModel { CardEnvelopeViewModel(get()) }
-    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), orderId) }
-    viewModel { (orderId: String) -> PaySinpeViewModel(get(), orderId) }
-    viewModel { (orderId: String) -> DeliverStoreViewModel(get(), orderId) }
+    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), orderId) }
 }

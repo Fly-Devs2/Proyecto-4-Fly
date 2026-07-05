@@ -27,12 +27,6 @@ class StorageImageRepository(
 
     private suspend fun upload(folder: String, image: PickedImage): String {
         val objectPath = "$folder/${randomId()}.${image.extension}"
-    override suspend fun uploadCardImage(image: PickedImage): String {
-        return uploadImage(image, "cards")
-    }
-
-    override suspend fun uploadImage(image: PickedImage, folder: String): String {
-        val objectPath = "$folder/${randomId()}.${image.extension}"
         val encodedPath = objectPath.encodeURLParameter()
 
         val uploadUrl =

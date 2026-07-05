@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
-import ucenfotec.ac.cr.flydevs.domain.model.Exchange
+import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
 import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
@@ -69,7 +69,7 @@ fun DeliverToStoreScreen(
 
                 ExchangeStatusChip("Esperando entrega", AccentGold)
 
-                state.exchange?.let { ExchangeEnvelopeCard(it) }
+                state.order?.let { OrderEnvelopeCard(it) }
 
                 ExchangeSectionTitle("FOTO DE LA CARTA + SOBRE · MÍN. 1")
 
@@ -144,8 +144,7 @@ internal fun ExchangeStatusChip(text: String, color: Color) {
 }
 
 @Composable
-internal fun ExchangeEnvelopeCard(exchange: Exchange) {
-    val destination = exchange.storeId.ifBlank { "Tienda destino" }
+internal fun OrderEnvelopeCard(order: Order) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -156,12 +155,12 @@ internal fun ExchangeEnvelopeCard(exchange: Exchange) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            "Sobre #${envelopeCode(exchange.id)} · ${exchange.cardIds.size} cartas",
+            "Pedido #${envelopeCode(order.id)}",
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
         )
-        Text("${exchange.sellerId}  →  $destination", color = TextSecondary, fontSize = 13.sp)
+        Text("Vendedor: ${order.sellerName}", color = TextSecondary, fontSize = 13.sp)
     }
 }
 

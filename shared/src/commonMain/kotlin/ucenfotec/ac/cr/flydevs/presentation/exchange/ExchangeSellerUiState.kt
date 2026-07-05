@@ -1,10 +1,10 @@
 package ucenfotec.ac.cr.flydevs.presentation.exchange
 
-import ucenfotec.ac.cr.flydevs.domain.model.Exchange
+import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.ImageError
 
 data class ExchangeSellerUiState(
-    val exchange: Exchange? = null,
+    val order: Order? = null,
     val isLoading: Boolean = false,
 
     // ── Evidencia (foto sobre) ──
