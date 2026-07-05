@@ -1,7 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import { getFirestore } from "firebase-admin/firestore";
-import { CardStatus, Collections, ExchangeStatus } from "../contract";
+import { CardStatus, Collections, status } from "../contract";
 
 /**
  * Reintegro cuando no se realiza el pago SINPE.
@@ -20,8 +20,8 @@ export const releaseUnpaidExchanges = onSchedule(
     const db = getFirestore();
 
     const pending = await db
-      .collection(Collections.exchanges)
-      .where("status", "==", ExchangeStatus.WAITING_SINPE_PROOF)
+      .collection(Collections.orders)
+      .where("status", "==", status.WAITING_PAYMENT)
       .get();
 
     if (pending.empty) {
@@ -37,12 +37,12 @@ export const releaseUnpaidExchanges = onSchedule(
       const data = doc.data();
 
       // Doble chequeo por si entró el comprobante entre la query y esta iteración.
-      if (data.sinpeProofUrl) continue;
+      if (data.sinpeReceiptUrl) continue;
 
-      const cardIds: string[] = Array.isArray(data.cardIds) ? data.cardIds : [];
+      const cardIds: string[] = Array.isArray(data.cards) ? data.cards : [];
       const batch = db.batch();
 
-      batch.update(doc.ref, { status: ExchangeStatus.EXPIRED });
+      batch.update(doc.ref, { status: status.CANCELLED });
       for (const cardId of cardIds) {
         batch.update(
           db.collection(Collections.gameCards).doc(cardId),
@@ -55,7 +55,7 @@ export const releaseUnpaidExchanges = onSchedule(
         releasedExchanges++;
         releasedCards += cardIds.length;
       } catch (error) {
-        logger.error(`Reintegro: falló liberar el sobre ${doc.id}`, error);
+        logger.error(`Reintegro: falló liberar el sobre ${data.sobreId}`, error);
       }
     }
 
