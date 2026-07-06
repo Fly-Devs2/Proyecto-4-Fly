@@ -2,16 +2,16 @@ package ucenfotec.ac.cr.flydevs.data.repository
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
+import ucenfotec.ac.cr.flydevs.domain.model.*
 import dev.gitlive.firebase.firestore.DocumentSnapshot
-import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
-import ucenfotec.ac.cr.flydevs.domain.model.GameCard
-import ucenfotec.ac.cr.flydevs.domain.model.ShippingMethod
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
+import ucenfotec.ac.cr.flydevs.getEpochMillis
 
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private val cardEnvelopesCollection = Firebase.firestore.collection("sobres")
     private val gameCardsCollection = Firebase.firestore.collection("game_cards")
+    private val ordersCollection = Firebase.firestore.collection("ORDERS")
+    private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
 
     override suspend fun getCardEnvelopebyUser(userId: String): List<CardEnvelope> {
@@ -87,22 +87,76 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
         validateCardsBeforeOrder(cardIds)
 
+        val cards = getCardsByIds(cardIds)
+        if (cards.isEmpty()) throw Exception("No se pudieron recuperar las cartas del sobre.")
+
+        // Logic to determine seller: for now, assume all cards in an envelope belong to the same seller
+        // or we take the seller of the first card.
+        val firstCard = cards.first()
+        val sellerId = firstCard.sellerId
+        
+        // Fetch Names
+        val seller = fetchUser(sellerId)
+        val buyer = fetchUser(userId)
+
         val totals = calculateTotals(cardIds)
 
+        // 1. Create the Order document in ORDERS collection
+        val newOrderDoc = ordersCollection.document
+        val order = Order(
+            id = newOrderDoc.id,
+            buyerId = userId,
+            sellerId = sellerId,
+            sellerName = seller?.name ?: "Vendedor",
+            buyerName = buyer?.name ?: "Comprador",
+            cards = cards.map { 
+                OrderCardSnapshot(
+                    cardId = it.id,
+                    name = it.name,
+                    imageUrl = it.imageUrl,
+                    price = it.price,
+                    condition = it.condition.label,
+                    game = it.game?.label ?: ""
+                )
+            },
+            status = OrderStatus.RESERVED,
+            createdAt = getEpochMillis(),
+            modifiedAt = getEpochMillis(),
+            montoTotal = totals.second,
+            sobreId = pendingEnvelopeDocument.id,
+            shippingMethod = getShippingMethod(pendingEnvelopeDocument).name,
+            sellerEvidenceUrls = emptyList(),
+            buyerEvidenceUrls = emptyList()
+        )
+
+        newOrderDoc.set(Order.serializer(), order)
+
+        // 2. Update the Envelope status
         cardEnvelopesCollection.document(pendingEnvelopeDocument.id).update(
             "sub_total" to totals.first,
             "monto_total" to totals.second,
             "cantidad_cartas" to cardIds.size.toLong(),
-            "status" to "ORDER_GENERATED"
+            "status" to "ORDER_GENERATED",
+            "orderId" to newOrderDoc.id
         )
 
+        // 3. Mark cards as reserved (already done in addCard, but ensuring consistency)
         cardIds.forEach { cardId ->
             gameCardsCollection.document(cardId).update(
                 "status" to CardStatus.RESERVED.name
             )
         }
-        println("DEBUG_ENVELOPE: Order generated successfully")
+        
+        println("DEBUG_ENVELOPE: Order ${newOrderDoc.id} generated successfully")
+    }
 
+    private suspend fun fetchUser(uid: String): User? {
+        return try {
+            val doc = usersCollection.document(uid).get()
+            if (doc.exists) doc.data<User>() else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override suspend fun getCardEnvelopes(): List<CardEnvelope> {

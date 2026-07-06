@@ -9,4 +9,5 @@ interface IImageStorageRepository {
 
     /** Evidencias del flujo de intercambio (foto de entrega, comprobante SINPE) → carpeta `evidence/`. */
     suspend fun uploadEvidenceImage(image: PickedImage): String
+
 }

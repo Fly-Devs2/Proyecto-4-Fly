@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.OrdersSection
 
 @Preview
 @Composable
@@ -33,6 +35,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onSignOutSuccess: () -> Unit = {},
     onNavigateToMyCollection: () -> Unit = {},
+    onNavigateToOrder: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,7 +92,10 @@ fun HomeScreen(
             
             // Orders
             SectionTitle("MIS PEDIDOS")
-            OrdersSection()
+            OrdersSection(
+                orders = uiState.orders,
+                onOrderClick = onNavigateToOrder
+            )
             
             Spacer(Modifier.height(32.dp))
             
@@ -153,7 +159,7 @@ private fun HeaderSection(
         }
         
         IconButton(onClick = onSignOutClick) {
-            Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
         }
         
         IconButton(onClick = { }) {
@@ -213,6 +219,7 @@ private fun FeaturedCards() {
 
 @Composable
 private fun FeaturedCardItem(name: String, price: String, tag: String) {
+    val displayName = if (name.length > 20) name.take(17) + "..." else name
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(20.dp),
@@ -229,7 +236,7 @@ private fun FeaturedCardItem(name: String, price: String, tag: String) {
                         .background(BgSurface)
                 )
                 Spacer(Modifier.height(12.dp))
-                Text(name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                Text(displayName, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Text(price, color = AccentViolet, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
             }
             
@@ -273,60 +280,5 @@ private fun CategoryChip(text: String, isSelected: Boolean = false) {
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
-    }
-}
-
-@Composable
-private fun OrdersSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OrderItem("Pedido #FA-1042", "3 cartas · Vendedor: CardKingCR", "EN RUTA", AccentGold)
-        OrderItem("Pedido #FA-1037", "1 carta · Entregado 08 jun", "ENTREGADO", AccentMint)
-        OrderItem("Pedido #FA-1029", "Disputa abierta · En revisión", "DISPUTA", AccentRed)
-    }
-}
-
-@Composable
-private fun OrderItem(id: String, desc: String, status: String, statusColor: Color) {
-    Surface(
-        color = BgCard,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(BgSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (status == "DISPUTA") Icons.Default.Warning else Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(id, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text(desc, color = TextSecondary, fontSize = 12.sp)
-            }
-            
-            Surface(
-                color = statusColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    status,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = statusColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
     }
 }

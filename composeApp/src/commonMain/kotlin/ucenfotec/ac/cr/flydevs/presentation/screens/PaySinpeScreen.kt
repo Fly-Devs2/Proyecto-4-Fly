@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
-import ucenfotec.ac.cr.flydevs.domain.model.Exchange
-import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
+import ucenfotec.ac.cr.flydevs.domain.model.Order
+import ucenfotec.ac.cr.flydevs.presentation.components.GalleryPicker
 import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
@@ -45,7 +45,7 @@ fun PaySinpeScreen(
     onBack: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var showCamera by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(exchangeId) { viewModel.load(exchangeId) }
 
@@ -64,7 +64,7 @@ fun PaySinpeScreen(
 
                 ExchangeStatusChip("Esperando comprobante", AccentGold)
 
-                state.exchange?.let { SinpeEnvelopeCard(it) }
+                state.order?.let { SinpeOrderCard(it) }
 
                 InfoBanner(
                     "Recordá presentar el SINPE Móvil en la tienda destino al retirar.",
@@ -81,7 +81,7 @@ fun PaySinpeScreen(
                 ExchangeSectionTitle("COMPROBANTE SINPE · MÍN. 1")
 
                 PhotoUploadZone(
-                    onClick = { showCamera = true },
+                    onClick = { showPicker = true },
                     title = if (state.proofUrl != null) "Comprobante listo" else "Subir comprobante SINPE",
                     subtitle = "JPG o PNG · máx. 5 MB",
                     accentColor = if (state.proofUrl != null) AccentMint else AccentViolet,
@@ -115,20 +115,20 @@ fun PaySinpeScreen(
             }
         }
 
-        if (showCamera) {
-            CameraCaptureScreen(
-                onImageCaptured = { image ->
-                    showCamera = false
+        if (showPicker) {
+            GalleryPicker(
+                onImagePicked = { image ->
+                    showPicker = false
                     viewModel.onImagePicked(image)
                 },
-                onCancel = { showCamera = false },
+                onCancel = { showPicker = false },
             )
         }
     }
 }
 
 @Composable
-private fun SinpeEnvelopeCard(exchange: Exchange) {
+private fun SinpeOrderCard(order: Order) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,13 +138,20 @@ private fun SinpeEnvelopeCard(exchange: Exchange) {
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        val cardsCount = if (order.cards.isNotEmpty()) order.cards.size else 1
         Text(
-            "Sobre #${envelopeCode(exchange.id)} · Total ₡${exchange.total}",
+            "Pedido #${envelopeCode(order.id)} · $cardsCount cartas",
             color = TextPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
         )
-        Text("SINPE Móvil · ${exchange.sellerId}", color = TextSecondary, fontSize = 13.sp)
+        Text(
+            "Total ₡${order.montoTotal}",
+            color = AccentGold,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 16.sp
+        )
+        Text("Vendedor: ${order.sellerName}", color = TextSecondary, fontSize = 13.sp)
     }
 }
 
