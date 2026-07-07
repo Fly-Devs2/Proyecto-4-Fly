@@ -24,23 +24,56 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     }
 
     override suspend fun addCardToEnvelope(userId: String, cardId: String) {
-        println("DEBUG_ENVELOPE: Adding card $cardId to envelope for user $userId")
+        println("DEBUG_ENVELOPE_REPO: addCardToEnvelope START")
+        println("DEBUG_ENVELOPE_REPO: userId=$userId")
+        println("DEBUG_ENVELOPE_REPO: cardId=$cardId")
 
-        val card = getCardById(cardId)?:throw Exception("No se encontró la carta seleccionada.")
-        if(card.status != CardStatus.AVAILABLE){
-            throw Exception("La carta seleccionada no está disponible.")
+        val card = getCardById(cardId)
+            ?: throw Exception("No se encontró la carta seleccionada.")
+
+        println("DEBUG_ENVELOPE_REPO: card sellerId=${card.sellerId}")
+        println("DEBUG_ENVELOPE_REPO: card status=${card.status}")
+
+        if (userId.isBlank()) {
+            throw Exception("No se encontró el usuario comprador.")
         }
-        val pendingEnvelopeDocument = getPendingEnvelopeDocumentByUser(userId)
+
+        if (card.sellerId.isBlank()) {
+            throw Exception("La carta no tiene vendedor asignado.")
+        }
+
+        if (card.status != CardStatus.AVAILABLE) {
+            throw Exception("La carta ya no está disponible.")
+        }
+
+        val pendingEnvelopeDocument = getPendingEnvelopeDocumentByUserAndSeller(
+            userId = userId,
+            sellerId = card.sellerId
+        )
+
         if (pendingEnvelopeDocument == null) {
-            createEnvelopeWithCard(userId, cardId, card.price)
+            println("DEBUG_ENVELOPE_REPO: No pending envelope for this seller. Creating new envelope.")
+
+            createEnvelopeWithCard(
+                userId = userId,
+                sellerId = card.sellerId,
+                cardId = cardId,
+                cardPrice = card.price
+            )
         } else {
-            addCardToExistingEnvelope(pendingEnvelopeDocument, cardId)
+            println("DEBUG_ENVELOPE_REPO: Pending envelope found for same seller. Adding card.")
+
+            addCardToExistingEnvelope(
+                envelopeDocument = pendingEnvelopeDocument,
+                cardId = cardId
+            )
         }
+
         gameCardsCollection.document(cardId).update(
             "status" to CardStatus.RESERVED.name
         )
-        println("DEBUG_ENVELOPE: Card $cardId added successfully")
 
+        println("DEBUG_ENVELOPE_REPO: addCardToEnvelope END SUCCESS")
     }
 
     override suspend fun removeCardFromEnvelope(userId: String, cardId: String) {
@@ -133,31 +166,57 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         document: DocumentSnapshot
     ): CardEnvelope? {
         return try {
-            val cardIds = try {
-                document.get<List<String>>("cartas_agregadas")
-            } catch (e: Exception) {
-                emptyList()
-            }
-
+            val cardIds = getStringList(document, "cartas_agregadas")
             val cards = getCardsByIds(cardIds)
 
             CardEnvelope(
-                id = try {
-                    document.get<String>("id")
-                } catch (e: Exception) {
-                    document.id
-                },
+                id = getStringValue(document, "id", document.id),
                 cardIds = cardIds,
                 cards = cards,
                 subTotal = getLongValue(document, "sub_total"),
                 total = getLongValue(document, "monto_total"),
                 status = getStringValue(document, "status", "PENDING"),
                 shippingMethod = getShippingMethod(document),
-                userId = getStringValue(document, "userID", "")
+                userId = getStringValue(document, "userID", ""),
+                sellerId = getStringValue(document, "sellerId", "")
             )
         } catch (e: Exception) {
             println("ERROR_ENVELOPE: Error mapping envelope ${document.id}: ${e.message}")
             null
+        }
+    }
+
+    private suspend fun getPendingEnvelopeDocumentByUserAndSeller(
+        userId: String,
+        sellerId: String
+    ): DocumentSnapshot? {
+        println("DEBUG_ENVELOPE_REPO: Searching pending envelope by user and seller")
+        println("DEBUG_ENVELOPE_REPO: userId=$userId")
+        println("DEBUG_ENVELOPE_REPO: sellerId=$sellerId")
+
+        val snapshot = cardEnvelopesCollection.get()
+
+        println("DEBUG_ENVELOPE_REPO: total envelopes=${snapshot.documents.size}")
+
+        snapshot.documents.forEach { document ->
+            val documentUserId = getStringValue(document, "userID")
+            val documentSellerId = getStringValue(document, "sellerId")
+            val documentStatus = getStringValue(document, "status", "PENDING")
+
+            println("DEBUG_ENVELOPE_REPO: envelopeId=${document.id}")
+            println("DEBUG_ENVELOPE_REPO: envelope userID=$documentUserId")
+            println("DEBUG_ENVELOPE_REPO: envelope sellerId=$documentSellerId")
+            println("DEBUG_ENVELOPE_REPO: envelope status=$documentStatus")
+        }
+
+        return snapshot.documents.firstOrNull { document ->
+            val documentUserId = getStringValue(document, "userID")
+            val documentSellerId = getStringValue(document, "sellerId")
+            val documentStatus = getStringValue(document, "status", "PENDING")
+
+            documentUserId == userId &&
+                    documentSellerId == sellerId &&
+                    documentStatus == "PENDING"
         }
     }
 
@@ -247,26 +306,38 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
     private suspend fun createEnvelopeWithCard(
         userId: String,
+        sellerId: String,
         cardId: String,
         cardPrice: Long
     ) {
+        println("DEBUG_ENVELOPE_REPO: createEnvelopeWithCard START")
+        println("DEBUG_ENVELOPE_REPO: userId=$userId")
+        println("DEBUG_ENVELOPE_REPO: sellerId=$sellerId")
+        println("DEBUG_ENVELOPE_REPO: cardId=$cardId")
+        println("DEBUG_ENVELOPE_REPO: cardPrice=$cardPrice")
+
         val newEnvelopeDocument = cardEnvelopesCollection.document
         val shippingCost = defaultShippingCost
         val total = cardPrice + shippingCost
 
-        newEnvelopeDocument.set(
-            mapOf(
-                "id" to newEnvelopeDocument.id,
-                "userID" to userId,
-                "cartas_agregadas" to listOf(cardId),
-                "cantidad_cartas" to 1L,
-                "sub_total" to cardPrice,
-                "monto_total" to total,
-                "shippingMethod" to ShippingMethod.DELIVERY.name,
-                "status" to "PENDING",
-                "createdAt" to System.currentTimeMillis()
-            )
+        val envelopeData = mapOf(
+            "id" to newEnvelopeDocument.id,
+            "userID" to userId,
+            "sellerId" to sellerId,
+            "cartas_agregadas" to listOf(cardId),
+            "cantidad_cartas" to 1L,
+            "sub_total" to cardPrice,
+            "monto_total" to total,
+            "shippingMethod" to ShippingMethod.DELIVERY.name,
+            "status" to "PENDING",
+            "createdAt" to System.currentTimeMillis()
         )
+
+        println("DEBUG_ENVELOPE_REPO: new envelope data=$envelopeData")
+
+        newEnvelopeDocument.set(envelopeData)
+
+        println("DEBUG_ENVELOPE_REPO: createEnvelopeWithCard END SUCCESS")
     }
 
     private suspend fun addCardToExistingEnvelope(
