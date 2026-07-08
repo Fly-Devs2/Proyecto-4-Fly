@@ -8,19 +8,34 @@ import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
 
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
-    private val cardEnvelopesCollection = Firebase.firestore.collection("sobres")
+    private val cardEnvelopesCollection = Firebase.firestore.collection("envelopes")
     private val gameCardsCollection = Firebase.firestore.collection("game_cards")
     private val ordersCollection = Firebase.firestore.collection("orders")
     private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
 
     override suspend fun getCardEnvelopebyUser(userId: String): List<CardEnvelope> {
-        println("DEBUG_ENVELOPE: Fetching envelopes for user $userId")
-        println("DEBUG_ENVELOPE: Total envelopes in collection: ${getCardEnvelopes().size}")
-        println("Cards: ${getCardEnvelopes().size}")
-        return getCardEnvelopes().filter { envelope ->
-            envelope.userId == userId
+        if (userId.isBlank()) {
+            return emptyList()
         }
+
+        val snapshot = cardEnvelopesCollection
+            .where {
+                "userId" equalTo userId
+            }
+            .get()
+
+        val envelopes = mutableListOf<CardEnvelope>()
+
+        snapshot.documents.forEach { document ->
+            val envelope = mapDocumentToEnvelope(document)
+
+            if (envelope != null) {
+                envelopes.add(envelope)
+            }
+        }
+
+        return envelopes
     }
 
     override suspend fun addCardToEnvelope(
@@ -92,7 +107,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             .document(envelopeId)
             .get()
 
-        val currentCardIds = getStringList(envelopeDocument, "cartas_agregadas")
+        val currentCardIds = getStringList(envelopeDocument, "cardIds")
 
         if (!currentCardIds.contains(cardId)) {
             throw Exception("La carta no existe dentro del sobre.")
@@ -105,10 +120,10 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         val totals = calculateTotals(updatedCardIds)
 
         cardEnvelopesCollection.document(envelopeId).update(
-            "cartas_agregadas" to updatedCardIds,
-            "cantidad_cartas" to updatedCardIds.size.toLong(),
-            "sub_total" to totals.first,
-            "monto_total" to totals.second
+            "cardsAdded" to updatedCardIds,
+            "cardsQuantity" to updatedCardIds.size.toLong(),
+            "subTotal" to totals.first,
+            "total" to totals.second
         )
 
         gameCardsCollection.document(cardId).update(
@@ -174,9 +189,9 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
         // 2. Update the Envelope status
         cardEnvelopesCollection.document(envelopeId).update(
-            "sub_total" to totals.first,
-            "monto_total" to totals.second,
-            "cantidad_cartas" to envelope.cardIds.size.toLong(),
+            "subTotal" to totals.first,
+            "total" to totals.second,
+            "cardsQuantity" to envelope.cardIds.size.toLong(),
             "status" to "ORDER_GENERATED"
         )
 
@@ -243,7 +258,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             throw Exception("Solo se pueden eliminar sobres pendientes.")
         }
 
-        val cardIds = getStringList(envelopeDocument, "cartas_agregadas")
+        val cardIds = getStringList(envelopeDocument, "cardsAdded")
 
         println("DEBUG_ENVELOPE_REPO: cards to release=$cardIds")
 
@@ -267,18 +282,18 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         document: DocumentSnapshot
     ): CardEnvelope? {
         return try {
-            val cardIds = getStringList(document, "cartas_agregadas")
+            val cardIds = getStringList(document, "cardsAdded")
             val cards = getCardsByIds(cardIds)
 
             CardEnvelope(
                 id = getStringValue(document, "id", document.id),
                 cardIds = cardIds,
                 cards = cards,
-                subTotal = getLongValue(document, "sub_total"),
-                total = getLongValue(document, "monto_total"),
+                subTotal = getLongValue(document, "subTotal"),
+                total = getLongValue(document, "total"),
                 status = getStringValue(document, "status", "PENDING"),
                 shippingMethod = getShippingMethod(document),
-                userId = getStringValue(document, "userID", ""),
+                userId = getStringValue(document, "userId", ""),
                 sellerId = getStringValue(document, "sellerId", "")
             )
         } catch (e: Exception) {
@@ -300,18 +315,18 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         println("DEBUG_ENVELOPE_REPO: total envelopes=${snapshot.documents.size}")
 
         snapshot.documents.forEach { document ->
-            val documentUserId = getStringValue(document, "userID")
+            val documentUserId = getStringValue(document, "userId")
             val documentSellerId = getStringValue(document, "sellerId")
             val documentStatus = getStringValue(document, "status", "PENDING")
 
             println("DEBUG_ENVELOPE_REPO: envelopeId=${document.id}")
-            println("DEBUG_ENVELOPE_REPO: envelope userID=$documentUserId")
+            println("DEBUG_ENVELOPE_REPO: envelope userId=$documentUserId")
             println("DEBUG_ENVELOPE_REPO: envelope sellerId=$documentSellerId")
             println("DEBUG_ENVELOPE_REPO: envelope status=$documentStatus")
         }
 
         return snapshot.documents.firstOrNull { document ->
-            val documentUserId = getStringValue(document, "userID")
+            val documentUserId = getStringValue(document, "userId")
             val documentSellerId = getStringValue(document, "sellerId")
             val documentStatus = getStringValue(document, "status", "PENDING")
 
@@ -419,12 +434,12 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
         val envelopeData = mapOf(
             "id" to newEnvelopeDocument.id,
-            "userID" to userId,
+            "userId" to userId,
             "sellerId" to sellerId,
-            "cartas_agregadas" to listOf(cardId),
-            "cantidad_cartas" to 1L,
-            "sub_total" to cardPrice,
-            "monto_total" to total,
+            "cardsAdded" to listOf(cardId),
+            "cardsQuantity" to 1L,
+            "subTotal" to cardPrice,
+            "total" to total,
             "shippingMethod" to ShippingMethod.DELIVERY.name,
             "status" to "PENDING",
             "createdAt" to System.currentTimeMillis()
@@ -440,7 +455,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         envelopeDocument: DocumentSnapshot,
         cardId: String
     ) {
-        val currentCardIds = getStringList(envelopeDocument, "cartas_agregadas")
+        val currentCardIds = getStringList(envelopeDocument, "cardsAdded")
 
         if (currentCardIds.contains(cardId)) {
             throw Exception("Esta carta ya fue agregada al sobre.")
@@ -450,10 +465,10 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         val totals = calculateTotals(updatedCardIds)
 
         cardEnvelopesCollection.document(envelopeDocument.id).update(
-            "cartas_agregadas" to updatedCardIds,
-            "cantidad_cartas" to updatedCardIds.size.toLong(),
-            "sub_total" to totals.first,
-            "monto_total" to totals.second
+            "cardsAdded" to updatedCardIds,
+            "cardsQuantity" to updatedCardIds.size.toLong(),
+            "subTotal" to totals.first,
+            "total" to totals.second
         )
     }
 

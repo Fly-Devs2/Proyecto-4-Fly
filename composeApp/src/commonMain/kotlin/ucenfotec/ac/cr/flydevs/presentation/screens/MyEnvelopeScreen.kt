@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -42,7 +41,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,21 +56,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.ShippingMethod
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentVioletLight
-import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
-import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
-import ucenfotec.ac.cr.flydevs.presentation.theme.BgDarkest
-import ucenfotec.ac.cr.flydevs.presentation.theme.BgSurface
-import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
-import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
-import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -138,7 +128,7 @@ fun MyEnvelopeScreen(
                 .padding(paddingValues)
                 .statusBarsPadding()
         ) {
-            MiSobreTopBar(
+            MyEnvelopeTopBar(
                 cardCount = uiState.cardCount,
                 onBack = onBack
             )
@@ -152,14 +142,14 @@ fun MyEnvelopeScreen(
             ) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                MiSobreInfoBanner()
+                MyEnvelopeInfoBanner()
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (uiState.isLoading && uiState.cards.isEmpty()) {
-                    MiSobreLoadingContent()
+                    MyEnvelopeLoadingContent()
                 } else {
-                    MiSobreCardsContainer(
+                    MyEnvelopeCardsContainer(
                         cards = uiState.cards,
                         onRemoveCard = { cardId ->
                             viewModel.removeCardFromEnvelope(
@@ -171,13 +161,13 @@ fun MyEnvelopeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    MiSobreAddMoreCardsButton(
+                    MyEnvelopeAddMoreCardsButton(
                         onClick = onAddMoreCards
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    MiSobreDeliveryMethodSection(
+                    MyEnvelopeDeliveryMethodSection(
                         selectedShippingMethod = selectedShippingMethod,
                         onSelect = { method ->
                             selectedShippingMethod = method
@@ -189,7 +179,7 @@ fun MyEnvelopeScreen(
                     val shippingCost = getShippingCost(selectedShippingMethod)
                     val total = uiState.subTotal + shippingCost
 
-                    MiSobreSummarySection(
+                    MyEnvelopeSummarySection(
                         cardCount = uiState.cardCount,
                         subTotal = uiState.subTotal,
                         shippingCost = shippingCost,
@@ -198,7 +188,7 @@ fun MyEnvelopeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    MiSobreReserveButton(
+                    MyEnvelopeReserveButton(
                         enabled = uiState.canGenerateOrder,
                         isLoading = uiState.isGeneratingOrder,
                         onClick = {
@@ -216,7 +206,7 @@ fun MyEnvelopeScreen(
 
 
 @Composable
-private fun MiSobreTopBar(
+private fun MyEnvelopeTopBar(
     cardCount: Int,
     onBack: () -> Unit
 ) {
@@ -265,7 +255,7 @@ private fun MiSobreTopBar(
 }
 
 @Composable
-private fun MiSobreInfoBanner() {
+private fun MyEnvelopeInfoBanner() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -296,7 +286,7 @@ private fun MiSobreInfoBanner() {
 }
 
 @Composable
-private fun MiSobreLoadingContent() {
+private fun MyEnvelopeLoadingContent() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -310,7 +300,7 @@ private fun MiSobreLoadingContent() {
 }
 
 @Composable
-private fun MiSobreCardsContainer(
+private fun MyEnvelopeCardsContainer(
     cards: List<GameCard>,
     onRemoveCard: (String) -> Unit
 ) {
@@ -322,13 +312,13 @@ private fun MiSobreCardsContainer(
         )
     ) {
         if (cards.isEmpty()) {
-            MiSobreEmptyMessage()
+            MyEnvelopeEmptyMessage()
         } else {
             Column(
                 modifier = Modifier.padding(14.dp)
             ) {
                 cards.forEachIndexed { index, card ->
-                    MiSobreCardRow(
+                    MyEnvelopeCardRow(
                         card = card,
                         onRemoveCard = onRemoveCard
                     )
@@ -342,7 +332,7 @@ private fun MiSobreCardsContainer(
     }
 }
 @Composable
-private fun MiSobreEmptyMessage() {
+private fun MyEnvelopeEmptyMessage() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -366,7 +356,7 @@ private fun MiSobreEmptyMessage() {
 }
 
 @Composable
-private fun MiSobreCardRow(
+private fun MyEnvelopeCardRow(
     card: GameCard,
     onRemoveCard: (String) -> Unit
 ) {
@@ -438,7 +428,7 @@ private fun MiSobreCardRow(
 }
 
 @Composable
-private fun MiSobreAddMoreCardsButton(
+private fun MyEnvelopeAddMoreCardsButton(
     onClick: () -> Unit
 ) {
     Box(
@@ -476,7 +466,7 @@ private fun MiSobreAddMoreCardsButton(
 }
 
 @Composable
-private fun MiSobreDeliveryMethodSection(
+private fun MyEnvelopeDeliveryMethodSection(
     selectedShippingMethod: ShippingMethod,
     onSelect: (ShippingMethod) -> Unit
 ) {
@@ -493,7 +483,7 @@ private fun MiSobreDeliveryMethodSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            MiSobreDeliveryOptionCard(
+            MyEnvelopeDeliveryOptionCard(
                 modifier = Modifier.weight(1f),
                 title = "Retiro en tienda",
                 subtitle = "Gratis",
@@ -512,7 +502,7 @@ private fun MiSobreDeliveryMethodSection(
                 }
             )
 
-            MiSobreDeliveryOptionCard(
+            MyEnvelopeDeliveryOptionCard(
                 modifier = Modifier.weight(1f),
                 title = "Mensajero",
                 subtitle = formatCRC(DELIVERY_SHIPPING_COST),
@@ -535,7 +525,7 @@ private fun MiSobreDeliveryMethodSection(
 }
 
 @Composable
-private fun MiSobreDeliveryOptionCard(
+private fun MyEnvelopeDeliveryOptionCard(
     modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
@@ -606,7 +596,7 @@ private fun MiSobreDeliveryOptionCard(
 }
 
 @Composable
-private fun MiSobreSummarySection(
+private fun MyEnvelopeSummarySection(
     cardCount: Int,
     subTotal: Long,
     shippingCost: Long,
@@ -697,7 +687,7 @@ private fun SummaryRow(
 }
 
 @Composable
-private fun MiSobreReserveButton(
+private fun MyEnvelopeReserveButton(
     enabled: Boolean,
     isLoading: Boolean,
     onClick: () -> Unit
