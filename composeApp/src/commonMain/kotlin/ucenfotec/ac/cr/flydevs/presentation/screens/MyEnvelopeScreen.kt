@@ -82,6 +82,7 @@ private const val DELIVERY_SHIPPING_COST = 600L
 @Composable
 fun MyEnvelopeScreen(
     userId: String,
+    envelopeId: String,
     viewModel: CardEnvelopeViewModel = koinViewModel(),
     onBack: () -> Unit,
     onAddMoreCards: () -> Unit,
@@ -96,8 +97,8 @@ fun MyEnvelopeScreen(
         mutableStateOf(ShippingMethod.DELIVERY)
     }
 
-    LaunchedEffect(userId) {
-        viewModel.loadEnvelope(userId)
+    LaunchedEffect(envelopeId) {
+        viewModel.loadEnvelopeById(envelopeId)
     }
     LaunchedEffect(uiState.envelope?.shippingMethod) {
         uiState.envelope?.shippingMethod?.let { method ->
@@ -162,7 +163,7 @@ fun MyEnvelopeScreen(
                         cards = uiState.cards,
                         onRemoveCard = { cardId ->
                             viewModel.removeCardFromEnvelope(
-                                userId = userId,
+                                envelopeId = envelopeId,
                                 cardId = cardId
                             )
                         }
@@ -201,7 +202,7 @@ fun MyEnvelopeScreen(
                         enabled = uiState.canGenerateOrder,
                         isLoading = uiState.isGeneratingOrder,
                         onClick = {
-                            viewModel.generateOrderFromEnvelope(userId)
+                            viewModel.generateOrderFromEnvelope(envelopeId)
                         }
                     )
                 }
@@ -445,7 +446,7 @@ private fun MiSobreAddMoreCardsButton(
             .fillMaxWidth()
             .height(40.dp)
             .dashedBorder(
-                color = MaterialTheme.colorScheme.outline,
+                color = AccentVioletLight,
                 radius = 14.dp
             )
             .clickable {

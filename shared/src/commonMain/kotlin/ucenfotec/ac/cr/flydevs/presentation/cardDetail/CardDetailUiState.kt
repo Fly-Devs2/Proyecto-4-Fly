@@ -13,7 +13,9 @@ data class CardDetailUiState(
     val isAddingToEnvelope: Boolean = false,
     val actionErrorMessage: String? = null,
     val actionSuccessMessage: String? = null,
-    val shouldOpenEnvelope: Boolean = false
+    val shouldOpenEnvelope: Boolean = false,
+    val targetEnvelopeId: String? = null,
+
 
 
 )

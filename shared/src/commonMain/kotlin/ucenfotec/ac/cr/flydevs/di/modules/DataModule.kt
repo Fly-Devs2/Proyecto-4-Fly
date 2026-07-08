@@ -28,5 +28,6 @@ val dataModule = module {
     single<IExpansionRepository> { FirestoreExpansionRepository() }
     single<ICardCatalogRepository> { CardCatalogRepositoryImpl() }
     single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
+
     single<IOrderRepository> { OrderRepositoryImpl(get()) }
 }
