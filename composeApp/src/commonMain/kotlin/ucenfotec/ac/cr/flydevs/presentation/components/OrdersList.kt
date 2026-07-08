@@ -35,7 +35,8 @@ fun OrdersSection(
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             orders.forEach { order ->
-                val cardName = if (order.cardName.length > 20) order.cardName.take(17) + "..." else order.cardName
+                val firstCard = order.cards.firstOrNull()
+                val cardName = if ((firstCard?.name?.length ?: 0) > 20) firstCard?.name?.take(17) + "..." else firstCard?.name ?: "Pedido sin cartas"
                 val sellerName = if (order.sellerName.length > 20) order.sellerName.take(17) + "..." else order.sellerName
                 val shortId = if (order.id.length > 7) order.id.take(7).uppercase() else order.id.uppercase()
                 
@@ -49,7 +50,7 @@ fun OrdersSection(
                         OrderStatus.DISPUTED -> AccentRed
                         else -> AccentViolet
                     },
-                    imageUrl = order.cards.firstOrNull()?.imageUrl ?: order.cardImageUrl,
+                    imageUrl = firstCard?.imageUrl ?: "",
                     onClick = { onOrderClick(order.id) }
                 )
             }

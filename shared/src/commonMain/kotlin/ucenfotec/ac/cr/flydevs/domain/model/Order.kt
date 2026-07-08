@@ -19,11 +19,5 @@ data class Order(
     val sinpePaid: Boolean = false,
     val sellerName: String = "",
     val buyerName: String = "",
-    val sobreId: String = "",
-    
-    // ── Legacy Fields (to be removed once fully migrated) ──
-    val cardId: String = "",
-    val cardName: String = "",
-    val cardImageUrl: String = "",
-    val cardPrice: Long = 0L
+    val sobreId: String = ""
 )

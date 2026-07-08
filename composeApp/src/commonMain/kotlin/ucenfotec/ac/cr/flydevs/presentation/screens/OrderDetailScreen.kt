@@ -102,14 +102,9 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Card Info List
-                    if (order.cards.isEmpty()) {
-                        // Fallback for legacy data with only one card
-                        LegacyOrderCardInfo(order)
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            order.cards.forEach { cardSnapshot ->
-                                OrderCardInfo(cardSnapshot, order.status)
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        order.cards.forEach { cardSnapshot ->
+                            OrderCardInfo(cardSnapshot, order.status)
                         }
                     }
 
@@ -218,46 +213,6 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
                 val cardDisplayName = if (card.name.length > 50) card.name.take(47) + "..." else card.name
                 Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
                 Text("₡${card.price}", color = AccentGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
-            }
-        }
-    }
-}
-
-@Composable
-private fun LegacyOrderCardInfo(order: Order) {
-    Surface(
-        color = BgCard,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(BgSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (order.cardImageUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = order.cardImageUrl,
-                        contentDescription = order.cardName,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
-                }
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(8.dp))
-                    Text("✦ " + order.status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
-                }
-                val cardDisplayName = if (order.cardName.length > 50) order.cardName.take(47) + "..." else order.cardName
-                Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-                Text("₡${order.cardPrice}", color = AccentGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
             }
         }
     }

@@ -10,7 +10,7 @@ import ucenfotec.ac.cr.flydevs.getEpochMillis
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private val cardEnvelopesCollection = Firebase.firestore.collection("sobres")
     private val gameCardsCollection = Firebase.firestore.collection("game_cards")
-    private val ordersCollection = Firebase.firestore.collection("ORDERS")
+    private val ordersCollection = Firebase.firestore.collection("orders")
     private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
 

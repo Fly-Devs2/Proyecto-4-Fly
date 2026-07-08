@@ -1,5 +1,5 @@
 export const Collections = {
-  orders: "ORDERS",
+  orders: "orders",
   gameCards: "game_cards",
 } as const;
 
