@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +38,7 @@ fun HomeScreen(
     onNavigateToMyCollection: () -> Unit = {},
     onNavigateToOrder: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -68,7 +70,8 @@ fun HomeScreen(
             // Header
             HeaderSection(
                 userName = uiState.user?.name ?: "Usuario",
-                onSignOutClick = { viewModel.signOut() }
+                onSignOutClick = { viewModel.signOut() },
+                onNavigateToProfile = onNavigateToProfile,
             )
             
             Spacer(Modifier.height(24.dp))
@@ -130,14 +133,19 @@ fun HomeScreen(
 @Composable
 private fun HeaderSection(
     userName: String,
-    onSignOutClick: () -> Unit
+    onSignOutClick: () -> Unit,
+    onNavigateToProfile: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(48.dp).clip(CircleShape).background(BgSurface),
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(BgSurface)
+                .clickable { onNavigateToProfile() },
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.Person, contentDescription = null, tint = TextSecondary)
@@ -151,11 +159,6 @@ private fun HeaderSection(
                 style = Typography.titleLarge,
                 color = TextPrimary
             )
-            Text(
-                text = "Coleccionista · Nivel 4",
-                style = Typography.bodySmall,
-                color = TextSecondary
-            )
         }
         
         IconButton(onClick = onSignOutClick) {
@@ -164,19 +167,6 @@ private fun HeaderSection(
         
         IconButton(onClick = { }) {
             Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary)
-        }
-        
-        Surface(
-            color = AccentViolet,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                "USUARIO",
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
