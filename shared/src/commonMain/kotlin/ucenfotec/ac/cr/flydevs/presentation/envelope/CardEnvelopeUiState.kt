@@ -8,6 +8,9 @@ import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 @Serializable
 data class CardEnvelopeUiState(
     val isLoading: Boolean = false,
+    val targetEnvelopeId: String? = null,
+    val isAddingToEnvelope: Boolean = false,
+    val actionErrorMessage: String? = null,
     val isGeneratingOrder: Boolean = false,
     val envelope: CardEnvelope? = null,
     val cards: List<GameCard> = emptyList(),

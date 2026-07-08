@@ -10,13 +10,16 @@ interface ICardEnvelopeRepository {
 
 
     //Agrega una carta al sobre pendiente del usuario. Si el usuario no tiene sobre pendiente, crea uno.
-    suspend fun addCardToEnvelope(userId: String, cardId: String)
+    suspend fun addCardToEnvelope(userId: String, cardId: String): String
 
 
     //Quita una carta del sobre antes de generar la orden.
-    suspend fun removeCardFromEnvelope(userId: String, cardId: String)
+    suspend fun removeCardFromEnvelope(envelopeId: String, cardId: String)
 
-    suspend fun generateOrderFromEnvelope(userId: String)
+    suspend fun generateOrderFromEnvelope(envelopeId: String)
+    suspend fun getCardEnvelopeById(envelopeId: String): CardEnvelope?
+    suspend fun deleteEnvelope(envelopeId: String)
+
 
 
 }

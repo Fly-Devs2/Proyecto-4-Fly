@@ -11,12 +11,13 @@ import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
 import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
+import ucenfotec.ac.cr.flydevs.navigation.EnvelopeDetail
 import ucenfotec.ac.cr.flydevs.navigation.Home
 import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
-
+import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
@@ -27,6 +28,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
@@ -88,7 +90,9 @@ fun App(
                     cardId = route.cardId,
                     onBack = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
-                    onGoToEnvelope = { navController.navigate(MyEnvelope) }
+                    onGoToEnvelope = { envelopeId ->
+                        navController.navigate(EnvelopeDetail(envelopeId))
+                    }
                 )
             }
             composable<PublishCard> {
@@ -96,18 +100,45 @@ fun App(
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable<MyEnvelope> {
-                val uid = loginViewModel.getCurrentUserId()
-                MyEnvelopeScreen(
-                    userId = uid,
-                    onBack = { navController.popBackStack() },
+            composable<MyOrders> {
+                MyEnvelopesScreen(
+                    userId = loginViewModel.getCurrentUserId(),
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onEnvelopeClick = { envelopeId ->
+                        navController.navigate(EnvelopeDetail(envelopeId))
+                    },
                     onAddMoreCards = {
                         navController.navigate(CardCatalog)
                     },
                     onNavSelect = { destination ->
                         handleBottomNavNavigation(navController, destination)
-                    },
+                    }
                 )
+            }
+            composable<EnvelopeDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<EnvelopeDetail>()
+
+                MyEnvelopeScreen(
+                    userId = loginViewModel.getCurrentUserId(),
+                    envelopeId = route.envelopeId,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onAddMoreCards = {
+                        navController.navigate(CardCatalog)
+                    },
+                    onOrderGenerated = {
+                        navController.navigate(MyOrders) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    }
+                )
+            }
 
 
 
@@ -115,7 +146,7 @@ fun App(
             }
         }
     }
-}
+
 
 /**
  * Función helper centralizada para manejar la navegación desde el BottomNav
@@ -144,7 +175,7 @@ private fun handleBottomNavNavigation(
         }
 
         FlyNavDestination.Orders -> {
-            navController.navigate(MyEnvelope) {
+            navController.navigate(MyOrders) {
                 launchSingleTop = true
             }
         }

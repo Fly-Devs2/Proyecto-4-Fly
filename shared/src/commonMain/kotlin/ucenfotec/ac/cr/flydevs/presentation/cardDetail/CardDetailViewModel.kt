@@ -46,18 +46,21 @@ class CardDetailViewModel(
         _uiState.value = _uiState.value.copy(idCopied = false)
     }
 
-    fun addToEnvelope(userId: String,cardId: String) {
+    fun addToEnvelope(
+        userId: String,
+        cardId: String
+    ) {
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
                     isAddingToEnvelope = true,
                     actionErrorMessage = null,
-                    actionSuccessMessage = null,
-                    shouldOpenEnvelope = false
+                    targetEnvelopeId = null
                 )
             }
+
             try {
-                cardEnvelopeRepository.addCardToEnvelope(
+                val envelopeId = cardEnvelopeRepository.addCardToEnvelope(
                     userId = userId,
                     cardId = cardId
                 )
@@ -66,8 +69,7 @@ class CardDetailViewModel(
                     currentState.copy(
                         isAddingToEnvelope = false,
                         addedToEnvelope = true,
-                        actionSuccessMessage = "Carta agregada al sobre correctamente.",
-                        shouldOpenEnvelope = true
+                        targetEnvelopeId = envelopeId
                     )
                 }
             } catch (exception: Exception) {
@@ -79,13 +81,11 @@ class CardDetailViewModel(
                 }
             }
         }
-
     }
     fun clearEnvelopeNavigation() {
         _uiState.update { currentState ->
             currentState.copy(
-                shouldOpenEnvelope = false,
-                actionSuccessMessage = null,
+                targetEnvelopeId = null,
                 actionErrorMessage = null
             )
         }

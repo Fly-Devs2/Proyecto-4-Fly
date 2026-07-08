@@ -16,7 +16,7 @@ class CardEnvelopeViewModel(
     private val _uiState = MutableStateFlow(CardEnvelopeUiState())
     val uiState: StateFlow<CardEnvelopeUiState> = _uiState.asStateFlow()
 
-    fun loadEnvelope(userId: String) {
+    fun loadEnvelopeById(envelopeId: String) {
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
@@ -27,13 +27,17 @@ class CardEnvelopeViewModel(
             }
 
             try {
-                val envelope = getPendingEnvelope(userId)
+                val envelope = cardEnvelopeRepository.getCardEnvelopeById(envelopeId)
+
+                if (envelope == null) {
+                    throw Exception("No se encontró el sobre seleccionado.")
+                }
 
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
                         envelope = envelope,
-                        cards = envelope?.cards ?: emptyList()
+                        cards = envelope.cards
                     )
                 }
             } catch (exception: Exception) {
@@ -84,7 +88,7 @@ class CardEnvelopeViewModel(
         }
     }
 
-    fun removeCardFromEnvelope(userId: String, cardId: String) {
+    fun removeCardFromEnvelope(envelopeId: String, cardId: String) {
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
@@ -96,11 +100,11 @@ class CardEnvelopeViewModel(
 
             try {
                 cardEnvelopeRepository.removeCardFromEnvelope(
-                    userId = userId,
+                    envelopeId = envelopeId,
                     cardId = cardId
                 )
 
-                val updatedEnvelope = getPendingEnvelope(userId)
+                val updatedEnvelope = cardEnvelopeRepository.getCardEnvelopeById(envelopeId)
 
                 _uiState.update { currentState ->
                     currentState.copy(
@@ -121,7 +125,7 @@ class CardEnvelopeViewModel(
         }
     }
 
-    fun generateOrderFromEnvelope(userId: String) {
+    fun generateOrderFromEnvelope(envelopeId: String) {
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
@@ -132,7 +136,7 @@ class CardEnvelopeViewModel(
             }
 
             try {
-                cardEnvelopeRepository.generateOrderFromEnvelope(userId)
+                cardEnvelopeRepository.generateOrderFromEnvelope(envelopeId)
 
                 _uiState.update { currentState ->
                     currentState.copy(

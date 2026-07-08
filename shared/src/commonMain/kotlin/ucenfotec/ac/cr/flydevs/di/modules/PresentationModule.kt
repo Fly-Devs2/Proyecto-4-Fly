@@ -11,6 +11,7 @@ import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewModel
 import ucenfotec.ac.cr.flydevs.presentation.register.RegisterViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
 
 val presentationModule = module {
@@ -22,4 +23,5 @@ val presentationModule = module {
     viewModel { MyCollectionViewModel(get<ICardCatalogRepository>(), get<IAuthRepository>()) }
     viewModel { CardDetailViewModel(get(), get()) }
     viewModel { CardEnvelopeViewModel(get()) }
+    viewModel { CardEnvelopesViewModel(get()) }
 }

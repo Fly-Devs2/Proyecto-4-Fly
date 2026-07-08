@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2025 kevinah95 (Kevin A. Hernández Rostrán)
  *
@@ -41,3 +42,7 @@ import kotlinx.serialization.Serializable
 @Serializable object PublishCard
 
 @Serializable object MyEnvelope
+
+@Serializable data class EnvelopeDetail(val envelopeId: String)
+
+@Serializable object MyOrders
