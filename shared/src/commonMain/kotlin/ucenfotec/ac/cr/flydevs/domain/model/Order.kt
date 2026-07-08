@@ -8,7 +8,7 @@ data class Order(
     val cards: List<OrderCardSnapshot> = emptyList(),
     val buyerId: String = "",
     val sellerId: String = "",
-    val status: OrderStatus = OrderStatus.RESERVED,
+    val status: OrderStatus = OrderStatus.WAITING_SELLER_DELIVERY,
     val createdAt: Long = 0L,
     val modifiedAt: Long = 0L,
     val shippingMethod: String = "DELIVERY",

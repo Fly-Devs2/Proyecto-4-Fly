@@ -133,14 +133,11 @@ fun OrderDetailScreen(
                     // --- Workflow Action Buttons ---
                     
                     if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.WAITING_SELLER_DELIVERY) {
-                        Button(
+                        PrimaryButton(
+                            text = "Entregar en tienda",
                             onClick = { onNavigateToDeliver(order.id) },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Entregar en tienda", style = Typography.labelLarge)
-                        }
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                        )
                     }
 
                     // Section: EVIDENCIA
@@ -248,7 +245,6 @@ private fun TrackingStepper(currentStatus: OrderStatus) {
     Column {
         SectionTitle("SEGUIMIENTO")
         val steps = listOf(
-            OrderStatus.RESERVED,
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
             OrderStatus.WAITING_STORE_SHIPMENT,

@@ -57,7 +57,6 @@ fun DeliverToStoreScreen(
 
     LaunchedEffect(state.feedback) {
         if (state.feedback == SellerEvidenceFeedback.SUCCESS) {
-            kotlinx.coroutines.delay(2000)
             onBack()
         }
     }

@@ -45,7 +45,6 @@ fun PaySinpeScreen(
 
     LaunchedEffect(state.feedback) {
         if (state.feedback == SinpeProofFeedback.SUCCESS) {
-            kotlinx.coroutines.delay(2000)
             onBack()
         }
     }

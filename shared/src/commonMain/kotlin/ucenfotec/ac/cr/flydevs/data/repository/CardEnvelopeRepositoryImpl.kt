@@ -119,7 +119,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
                     game = it.game?.label ?: ""
                 )
             },
-            status = OrderStatus.RESERVED,
+            status = OrderStatus.WAITING_SELLER_DELIVERY,
             createdAt = getEpochMillis(),
             modifiedAt = getEpochMillis(),
             montoTotal = totals.second,
