@@ -8,6 +8,7 @@ data class CardEnvelopesUIState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val deletingEnvelopeId: String? = null,
+    val isGeneratingOrders: Boolean = false,
 ) {
     val pendingEnvelopeCount: Int
         get() = envelopes.size

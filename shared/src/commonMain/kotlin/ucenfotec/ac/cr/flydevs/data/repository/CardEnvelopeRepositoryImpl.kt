@@ -128,25 +128,29 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             .document(envelopeId)
             .get()
 
-        val cardIds = getStringList(envelopeDocument, "cartas_agregadas")
+        val envelope = mapDocumentToEnvelope(envelopeDocument)
+            ?: throw Exception("No se pudo cargar la información del sobre.")
 
-        if (cardIds.isEmpty()) {
+        if (envelope.cardIds.isEmpty()) {
             throw Exception("No se puede generar una orden con el sobre vacío.")
         }
 
-        validateCardsBeforeOrder(cardIds)
+        validateCardsBeforeOrder(envelope.cardIds)
 
-        val totals = calculateTotals(cardIds)
+        val totals = calculateTotals(envelope.cardIds)
 
-        // 1. Create the Order document in ORDERS collection
+        val seller = fetchUser(envelope.sellerId)
+        val buyer = fetchUser(envelope.userId)
+
+        // 1. Create the Order document in orders collection
         val newOrderDoc = ordersCollection.document
         val order = Order(
             id = newOrderDoc.id,
-            buyerId = userId,
-            sellerId = sellerId,
+            buyerId = envelope.userId,
+            sellerId = envelope.sellerId,
             sellerName = seller?.name ?: "Vendedor",
             buyerName = buyer?.name ?: "Comprador",
-            cards = cards.map { 
+            cards = envelope.cards.map {
                 OrderCardSnapshot(
                     cardId = it.id,
                     name = it.name,
@@ -160,8 +164,8 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             createdAt = getEpochMillis(),
             modifiedAt = getEpochMillis(),
             montoTotal = totals.second,
-            sobreId = pendingEnvelopeDocument.id,
-            shippingMethod = getShippingMethod(pendingEnvelopeDocument).name,
+            sobreId = envelope.id,
+            shippingMethod = envelope.shippingMethod.name,
             sellerEvidenceUrls = emptyList(),
             buyerEvidenceUrls = emptyList()
         )
@@ -169,15 +173,23 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         newOrderDoc.set(Order.serializer(), order)
 
         // 2. Update the Envelope status
-        cardEnvelopesCollection.document(pendingEnvelopeDocument.id).update(
         cardEnvelopesCollection.document(envelopeId).update(
             "sub_total" to totals.first,
             "monto_total" to totals.second,
-            "cantidad_cartas" to cardIds.size.toLong(),
+            "cantidad_cartas" to envelope.cardIds.size.toLong(),
             "status" to "ORDER_GENERATED"
         )
 
         println("DEBUG_ENVELOPE_REPO: generateOrderFromEnvelope END SUCCESS")
+    }
+
+    private suspend fun fetchUser(uid: String): User? {
+        return try {
+            val doc = usersCollection.document(uid).get()
+            if (doc.exists) doc.data<User>() else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override suspend fun getCardEnvelopeById(
