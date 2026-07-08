@@ -1,5 +1,8 @@
 package ucenfotec.ac.cr.flydevs.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class PickedImage(
     val bytes: ByteArray,
     val mimeType: String,

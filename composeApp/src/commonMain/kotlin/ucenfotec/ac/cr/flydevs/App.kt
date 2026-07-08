@@ -12,9 +12,14 @@ import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
 import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
 import ucenfotec.ac.cr.flydevs.navigation.EnvelopeDetail
+import ucenfotec.ac.cr.flydevs.navigation.DeliverStore
+import ucenfotec.ac.cr.flydevs.navigation.DeliverToStore
 import ucenfotec.ac.cr.flydevs.navigation.Home
 import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
+import ucenfotec.ac.cr.flydevs.navigation.OrderDetail
+import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
+import ucenfotec.ac.cr.flydevs.navigation.Profile
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
@@ -24,9 +29,13 @@ import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.OrderDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
@@ -66,6 +75,7 @@ fun App(
                 HomeScreen(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
+                    onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
@@ -97,7 +107,23 @@ fun App(
             }
             composable<PublishCard> {
                 PublishGameCardScreen(
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
+            composable<Profile> {
+                ProfileScreen(
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
+            composable<OrderDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<OrderDetail>()
+                OrderDetailScreen(
+                    orderId = route.orderId,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
+                    onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<MyOrders> {
@@ -139,6 +165,20 @@ fun App(
                     }
                 )
             }
+            composable<DeliverToStore> { backStackEntry ->
+                val route = backStackEntry.toRoute<DeliverToStore>()
+                DeliverToStoreScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable<PaySinpe> { backStackEntry ->
+                val route = backStackEntry.toRoute<PaySinpe>()
+                PaySinpeScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
 
 
 
@@ -173,14 +213,15 @@ private fun handleBottomNavNavigation(
                 launchSingleTop = true
             }
         }
-
+        FlyNavDestination.Profile -> {
+            navController.navigate(Profile) {
+                launchSingleTop = true
+            }
+        }
         FlyNavDestination.Orders -> {
             navController.navigate(MyOrders) {
                 launchSingleTop = true
             }
-        }
-        else -> {
-            // TODO: Implement Orders and Profile routes
         }
     }
 }

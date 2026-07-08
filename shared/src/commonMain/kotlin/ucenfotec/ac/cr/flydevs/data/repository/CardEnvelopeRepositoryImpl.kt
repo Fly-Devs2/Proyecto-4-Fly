@@ -2,16 +2,16 @@ package ucenfotec.ac.cr.flydevs.data.repository
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
+import ucenfotec.ac.cr.flydevs.domain.model.*
 import dev.gitlive.firebase.firestore.DocumentSnapshot
-import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
-import ucenfotec.ac.cr.flydevs.domain.model.GameCard
-import ucenfotec.ac.cr.flydevs.domain.model.ShippingMethod
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
+import ucenfotec.ac.cr.flydevs.getEpochMillis
 
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private val cardEnvelopesCollection = Firebase.firestore.collection("sobres")
     private val gameCardsCollection = Firebase.firestore.collection("game_cards")
+    private val ordersCollection = Firebase.firestore.collection("ORDERS")
+    private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
 
     override suspend fun getCardEnvelopebyUser(userId: String): List<CardEnvelope> {

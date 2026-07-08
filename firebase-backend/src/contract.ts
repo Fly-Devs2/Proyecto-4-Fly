@@ -1,0 +1,23 @@
+export const Collections = {
+  orders: "ORDERS",
+  gameCards: "game_cards",
+} as const;
+
+export const status = {
+    RESERVED: "RESERVED",
+
+  WAITING_SELLER_DELIVERY: "WAITING_SELLER_DELIVERY",
+  WAITING_PAYMENT: "WAITING_PAYMENT",
+  WAITING_STORE_SHIPMENT: "WAITING_STORE_SHIPMENT",
+  IN_TRANSIT: "IN_TRANSIT",
+  DELIVERED_TO_STORE: "DELIVERED_TO_STORE",
+  PICKED_UP: "PICKED_UP",
+  DISPUTED: "DISPUTED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export const CardStatus = {
+  AVAILABLE: "AVAILABLE",
+  RESERVED: "RESERVED",
+  SOLD: "SOLD",
+} as const;
