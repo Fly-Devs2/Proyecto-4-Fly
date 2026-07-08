@@ -152,6 +152,16 @@ fun MyEnvelopesScreen(
                                 totalCards = uiState.totalCards,
                                 totalAmount = uiState.totalAmount
                             )
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            ReserveAllButton(
+                                isLoading = uiState.isGeneratingOrders,
+                                enabled = uiState.envelopes.isNotEmpty(),
+                                onClick = {
+                                    viewModel.generateOrdersForAllEnvelopes(userId)
+                                }
+                            )
                         }
 
                         items(
@@ -657,6 +667,42 @@ private fun EnvelopeAmountRow(
             },
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+@Composable
+private fun ReserveAllButton(
+    isLoading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled && !isLoading,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AccentViolet,
+            disabledContainerColor = AccentViolet.copy(alpha = 0.5f),
+            contentColor = TextPrimary,
+            disabledContentColor = TextPrimary.copy(alpha = 0.5f)
+        )
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = TextPrimary,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(22.dp)
+            )
+        } else {
+            Text(
+                text = "Generar orden para todos los sobres",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 

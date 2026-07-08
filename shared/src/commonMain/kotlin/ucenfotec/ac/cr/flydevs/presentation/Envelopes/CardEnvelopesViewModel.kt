@@ -97,6 +97,52 @@ class CardEnvelopesViewModel(
             }
         }
     }
+
+    fun generateOrdersForAllEnvelopes(userId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGeneratingOrders = true, errorMessage = null, successMessage = null) }
+
+            val envelopes = _uiState.value.envelopes
+            var successCount = 0
+            var failCount = 0
+            val errors = mutableListOf<String>()
+
+            envelopes.forEach { envelope ->
+                try {
+                    cardEnvelopeRepository.generateOrderFromEnvelope(envelope.id)
+                    successCount++
+                } catch (e: Exception) {
+                    failCount++
+                    errors.add("${envelope.id}: ${e.message}")
+                    println("ERROR_BULK_ORDER: Failed to generate order for envelope ${envelope.id}: ${e.message}")
+                }
+            }
+
+            if (successCount > 0 || failCount > 0) {
+                // Refresh list
+                loadPendingEnvelopes(userId)
+            }
+
+            _uiState.update { currentState ->
+                val finalSuccessMsg = when {
+                    failCount == 0 && successCount > 0 -> "Todas las órdenes (${successCount}) se generaron correctamente."
+                    successCount > 0 && failCount > 0 -> "${successCount} órdenes generadas, ${failCount} fallaron."
+                    else -> null
+                }
+                
+                val finalErrorMsg = if (successCount == 0 && failCount > 0) {
+                    "No se pudo generar ninguna orden. Errores: ${errors.joinToString(", ")}"
+                } else null
+
+                currentState.copy(
+                    isGeneratingOrders = false,
+                    successMessage = finalSuccessMsg,
+                    errorMessage = finalErrorMsg
+                )
+            }
+        }
+    }
+
     fun clearMessages() {
         _uiState.update { currentState ->
             currentState.copy(
