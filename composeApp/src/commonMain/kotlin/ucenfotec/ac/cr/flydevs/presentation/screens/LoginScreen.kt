@@ -57,6 +57,7 @@ fun LoginScreen(
             .fillMaxSize()
             .background(BgDarkest)
             .padding(horizontal = 24.dp)
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

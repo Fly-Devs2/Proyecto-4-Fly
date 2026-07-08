@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -54,8 +55,15 @@ fun DeliverToStoreScreen(
 
     LaunchedEffect(exchangeId) { viewModel.load(exchangeId) }
 
+    LaunchedEffect(state.feedback) {
+        if (state.feedback == SellerEvidenceFeedback.SUCCESS) {
+            kotlinx.coroutines.delay(2000)
+            onBack()
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize().background(BgDarkest)) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             TopBar(title = "Entregar en tienda", onBack = onBack)
 
             if (state.isLoading) {

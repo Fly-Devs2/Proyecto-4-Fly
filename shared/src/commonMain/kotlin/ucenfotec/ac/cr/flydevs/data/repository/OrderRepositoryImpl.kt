@@ -119,10 +119,15 @@ class OrderRepositoryImpl(
     override suspend fun submitSellerEvidence(orderId: String, evidenceUrl: String): Order {
         val current = fetchOrderOnce(orderId)
             ?: throw IllegalStateException("Orden no encontrada: $orderId")
-
+        
+        val newStatus = if (current.status == OrderStatus.WAITING_SELLER_DELIVERY) {
+            OrderStatus.WAITING_PAYMENT
+        } else {
+            current.status
+        }
         val updated = current.copy(
             sellerEvidenceUrls = current.sellerEvidenceUrls + evidenceUrl,
-            status = OrderStatus.WAITING_PAYMENT,
+            status = newStatus,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
