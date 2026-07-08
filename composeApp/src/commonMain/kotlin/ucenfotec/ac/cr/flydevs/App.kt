@@ -73,7 +73,8 @@ fun App(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
                     onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavigateToProfile = { navController.navigate(Profile) }
                 )
             }
             composable<CardCatalog> {
@@ -108,6 +109,12 @@ fun App(
             }
             composable<Profile> {
                 ProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    onSignOutSuccess = {
+                        navController.navigate(Login) {
+                            popUpTo(Home) { inclusive = true }
+                        }
+                    },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
