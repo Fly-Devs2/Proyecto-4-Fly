@@ -17,7 +17,7 @@ enum class OrderStatus(val label: String) {
     companion object {
         fun fromString(value: String): OrderStatus {
             return entries.find { it.name.equals(value, ignoreCase = true) || it.label.equals(value, ignoreCase = true) } 
-                ?: RESERVED
+                ?: WAITING_SELLER_DELIVERY
         }
     }
 }

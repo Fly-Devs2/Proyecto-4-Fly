@@ -123,7 +123,13 @@ class PublishGameCardViewModel(
 
         _uiState.update { it.copy(isLoading = true, feedback = null) }
 
-        val card = draft.copy(sellerId = authRepository.getCurrentUserUid().toString())
+        val currentUid = authRepository.getCurrentUserUid()
+        if (currentUid == null) {
+            _uiState.update { it.copy(isLoading = false, feedback = PublishFeedback.PUBLISH_FAILED) }
+            return
+        }
+
+        val card = draft.copy(sellerId = currentUid)
 
         viewModelScope.launch {
             runCatching { repository.saveGameCard(card) }

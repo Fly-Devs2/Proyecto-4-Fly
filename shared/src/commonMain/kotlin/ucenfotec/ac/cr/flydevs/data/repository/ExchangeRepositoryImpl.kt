@@ -9,7 +9,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IExchangeRepository
 class ExchangeRepositoryImpl : IExchangeRepository {
 
     private val exchangesCollection by lazy {
-        Firebase.firestore.collection("ORDERS")
+        Firebase.firestore.collection("orders")
     }
 
     override suspend fun createExchange(exchange: Exchange): Exchange {

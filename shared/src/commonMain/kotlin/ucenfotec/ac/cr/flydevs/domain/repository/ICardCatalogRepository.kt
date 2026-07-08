@@ -5,4 +5,6 @@ import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 interface ICardCatalogRepository {
 
     suspend fun getCardCatalog(): List<GameCard>
+
+    suspend fun getCardsBySeller(sellerId: String): List<GameCard>
 }

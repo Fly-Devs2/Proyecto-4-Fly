@@ -17,7 +17,7 @@ class OrderRepositoryImpl(
     private val imageStorage: IImageStorageRepository
 ) : IOrderRepository {
     private val firestore = Firebase.firestore
-    private val ordersCollection = firestore.collection("ORDERS")
+    private val ordersCollection = firestore.collection("orders")
 
     override fun getOrdersForUser(userId: String): Flow<List<Order>> {
         println("DEBUG_ORDERS: Fetching orders for user: $userId")
@@ -57,9 +57,6 @@ class OrderRepositoryImpl(
                     cards = safeGetCards("cards") ?: emptyList(),
                     buyerId = safeGet<String>("buyerId") ?: "",
                     sellerId = safeGet<String>("sellerId") ?: "",
-                    cardName = safeGet<String>("cardName") ?: "Carta sin nombre",
-                    cardImageUrl = safeGet<String>("cardImageUrl") ?: "",
-                    cardPrice = safeGet<Long>("cardPrice") ?: 0L,
                     status = OrderStatus.fromString(safeGet<String>("status") ?: ""),
                     sinpePaid = safeGet<Boolean>("sinpePaid") ?: false,
                     sinpeReceiptUrl = safeGet<String>("sinpeReceiptUrl"),
@@ -119,10 +116,15 @@ class OrderRepositoryImpl(
     override suspend fun submitSellerEvidence(orderId: String, evidenceUrl: String): Order {
         val current = fetchOrderOnce(orderId)
             ?: throw IllegalStateException("Orden no encontrada: $orderId")
-
+        
+        val newStatus = if (current.status == OrderStatus.WAITING_SELLER_DELIVERY) {
+            OrderStatus.WAITING_PAYMENT
+        } else {
+            current.status
+        }
         val updated = current.copy(
             sellerEvidenceUrls = current.sellerEvidenceUrls + evidenceUrl,
-            status = OrderStatus.WAITING_PAYMENT,
+            status = newStatus,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)

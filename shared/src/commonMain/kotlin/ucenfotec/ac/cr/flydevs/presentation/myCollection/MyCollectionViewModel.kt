@@ -23,8 +23,12 @@ class MyCollectionViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching {
-                val uid = authRepository.getCurrentUserUid() ?: ""
-                repository.getCardCatalog().filter { it.sellerId == uid }
+                val uid = authRepository.getCurrentUserUid()
+                if (uid != null) {
+                    repository.getCardsBySeller(uid)
+                } else {
+                    emptyList()
+                }
             }
                 .onSuccess { cards ->
                     _uiState.value = _uiState.value.copy(isLoading = false, cards = cards)

@@ -8,7 +8,7 @@ data class Order(
     val cards: List<OrderCardSnapshot> = emptyList(),
     val buyerId: String = "",
     val sellerId: String = "",
-    val status: OrderStatus = OrderStatus.RESERVED,
+    val status: OrderStatus = OrderStatus.WAITING_SELLER_DELIVERY,
     val createdAt: Long = 0L,
     val modifiedAt: Long = 0L,
     val shippingMethod: String = "DELIVERY",
@@ -19,11 +19,5 @@ data class Order(
     val sinpePaid: Boolean = false,
     val sellerName: String = "",
     val buyerName: String = "",
-    val sobreId: String = "",
-    
-    // ── Legacy Fields (to be removed once fully migrated) ──
-    val cardId: String = "",
-    val cardName: String = "",
-    val cardImageUrl: String = "",
-    val cardPrice: Long = 0L
+    val sobreId: String = ""
 )

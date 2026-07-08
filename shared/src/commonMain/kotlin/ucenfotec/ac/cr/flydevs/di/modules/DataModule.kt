@@ -26,7 +26,7 @@ val dataModule = module {
     single<IImageStorageRepository> { StorageImageRepository(get()) }
     single<IRarityRepository> { FirestoreRarityRepository() }
     single<IExpansionRepository> { FirestoreExpansionRepository() }
-    single<ICardCatalogRepository> { CardCatalogRepositoryImpl() }
+    single<ICardCatalogRepository> { CardCatalogRepositoryImpl(get()) }
     single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
 
     single<IOrderRepository> { OrderRepositoryImpl(get()) }

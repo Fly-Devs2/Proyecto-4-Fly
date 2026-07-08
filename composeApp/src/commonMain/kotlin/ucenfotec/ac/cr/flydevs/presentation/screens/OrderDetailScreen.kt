@@ -1,8 +1,5 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,7 +15,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,11 +38,7 @@ import org.koin.core.parameter.parametersOf
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
-import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
-import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
-import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
-import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
-import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
+import ucenfotec.ac.cr.flydevs.presentation.components.*
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
@@ -110,14 +102,9 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Card Info List
-                    if (order.cards.isEmpty()) {
-                        // Fallback for legacy data with only one card
-                        LegacyOrderCardInfo(order)
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            order.cards.forEach { cardSnapshot ->
-                                OrderCardInfo(cardSnapshot, order.status)
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        order.cards.forEach { cardSnapshot ->
+                            OrderCardInfo(cardSnapshot, order.status)
                         }
                     }
 
@@ -145,43 +132,12 @@ fun OrderDetailScreen(
 
                     // --- Workflow Action Buttons ---
                     
-                    // 1. Seller Action: WAITING_STORE_SHIPMENT -> Marcar como enviado
-                    if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.WAITING_STORE_SHIPMENT) {
-                        PrimaryButton(
-                            text = "Marcar como enviado",
-                            onClick = { viewModel.markAsShipped() },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                        )
-                    }
-
-                    // 2. Seller Action: IN_TRANSIT -> Confirmar llegada a tienda
-                    if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.IN_TRANSIT) {
-                        PrimaryButton(
-                            text = "Confirmar llegada a tienda",
-                            onClick = { viewModel.markAsDeliveredToStore() },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                        )
-                    }
-
-                    // 3. Buyer Action: DELIVERED_TO_STORE -> Confirmar recolección (triggers camera)
-                    if (uiState.userRole == UserRole.BUYER && order.status == OrderStatus.DELIVERED_TO_STORE) {
-                        PrimaryButton(
-                            text = "Confirmar recolección",
-                            onClick = { showCamera = true },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                        )
-                    }
-
-                    // Legacy Seller-only action: Entregar en tienda
                     if (uiState.userRole == UserRole.SELLER && order.status == OrderStatus.WAITING_SELLER_DELIVERY) {
-                        Button(
+                        PrimaryButton(
+                            text = "Entregar en tienda",
                             onClick = { onNavigateToDeliver(order.id) },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Entregar en tienda", style = Typography.labelLarge)
-                        }
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                        )
                     }
 
                     // Section: EVIDENCIA
@@ -202,38 +158,10 @@ fun OrderDetailScreen(
             }
         }
 
-        // Full Screen Image Viewer Overlay
-        AnimatedVisibility(
-            visible = fullScreenImageUrl != null,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.9f))
-                    .clickable { fullScreenImageUrl = null },
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = fullScreenImageUrl,
-                    contentDescription = "Evidence Full Screen",
-                    modifier = Modifier.fillMaxSize(0.9f),
-                    contentScale = ContentScale.Fit
-                )
-                
-                IconButton(
-                    onClick = { fullScreenImageUrl = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .statusBarsPadding()
-                        .padding(16.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                }
-            }
-        }
+        FullScreenImageViewer(
+            imageUrl = fullScreenImageUrl,
+            onDismiss = { fullScreenImageUrl = null }
+        )
 
         if (showCamera) {
             CameraCaptureScreen(
@@ -288,46 +216,6 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
 }
 
 @Composable
-private fun LegacyOrderCardInfo(order: Order) {
-    Surface(
-        color = BgCard,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(BgSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (order.cardImageUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = order.cardImageUrl,
-                        contentDescription = order.cardName,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
-                }
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(8.dp))
-                    Text("✦ " + order.status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
-                }
-                val cardDisplayName = if (order.cardName.length > 50) order.cardName.take(47) + "..." else order.cardName
-                Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-                Text("₡${order.cardPrice}", color = AccentGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
-            }
-        }
-    }
-}
-
-@Composable
 private fun OrderDataSection(order: Order, role: UserRole) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle("DATOS DE LA COMPRA")
@@ -357,7 +245,6 @@ private fun TrackingStepper(currentStatus: OrderStatus) {
     Column {
         SectionTitle("SEGUIMIENTO")
         val steps = listOf(
-            OrderStatus.RESERVED,
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
             OrderStatus.WAITING_STORE_SHIPMENT,
@@ -460,19 +347,10 @@ private fun ComprobanteSinpeSection(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        "Visible para el comprador y el vendedor. Solo el comprador puede adjuntar o reemplazar el SINPE.",
+                        "Visible para el comprador y el vendedor. Solo el comprador puede adjuntar el SINPE.",
                         color = TextMuted,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
-                    )
-                }
-
-                if (role == UserRole.BUYER) {
-                    Spacer(Modifier.height(20.dp))
-                    DashedButton(
-                        text = "Reemplazar comprobante",
-                        icon = Icons.Default.FileUpload,
-                        onClick = { onNavigateToPay(order.id) }
                     )
                 }
             }
@@ -482,41 +360,13 @@ private fun ComprobanteSinpeSection(
 
 @Composable
 private fun ComprobanteCardPolished(order: Order, onViewImage: (String) -> Unit) {
-    Surface(
-        color = BgSurface,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().clickable { 
-            order.sinpeReceiptUrl?.let { onViewImage(it) }
-        }
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(BgDarkest),
-                contentAlignment = Alignment.Center
-            ) {
-                if (order.sinpeReceiptUrl != null && order.sinpeReceiptUrl!!.isNotBlank()) {
-                    AsyncImage(
-                        model = order.sinpeReceiptUrl,
-                        contentDescription = "SINPE Receipt Thumbnail",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(Icons.Default.Description, contentDescription = null, tint = AccentMint)
-                }
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Comprobante adjuntado", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("Por el comprador · 13 jun 2026 · 09:00", color = TextMuted, fontSize = 12.sp)
-                Text("₡${order.montoTotal}", color = AccentMint, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-            }
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, tint = TextMuted, contentDescription = null)
-        }
-    }
+    EvidenceCard(
+        title = "Comprobante adjuntado",
+        subtitle = "Por el comprador · 13 jun 2026 · 09:00",
+        amount = "₡${order.montoTotal}",
+        imageUrl = order.sinpeReceiptUrl,
+        onClick = { order.sinpeReceiptUrl?.let { onViewImage(it) } }
+    )
 }
 
 @Composable

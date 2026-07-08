@@ -10,7 +10,7 @@ import ucenfotec.ac.cr.flydevs.getEpochMillis
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private val cardEnvelopesCollection = Firebase.firestore.collection("sobres")
     private val gameCardsCollection = Firebase.firestore.collection("game_cards")
-    private val ordersCollection = Firebase.firestore.collection("ORDERS")
+    private val ordersCollection = Firebase.firestore.collection("orders")
     private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
 
@@ -138,6 +138,38 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
         val totals = calculateTotals(cardIds)
 
+        // 1. Create the Order document in ORDERS collection
+        val newOrderDoc = ordersCollection.document
+        val order = Order(
+            id = newOrderDoc.id,
+            buyerId = userId,
+            sellerId = sellerId,
+            sellerName = seller?.name ?: "Vendedor",
+            buyerName = buyer?.name ?: "Comprador",
+            cards = cards.map { 
+                OrderCardSnapshot(
+                    cardId = it.id,
+                    name = it.name,
+                    imageUrl = it.imageUrl,
+                    price = it.price,
+                    condition = it.condition.label,
+                    game = it.game?.label ?: ""
+                )
+            },
+            status = OrderStatus.WAITING_SELLER_DELIVERY,
+            createdAt = getEpochMillis(),
+            modifiedAt = getEpochMillis(),
+            montoTotal = totals.second,
+            sobreId = pendingEnvelopeDocument.id,
+            shippingMethod = getShippingMethod(pendingEnvelopeDocument).name,
+            sellerEvidenceUrls = emptyList(),
+            buyerEvidenceUrls = emptyList()
+        )
+
+        newOrderDoc.set(Order.serializer(), order)
+
+        // 2. Update the Envelope status
+        cardEnvelopesCollection.document(pendingEnvelopeDocument.id).update(
         cardEnvelopesCollection.document(envelopeId).update(
             "sub_total" to totals.first,
             "monto_total" to totals.second,

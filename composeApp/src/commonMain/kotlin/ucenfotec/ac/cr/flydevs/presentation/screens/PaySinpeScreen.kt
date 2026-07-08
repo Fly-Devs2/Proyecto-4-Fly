@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -13,12 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,10 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.Order
-import ucenfotec.ac.cr.flydevs.presentation.components.GalleryPicker
-import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
-import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
-import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
+import ucenfotec.ac.cr.flydevs.presentation.components.*
 import ucenfotec.ac.cr.flydevs.presentation.exchange.ExchangeBuyerViewModel
 import ucenfotec.ac.cr.flydevs.presentation.exchange.SinpeProofFeedback
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
@@ -46,11 +39,18 @@ fun PaySinpeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showPicker by remember { mutableStateOf(false) }
+    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(exchangeId) { viewModel.load(exchangeId) }
 
+    LaunchedEffect(state.feedback) {
+        if (state.feedback == SinpeProofFeedback.SUCCESS) {
+            onBack()
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize().background(BgDarkest)) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             TopBar(title = "Pagar con SINPE", onBack = onBack)
 
             if (state.isLoading) {
@@ -87,6 +87,19 @@ fun PaySinpeScreen(
                     accentColor = if (state.proofUrl != null) AccentMint else AccentViolet,
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp),
                 )
+
+                if (state.proofUrl != null) {
+                    Box(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                        EvidenceCard(
+                            title = "Vista previa del comprobante",
+                            subtitle = "Total a pagar",
+                            amount = "₡${state.order?.montoTotal ?: 0L}",
+                            imageUrl = state.proofUrl,
+                            onClick = { fullScreenImageUrl = state.proofUrl }
+                        )
+                    }
+                }
+
                 state.imageError?.let { ExchangeStatusText(exchangeImageErrorText(it), AccentRed) }
 
                 ExchangeStatusText("Adjuntá la captura del comprobante de SINPE Móvil.", TextMuted)
@@ -124,6 +137,11 @@ fun PaySinpeScreen(
                 onCancel = { showPicker = false },
             )
         }
+
+        FullScreenImageViewer(
+            imageUrl = fullScreenImageUrl,
+            onDismiss = { fullScreenImageUrl = null }
+        )
     }
 }
 
