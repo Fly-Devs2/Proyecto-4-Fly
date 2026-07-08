@@ -14,4 +14,5 @@ data class CardEnvelope(
     val status: String = "PENDING",
     val shippingMethod: ShippingMethod = ShippingMethod.DELIVERY,
     val userId: String = "",
+    val sellerId: String = "",
 )
