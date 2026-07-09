@@ -4,6 +4,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
 
@@ -25,7 +26,7 @@ data class PublishCardUiState(
     val isLoadingRarities: Boolean = false,
 
     // ── Imagen ──
-    val imageUrl: String? = null,
+    val pendingImage: PickedImage? = null,
     val isUploadingImage: Boolean = false,
     val imageError: ImageError? = null,
 
@@ -34,7 +35,7 @@ data class PublishCardUiState(
     val feedback: PublishFeedback? = null,
 ) {
 
-    fun toDraftCard(): GameCard = GameCard(
+    fun toDraftCard(imageUrl: String = ""): GameCard = GameCard(
         name = name.trim(),
         game = game,
         expansion = expansion,
@@ -44,9 +45,13 @@ data class PublishCardUiState(
         price = price.toLongOrNull() ?: 0L,
         quantity = quantity,
         description = description.trim(),
-        imageUrl = imageUrl.orEmpty(),
+        imageUrl = imageUrl,
     )
 
     val validationErrors: List<GameCardValidationError>
-        get() = GameCardValidator.validate(toDraftCard())
+        get() = GameCardValidator.validate(
+            toDraftCard(imageUrl = if (pendingImage != null) LOCAL_IMAGE_MARKER else "")
+        )
 }
+
+private const val LOCAL_IMAGE_MARKER = "local"

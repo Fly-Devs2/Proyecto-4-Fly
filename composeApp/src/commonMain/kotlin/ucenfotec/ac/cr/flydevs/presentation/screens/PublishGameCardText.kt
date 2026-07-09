@@ -7,13 +7,13 @@ import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishFeedback
 
 internal fun photoTitle(state: PublishCardUiState): String = when {
     state.isUploadingImage -> "Subiendo imagen..."
-    state.imageUrl != null -> "Foto lista ✓"
+    state.pendingImage != null -> "Foto lista ✓"
     else -> "Tomar foto de la carta"
 }
 
 internal fun photoSubtitle(state: PublishCardUiState): String = when {
     state.isUploadingImage -> "Espera un momento"
-    state.imageUrl != null -> "Toca para volver a tomarla"
+    state.pendingImage != null -> "Toca para volver a tomarla"
     else -> "Centra la carta en el marco"
 }
 

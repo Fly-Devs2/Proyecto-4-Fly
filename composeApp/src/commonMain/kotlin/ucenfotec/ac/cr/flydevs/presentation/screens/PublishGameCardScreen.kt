@@ -100,7 +100,7 @@ private fun PhotoSection(state: PublishCardUiState, onTakePhoto: () -> Unit) {
         onClick = onTakePhoto,
         title = photoTitle(state),
         subtitle = photoSubtitle(state),
-        accentColor = if (state.imageUrl != null) AccentMint else AccentViolet,
+        accentColor = if (state.pendingImage != null) AccentMint else AccentViolet,
         modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp),
     )
     state.imageError?.let { StatusText(imageErrorText(it), AccentRed) }
