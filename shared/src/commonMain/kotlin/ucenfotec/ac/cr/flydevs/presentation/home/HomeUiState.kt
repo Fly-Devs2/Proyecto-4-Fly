@@ -9,6 +9,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val user: User? = null,
     val orders: List<Order> = emptyList(),
+    val unreadNotifications: Int = 0,
     val isSignedOut: Boolean = false,
     val errorMessage: String? = null
 )
