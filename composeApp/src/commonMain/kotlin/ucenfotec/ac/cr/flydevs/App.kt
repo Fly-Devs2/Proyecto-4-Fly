@@ -24,6 +24,7 @@ import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
+import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
@@ -33,6 +34,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.OrderDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
@@ -77,7 +79,18 @@ fun App(
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
                     onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
-                    onNavigateToProfile = { navController.navigate(Profile) }
+                    onNavigateToProfile = { navController.navigate(Profile) },
+                    onNavigateToNotifications = { navController.navigate(Notifications) }
+                )
+            }
+            composable<Notifications> {
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNotificationClick = { notification ->
+                        notification.data["orderId"]?.let { orderId ->
+                            navController.navigate(OrderDetail(orderId))
+                        }
+                    }
                 )
             }
             composable<CardCatalog> {
