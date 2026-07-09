@@ -310,29 +310,23 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
         println("DEBUG_ENVELOPE_REPO: userId=$userId")
         println("DEBUG_ENVELOPE_REPO: sellerId=$sellerId")
 
-        val snapshot = cardEnvelopesCollection.get()
+        val snapshot = cardEnvelopesCollection
+            .where {
+                "userId" equalTo userId
+            }
+            .get()
 
-        println("DEBUG_ENVELOPE_REPO: total envelopes=${snapshot.documents.size}")
+        println("DEBUG_ENVELOPE_REPO: envelopes found for user=${snapshot.documents.size}")
 
-        snapshot.documents.forEach { document ->
-            val documentUserId = getStringValue(document, "userId")
+        return snapshot.documents.firstOrNull { document ->
             val documentSellerId = getStringValue(document, "sellerId")
             val documentStatus = getStringValue(document, "status", "PENDING")
 
             println("DEBUG_ENVELOPE_REPO: envelopeId=${document.id}")
-            println("DEBUG_ENVELOPE_REPO: envelope userId=$documentUserId")
-            println("DEBUG_ENVELOPE_REPO: envelope sellerId=$documentSellerId")
-            println("DEBUG_ENVELOPE_REPO: envelope status=$documentStatus")
-        }
+            println("DEBUG_ENVELOPE_REPO: documentSellerId=$documentSellerId")
+            println("DEBUG_ENVELOPE_REPO: documentStatus=$documentStatus")
 
-        return snapshot.documents.firstOrNull { document ->
-            val documentUserId = getStringValue(document, "userId")
-            val documentSellerId = getStringValue(document, "sellerId")
-            val documentStatus = getStringValue(document, "status", "PENDING")
-
-            documentUserId == userId &&
-                    documentSellerId == sellerId &&
-                    documentStatus == "PENDING"
+            documentSellerId == sellerId && documentStatus == "PENDING"
         }
     }
 
