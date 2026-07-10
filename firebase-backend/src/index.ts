@@ -4,3 +4,6 @@ initializeApp();
 
 // ── Intercambio (sobres) ──
 export { releaseUnpaidExchanges } from "./exchange/releaseUnpaidExchanges";
+
+// ── Notificaciones ──
+export { onOrderStatusChange } from "./notifications/onOrderStatusChange";

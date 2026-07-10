@@ -8,7 +8,7 @@ import { CardStatus, Collections, status } from "../contract";
  *
  * Corre todos los jueves a las 12:00 md (America/Costa_Rica) y libera los sobres que
  * siguen esperando el comprobante SINPE.
- *   - el sobre pasa a EXPIRED
+ *   - la orden pasa a CANCELLED
  *   - todas sus cartas vuelven a AVAILABLE
  */
 export const releaseUnpaidExchanges = onSchedule(
@@ -39,23 +39,26 @@ export const releaseUnpaidExchanges = onSchedule(
       // Doble chequeo por si entró el comprobante entre la query y esta iteración.
       if (data.sinpeReceiptUrl) continue;
 
-      const cardIds: string[] = Array.isArray(data.cards) ? data.cards : [];
-      const batch = db.batch();
-
-      batch.update(doc.ref, { status: status.CANCELLED });
-      for (const cardId of cardIds) {
-        batch.update(
-          db.collection(Collections.gameCards).doc(cardId),
-          { status: CardStatus.AVAILABLE },
-        );
-      }
+      const cardIds: string[] = (Array.isArray(data.cards) ? data.cards : [])
+        .map((c: unknown) =>
+          typeof c === "string" ? c : ((c as { cardId?: string })?.cardId ?? ""),
+        )
+        .filter((id: string) => id !== "");
 
       try {
+        const batch = db.batch();
+        batch.update(doc.ref, { status: status.CANCELLED });
+        for (const cardId of cardIds) {
+          batch.update(
+            db.collection(Collections.gameCards).doc(cardId),
+            { status: CardStatus.AVAILABLE },
+          );
+        }
         await batch.commit();
         releasedExchanges++;
         releasedCards += cardIds.length;
       } catch (error) {
-        logger.error(`Reintegro: falló liberar el sobre ${data.sobreId}`, error);
+        logger.error(`Reintegro: falló liberar la orden ${doc.id}`, error);
       }
     }
 

@@ -39,6 +39,7 @@ fun HomeScreen(
     onNavigateToOrder: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -70,8 +71,10 @@ fun HomeScreen(
             // Header
             HeaderSection(
                 userName = uiState.user?.name ?: "Usuario",
+                unreadNotifications = uiState.unreadNotifications,
                 onSignOutClick = { viewModel.signOut() },
                 onNavigateToProfile = onNavigateToProfile,
+                onNotificationsClick = onNavigateToNotifications,
             )
             
             Spacer(Modifier.height(24.dp))
@@ -133,8 +136,10 @@ fun HomeScreen(
 @Composable
 private fun HeaderSection(
     userName: String,
+    unreadNotifications: Int,
     onSignOutClick: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -165,8 +170,18 @@ private fun HeaderSection(
             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
         }
         
-        IconButton(onClick = { }) {
-            Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary)
+        IconButton(onClick = onNotificationsClick) {
+            BadgedBox(
+                badge = {
+                    if (unreadNotifications > 0) {
+                        Badge(containerColor = AccentRed) {
+                            Text(if (unreadNotifications > 9) "9+" else "$unreadNotifications")
+                        }
+                    }
+                }
+            ) {
+                Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = TextPrimary)
+            }
         }
     }
 }
