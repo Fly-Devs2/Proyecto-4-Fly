@@ -25,6 +25,7 @@ import ucenfotec.ac.cr.flydevs.navigation.Register
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
+import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
@@ -41,6 +42,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.PurchaseHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 
@@ -80,7 +82,8 @@ fun App(
                     onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
                     onNavigateToProfile = { navController.navigate(Profile) },
-                    onNavigateToNotifications = { navController.navigate(Notifications) }
+                    onNavigateToNotifications = { navController.navigate(Notifications) },
+                    onNavigateToOrders = { navController.navigate(PurchaseHistory) }
                 )
             }
             composable<Notifications> {
@@ -133,6 +136,13 @@ fun App(
                             popUpTo(Home) { inclusive = true }
                         }
                     },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
+            composable<PurchaseHistory> {
+                PurchaseHistoryScreen(
+                    onBack = { navController.popBackStack() },
+                    onOrderClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
@@ -239,7 +249,7 @@ private fun handleBottomNavNavigation(
             }
         }
         FlyNavDestination.Orders -> {
-            navController.navigate(MyOrders) {
+            navController.navigate(PurchaseHistory) {
                 launchSingleTop = true
             }
         }
