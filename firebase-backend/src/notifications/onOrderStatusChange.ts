@@ -25,15 +25,26 @@ export const onOrderStatusChange = onDocumentUpdatedWithAuthContext(
     );
 
     await Promise.all(
-      [...recipients].map((uid) =>
-        notifyUser({
+      [...recipients].map(async (uid) => {
+        // Verificar preferencias
+        const db = event.data?.after.ref.firestore;
+        if (db) {
+            const prefDoc = await db.collection(Collections.notificationPreferences).doc(uid).get();
+            const prefs = prefDoc.data();
+            if (prefs && prefs.orderStatusChanged === false) {
+                logger.info(`Pedido ${orderId}: Usuario ${uid} tiene desactivadas las notificaciones de estado.`);
+                return;
+            }
+        }
+
+        return notifyUser({
           userId: uid,
           type: "ORDER_STATUS_CHANGED",
           title: "Actualización de tu envío",
           body: `Tu pedido cambió a: ${label}`,
           data: { orderId, status: after.status },
-        }),
-      ),
+        });
+      }),
     );
   },
 );

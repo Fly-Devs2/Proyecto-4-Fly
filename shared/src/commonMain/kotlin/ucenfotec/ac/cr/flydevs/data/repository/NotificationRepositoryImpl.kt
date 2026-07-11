@@ -6,6 +6,7 @@ import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ucenfotec.ac.cr.flydevs.domain.model.AppNotification
+import ucenfotec.ac.cr.flydevs.domain.model.NotificationPreferences
 import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.getPushToken
 
@@ -13,6 +14,7 @@ class NotificationRepositoryImpl : INotificationRepository {
     private val firestore = Firebase.firestore
     private val notificationsCollection = firestore.collection("notifications")
     private val usersCollection = firestore.collection("users")
+    private val prefsCollection = firestore.collection("notifications_preferences")
 
     override fun getNotificationsForUser(userId: String): Flow<List<AppNotification>> {
         return notificationsCollection
@@ -62,5 +64,22 @@ class NotificationRepositoryImpl : INotificationRepository {
         } catch (e: Exception) {
             println("DEBUG_NOTIFICATIONS: no se pudo remover token FCM: ${e.message}")
         }
+    }
+
+    override suspend fun getPreferences(userId: String): NotificationPreferences {
+        return try {
+            val doc = prefsCollection.document(userId).get()
+            if (doc.exists) {
+                doc.data(NotificationPreferences.serializer())
+            } else {
+                NotificationPreferences()
+            }
+        } catch (e: Exception) {
+            NotificationPreferences()
+        }
+    }
+
+    override suspend fun updatePreferences(userId: String, prefs: NotificationPreferences) {
+        prefsCollection.document(userId).set(NotificationPreferences.serializer(), prefs)
     }
 }
