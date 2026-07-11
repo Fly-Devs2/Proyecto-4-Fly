@@ -10,6 +10,7 @@ import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.myCollection.MyCollectionViewModel
 import ucenfotec.ac.cr.flydevs.presentation.notifications.NotificationsViewModel
+import ucenfotec.ac.cr.flydevs.presentation.notifications.NotificationPreferencesViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.profile.ProfileViewModel
@@ -39,4 +40,5 @@ val presentationModule = module {
     viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
+    viewModel { NotificationPreferencesViewModel(get(), get()) }
 }

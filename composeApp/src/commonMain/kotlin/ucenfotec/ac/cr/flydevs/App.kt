@@ -26,6 +26,7 @@ import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
+import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
@@ -36,6 +37,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationsScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationPreferencesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.OrderDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
@@ -96,6 +98,11 @@ fun App(
                     }
                 )
             }
+            composable<NotificationSettings> {
+                NotificationPreferencesScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable<CardCatalog> {
                 CardMarketplaceScreen(
                     onBack = { navController.popBackStack() },
@@ -136,7 +143,8 @@ fun App(
                             popUpTo(Home) { inclusive = true }
                         }
                     },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavigateToNotificationSettings = { navController.navigate(NotificationSettings) }
                 )
             }
             composable<PurchaseHistory> {

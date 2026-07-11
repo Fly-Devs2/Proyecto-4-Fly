@@ -3,6 +3,7 @@ export const Collections = {
   gameCards: "game_cards",
   users: "users",
   notifications: "notifications",
+  notificationPreferences: "notifications_preferences",
 } as const;
 
 export const status = {

@@ -19,5 +19,9 @@ data class Order(
     val sinpePaid: Boolean = false,
     val sellerName: String = "",
     val buyerName: String = "",
-    val sobreId: String = ""
+    val sobreId: String = "",
+    val qrStatus: String = "",
+    val qrImageUrl: String = "",
+    val qrImagePath: String = "",
+    val currentQrId: String = ""
 )
