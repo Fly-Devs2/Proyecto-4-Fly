@@ -257,7 +257,7 @@ private fun handleBottomNavNavigation(
             }
         }
         FlyNavDestination.Orders -> {
-            navController.navigate(PurchaseHistory) {
+            navController.navigate(MyOrders) {
                 launchSingleTop = true
             }
         }
