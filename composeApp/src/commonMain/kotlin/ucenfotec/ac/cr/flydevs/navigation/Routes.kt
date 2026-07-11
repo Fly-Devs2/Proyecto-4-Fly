@@ -49,6 +49,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable object Notifications
 
+@Serializable object NotificationSettings
+
 @Serializable object MyOrders
 @Serializable data class DeliverToStore(val exchangeId: String)
 @Serializable data class PaySinpe(val exchangeId: String)

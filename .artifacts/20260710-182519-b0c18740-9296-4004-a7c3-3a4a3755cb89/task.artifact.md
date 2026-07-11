@@ -1,0 +1,15 @@
+- [/] Explore project and research requirements
+    - [ ] Research Order structure and notification preferences schema
+    - [ ] Research app architecture and ProfileScreen
+- [ ] Implement Backend: Scheduled SINPE Reminder
+    - [ ] Create `scheduledSinpeReminder.ts`
+    - [ ] Update `onOrderStatusChange.ts` to respect preferences
+    - [ ] Export new function in `index.ts`
+- [ ] Implement App: Notification Preferences
+    - [ ] Create `NotificationPreferencesUiState` and `ViewModel`
+    - [ ] Create `NotificationPreferencesScreen`
+    - [ ] Add navigation to `NotificationPreferencesScreen` from `ProfileScreen`
+    - [ ] Implement Firebase repository for preferences
+- [ ] Verification
+    - [ ] Build backend
+    - [ ] Verify UI with Compose Preview

@@ -2,6 +2,7 @@ package ucenfotec.ac.cr.flydevs.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import ucenfotec.ac.cr.flydevs.domain.model.AppNotification
+import ucenfotec.ac.cr.flydevs.domain.model.NotificationPreferences
 
 interface INotificationRepository {
     /** Emite en tiempo real las notificaciones del usuario, más recientes primero. */
@@ -16,4 +17,8 @@ interface INotificationRepository {
 
     /** Quita el token de este dispositivo del usuario para que deje de recibir sus push. */
     suspend fun unregisterDeviceToken(userId: String)
+
+    suspend fun getPreferences(userId: String): NotificationPreferences
+
+    suspend fun updatePreferences(userId: String, prefs: NotificationPreferences)
 }
