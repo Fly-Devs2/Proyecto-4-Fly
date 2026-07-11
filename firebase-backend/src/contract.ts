@@ -4,6 +4,7 @@ export const Collections = {
   users: "users",
   notifications: "notifications",
   notificationPreferences: "notifications_preferences",
+  mail: "mail",
 } as const;
 
 export const status = {

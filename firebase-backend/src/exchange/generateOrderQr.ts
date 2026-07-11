@@ -184,10 +184,12 @@ export const generateOrderQr = onCall(
 
         const qrBuffer = await QRCode.toBuffer(qrPayload, {
           type: "png",
-          width: 512,
+          width: 256,
           margin: 2,
           errorCorrectionLevel: "M",
         });
+
+        const qrBase64 = `data:image/png;base64,${qrBuffer.toString("base64")}`;
 
         const qrImagePath = `exchange_qrs/${orderId}/${qrId}.png`;
         const file = bucket.file(qrImagePath);
@@ -257,6 +259,7 @@ export const generateOrderQr = onCall(
             qrSignature: signature,
             qrImagePath,
             qrImageUrl,
+            qrBase64,
             qrCreatedAt: now,
             qrExpiresAt: null,
             qrLastError: null,
