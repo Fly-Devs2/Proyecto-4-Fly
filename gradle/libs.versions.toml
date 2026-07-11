@@ -74,6 +74,7 @@ gitlive-firebase-firestore = { module = "dev.gitlive:firebase-firestore", versio
 gitlive-firebase-messaging = { module = "dev.gitlive:firebase-messaging", version.ref = "firebase-gitlive-sdk" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+gitlive-firebase-functions = { module = "dev.gitlive:firebase-functions", version.ref = "firebase-gitlive-sdk" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
