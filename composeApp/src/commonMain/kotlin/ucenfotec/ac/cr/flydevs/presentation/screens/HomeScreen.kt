@@ -40,6 +40,7 @@ fun HomeScreen(
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToOrders: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -97,7 +98,22 @@ fun HomeScreen(
             Spacer(Modifier.height(28.dp))
             
             // Orders
-            SectionTitle("MIS PEDIDOS")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionTitle("MIS PEDIDOS")
+                Text(
+                    "Ver todos",
+                    color = AccentViolet,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { onNavigateToOrders() }
+                        .padding(bottom = 16.dp),
+                )
+            }
             OrdersSection(
                 orders = uiState.orders,
                 onOrderClick = onNavigateToOrder

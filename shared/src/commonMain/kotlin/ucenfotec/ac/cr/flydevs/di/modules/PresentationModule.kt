@@ -21,6 +21,8 @@ import ucenfotec.ac.cr.flydevs.presentation.register.RegisterViewModel
 
 import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
+import ucenfotec.ac.cr.flydevs.presentation.purchaseHistory.PurchaseHistoryViewModel
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 
 val presentationModule = module {
     viewModel { RegisterViewModel(get(), get()) }
@@ -37,5 +39,6 @@ val presentationModule = module {
     viewModel { CardEnvelopesViewModel(get()) }
     viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
+    viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
 }
