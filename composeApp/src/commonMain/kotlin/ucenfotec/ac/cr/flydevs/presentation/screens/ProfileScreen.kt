@@ -272,7 +272,7 @@ fun ProfileScreen(
                     )
                 } else {
                     Text(
-                        "✓  Guardar cambios",
+                        "Guardar cambios",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
