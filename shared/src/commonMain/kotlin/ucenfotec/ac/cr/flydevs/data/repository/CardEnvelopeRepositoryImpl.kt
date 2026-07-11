@@ -5,6 +5,7 @@ import dev.gitlive.firebase.firestore.firestore
 import ucenfotec.ac.cr.flydevs.domain.model.*
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderQrRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
 
 class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
@@ -13,6 +14,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private val ordersCollection = Firebase.firestore.collection("orders")
     private val usersCollection = Firebase.firestore.collection("users")
     private val defaultShippingCost = 600L
+    private val orderQrRepository: IOrderQrRepository = OrderQrRepositoryImpl()
 
     override suspend fun getCardEnvelopebyUser(userId: String): List<CardEnvelope> {
         if (userId.isBlank()) {
@@ -90,7 +92,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             "status" to CardStatus.RESERVED.name
         )
 
-        println("DEBUG_ENVELOPE_REPO: addCardToEnvelope END SUCCESS envelopeId=$envelopeId")
+
 
         return envelopeId
     }
@@ -130,7 +132,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             "status" to CardStatus.AVAILABLE.name
         )
 
-        println("DEBUG_ENVELOPE_REPO: removeCardFromEnvelope END SUCCESS")
+
     }
 
     override suspend fun generateOrderFromEnvelope(
@@ -187,6 +189,9 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
 
         newOrderDoc.set(Order.serializer(), order)
 
+        println("DEBUG_ENVELOPE_REPO: Order created successfully")
+        println("DEBUG_ENVELOPE_REPO: orderId=${order.id}")
+
         // 2. Update the Envelope status
         cardEnvelopesCollection.document(envelopeId).update(
             "subTotal" to totals.first,
@@ -195,7 +200,40 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             "status" to "ORDER_GENERATED"
         )
 
-        println("DEBUG_ENVELOPE_REPO: generateOrderFromEnvelope END SUCCESS")
+        println("DEBUG_ENVELOPE_REPO: Envelope updated to ORDER_GENERATED")
+
+
+        // 3. Generate QR for the created order
+        try {
+            val qrResult = orderQrRepository.generateOrderQr(
+                orderId = order.id,
+                forceRegenerate = false
+            )
+
+            println("DEBUG_ENVELOPE_REPO: QR generated successfully")
+            println("DEBUG_ENVELOPE_REPO: orderId=${qrResult.orderId}")
+            println("DEBUG_ENVELOPE_REPO: qrId=${qrResult.qrId}")
+            println("DEBUG_ENVELOPE_REPO: qrImagePath=${qrResult.qrImagePath}")
+            println("DEBUG_ENVELOPE_REPO: reused=${qrResult.reused}")
+
+        } catch (e: Exception) {
+            println("DEBUG_ENVELOPE_REPO: QR generation failed for orderId=${order.id}")
+            println("DEBUG_ENVELOPE_REPO: error=${e.message}")
+
+            ordersCollection.document(order.id).update(
+                "qrStatus" to "ERROR",
+                "qrLastError" to (e.message ?: "Error desconocido generando QR"),
+                "qrLastErrorAt" to getEpochMillis()
+            )
+
+            throw Exception(
+                "La orden fue creada, pero no se pudo generar el código QR. Intente nuevamente.",
+                e
+            )
+        }
+
+
+
     }
 
     private suspend fun fetchUser(uid: String): User? {

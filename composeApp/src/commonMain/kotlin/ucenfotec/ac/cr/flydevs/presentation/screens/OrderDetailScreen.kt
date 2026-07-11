@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
@@ -55,6 +56,7 @@ fun OrderDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
     var showCamera by remember { mutableStateOf(false) }
+    var showQrDialog by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -129,6 +131,14 @@ fun OrderDetailScreen(
                     )
 
                     Spacer(Modifier.height(24.dp))
+                    if (order.sinpePaid) {
+                        OrderQrAccessSection(
+                            order = order,
+                            onShowQr = { showQrDialog = true }
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+                    }
 
                     // --- Workflow Action Buttons ---
                     
@@ -170,6 +180,12 @@ fun OrderDetailScreen(
                     viewModel.onImagePicked(image)
                 },
                 onCancel = { showCamera = false }
+            )
+        }
+        if (showQrDialog && uiState.order != null) {
+            OrderQrDialog(
+                order = uiState.order!!,
+                onDismiss = { showQrDialog = false }
             )
         }
     }
@@ -528,6 +544,187 @@ private fun DashedAddButton(onClick: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.Add, contentDescription = null, tint = AccentVioletLight)
             Text("Añadir", color = AccentVioletLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun OrderQrAccessSection(
+    order: Order,
+    onShowQr: () -> Unit
+) {
+    Surface(
+        color = BgCard,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        "QR DE RETIRO",
+                        color = AccentGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        if (order.qrImageUrl.isNotBlank())
+                            "Disponible para retirar en tienda."
+                        else
+                            "QR en preparación. Intenta de nuevo en unos segundos.",
+                        color = TextMuted,
+                        fontSize = 12.sp
+                    )
+                }
+
+                if (order.qrImageUrl.isNotBlank()) {
+                    StatusBadge(text = "LISTO", color = AccentMint)
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = onShowQr,
+                enabled = order.qrImageUrl.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentViolet,
+                    disabledContainerColor = BgSurface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Visibility,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                Spacer(Modifier.width(10.dp))
+
+                Text(
+                    text = if (order.qrImageUrl.isNotBlank())
+                        "Ver QR de retiro"
+                    else
+                        "QR no disponible todavía",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderQrDialog(
+    order: Order,
+    onDismiss: () -> Unit
+) {
+    if (!order.sinpePaid) return
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            color = BgCard,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "QR DE RETIRO",
+                        color = AccentMint,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            tint = TextPrimary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                if (order.qrImageUrl.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Color.White)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = order.qrImageUrl,
+                            contentDescription = "QR de retiro",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Text(
+                        "Mostrá este código en la tienda destino para retirar tu pedido.",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Surface(
+                        color = BgDarkest,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(
+                                "Pedido #${order.id.take(7).uppercase()}",
+                                color = TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                "Vendedor: ${order.sellerName}",
+                                color = TextMuted,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "El pago ya está completo, pero el QR todavía no está disponible.",
+                        color = TextMuted,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
