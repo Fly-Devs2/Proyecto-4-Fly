@@ -288,30 +288,17 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(BgCard)
+                    .background(AccentViolet)
                     .clickable { onNavigateToNotificationSettings() }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Default.Email, // Usando Email como fallback razonable si no hay uno de campana obvio importado
-                    contentDescription = null,
-                    tint = AccentViolet,
-                    modifier = Modifier.size(20.dp),
-                )
                 Text(
                     "Configuración de notificaciones",
                     color = TextPrimary,
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Girado sería ideal, pero ArrowBack es común
-                    contentDescription = null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(16.dp), // Note: Need to rotate for a "chevron" look or just use it.
+                    fontWeight = FontWeight.Medium
                 )
             }
 
