@@ -9,6 +9,7 @@ class MainApplication : Application() {
         super.onCreate()
 
         Firebase.initialize(this)
+        FlyMessagingService.ensureChannel(this)
 
         /* Koin se inicializa en MainActivity para asegurar el contexto de Activity */
     }

@@ -1,6 +1,9 @@
 export const Collections = {
   orders: "orders",
   gameCards: "game_cards",
+  users: "users",
+  notifications: "notifications",
+  notificationPreferences: "notifications_preferences",
 } as const;
 
 export const status = {
@@ -21,3 +24,15 @@ export const CardStatus = {
   RESERVED: "RESERVED",
   SOLD: "SOLD",
 } as const;
+
+export const statusLabels: Record<string, string> = {
+  RESERVED: "Reservado",
+  WAITING_SELLER_DELIVERY: "Esperando entrega del vendedor",
+  WAITING_PAYMENT: "Esperando pago",
+  WAITING_STORE_SHIPMENT: "Esperando envío entre tiendas",
+  IN_TRANSIT: "Tránsito entre tiendas",
+  DELIVERED_TO_STORE: "Entregado en destino",
+  PICKED_UP: "Carta recogida",
+  DISPUTED: "Disputa abierta",
+  CANCELLED: "Cancelado",
+};

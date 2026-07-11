@@ -46,6 +46,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinxJson)
         }
         androidMain.dependencies {
+            implementation(libs.gitlive.firebase.messaging)
             implementation(libs.androidx.auth.credentials)
             implementation(libs.androidx.auth.credentials.play)
             implementation(libs.androidx.auth.googleid)

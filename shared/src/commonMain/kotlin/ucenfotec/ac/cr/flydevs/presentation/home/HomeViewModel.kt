@@ -10,11 +10,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 
 class HomeViewModel(
     private val authRepository: IAuthRepository,
-    private val orderRepository: IOrderRepository
+    private val orderRepository: IOrderRepository,
+    private val notificationRepository: INotificationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -23,6 +25,27 @@ class HomeViewModel(
     init {
         loadUserProfile()
         observeOrders()
+        observeNotifications()
+        registerDeviceToken()
+    }
+
+    private fun observeNotifications() {
+        val uid = authRepository.getCurrentUserUid() ?: return
+        notificationRepository.getNotificationsForUser(uid)
+            .onEach { notifications ->
+                _uiState.value = _uiState.value.copy(
+                    unreadNotifications = notifications.count { !it.read }
+                )
+            }
+            .catch {}
+            .launchIn(viewModelScope)
+    }
+
+    private fun registerDeviceToken() {
+        val uid = authRepository.getCurrentUserUid() ?: return
+        viewModelScope.launch {
+            runCatching { notificationRepository.registerDeviceToken(uid) }
+        }
     }
 
     private fun observeOrders() {

@@ -75,6 +75,7 @@ fun ProfileScreen(
     onBack: () -> Unit = {},
     onSignOutSuccess: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -277,6 +278,28 @@ fun ProfileScreen(
                         fontSize = 15.sp,
                     )
                 }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ── Configuración de Notificaciones ───────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AccentViolet)
+                    .clickable { onNavigateToNotificationSettings() }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    "Configuración de notificaciones",
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
 
             Spacer(Modifier.height(16.dp))
