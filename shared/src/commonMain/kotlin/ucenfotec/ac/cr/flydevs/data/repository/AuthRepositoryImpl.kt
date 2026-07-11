@@ -6,9 +6,12 @@ import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import ucenfotec.ac.cr.flydevs.domain.model.User
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
 
-class AuthRepositoryImpl : IAuthRepository {
+class AuthRepositoryImpl(
+    private val notificationRepository: INotificationRepository
+) : IAuthRepository {
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
 
@@ -55,8 +58,8 @@ class AuthRepositoryImpl : IAuthRepository {
         } else {
             user
         }
-        
-        firestore.collection("users").document(user.uid).set(User.serializer(), userToSave)
+
+        firestore.collection("users").document(user.uid).set(User.serializer(), userToSave, merge = true)
     }
 
     override fun getCurrentUserUid(): String? {
@@ -72,6 +75,7 @@ class AuthRepositoryImpl : IAuthRepository {
     }
 
     override suspend fun signOut() {
+        auth.currentUser?.uid?.let { notificationRepository.unregisterDeviceToken(it) }
         auth.signOut()
     }
 }

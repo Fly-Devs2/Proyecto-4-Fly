@@ -11,19 +11,37 @@ import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
 import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
+import ucenfotec.ac.cr.flydevs.navigation.EnvelopeDetail
+import ucenfotec.ac.cr.flydevs.navigation.DeliverStore
+import ucenfotec.ac.cr.flydevs.navigation.DeliverToStore
 import ucenfotec.ac.cr.flydevs.navigation.Home
 import ucenfotec.ac.cr.flydevs.navigation.Login
 import ucenfotec.ac.cr.flydevs.navigation.MyCollection
+import ucenfotec.ac.cr.flydevs.navigation.OrderDetail
+import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
+import ucenfotec.ac.cr.flydevs.navigation.Profile
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
+import ucenfotec.ac.cr.flydevs.navigation.MyOrders
+import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
+import ucenfotec.ac.cr.flydevs.navigation.Notifications
+import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationsScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationPreferencesScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.OrderDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.PaySinpeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.ProfileScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
@@ -61,7 +79,25 @@ fun App(
                 HomeScreen(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavigateToProfile = { navController.navigate(Profile) },
+                    onNavigateToNotifications = { navController.navigate(Notifications) }
+                )
+            }
+            composable<Notifications> {
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNotificationClick = { notification ->
+                        notification.data["orderId"]?.let { orderId ->
+                            navController.navigate(OrderDetail(orderId))
+                        }
+                    }
+                )
+            }
+            composable<NotificationSettings> {
+                NotificationPreferencesScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable<CardCatalog> {
@@ -81,19 +117,104 @@ fun App(
             composable<CardDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<CardDetail>()
                 CardDetailScreen(
+                    userId = loginViewModel.getCurrentUserId(),
                     cardId = route.cardId,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onGoToEnvelope = { envelopeId ->
+                        navController.navigate(EnvelopeDetail(envelopeId))
+                    }
                 )
             }
             composable<PublishCard> {
                 PublishGameCardScreen(
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
+            }
+            composable<Profile> {
+                ProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    onSignOutSuccess = {
+                        navController.navigate(Login) {
+                            popUpTo(Home) { inclusive = true }
+                        }
+                    },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavigateToNotificationSettings = { navController.navigate(NotificationSettings) }
+                )
+            }
+            composable<OrderDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<OrderDetail>()
+                OrderDetailScreen(
+                    orderId = route.orderId,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
+                    onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
+            composable<MyOrders> {
+                MyEnvelopesScreen(
+                    userId = loginViewModel.getCurrentUserId(),
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onEnvelopeClick = { envelopeId ->
+                        navController.navigate(EnvelopeDetail(envelopeId))
+                    },
+                    onAddMoreCards = {
+                        navController.navigate(CardCatalog)
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    }
+                )
+            }
+            composable<EnvelopeDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<EnvelopeDetail>()
+
+                MyEnvelopeScreen(
+                    userId = loginViewModel.getCurrentUserId(),
+                    envelopeId = route.envelopeId,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onAddMoreCards = {
+                        navController.navigate(CardCatalog)
+                    },
+                    onOrderGenerated = {
+                        navController.navigate(MyOrders) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(navController, destination)
+                    }
+                )
+            }
+            composable<DeliverToStore> { backStackEntry ->
+                val route = backStackEntry.toRoute<DeliverToStore>()
+                DeliverToStoreScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable<PaySinpe> { backStackEntry ->
+                val route = backStackEntry.toRoute<PaySinpe>()
+                PaySinpeScreen(
+                    exchangeId = route.exchangeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+
+
+
             }
         }
     }
-}
+
 
 /**
  * Función helper centralizada para manejar la navegación desde el BottomNav
@@ -120,8 +241,15 @@ private fun handleBottomNavNavigation(
                 launchSingleTop = true
             }
         }
-        else -> {
-            // TODO: Implement Orders and Profile routes
+        FlyNavDestination.Profile -> {
+            navController.navigate(Profile) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.Orders -> {
+            navController.navigate(MyOrders) {
+                launchSingleTop = true
+            }
         }
     }
 }

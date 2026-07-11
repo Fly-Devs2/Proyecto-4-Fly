@@ -1,0 +1,115 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+
+    match /sobres/{sobresId} {
+      allow create, update, delete, read: if true;
+    }
+
+    match /envelopes/{envelopeId} {
+
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow write: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /game_cards/{cardId} {
+      allow read: if signedIn();
+      allow write: if signedIn();
+    }
+
+    match /expansions/{doc} { allow read: if signedIn(); allow write: if false; }
+    match /rarities/{doc}   { allow read: if signedIn(); allow write: if false; }
+
+
+    match /exchanges/{exchangeId} {
+
+      function isParticipant() {
+        return signedIn() && (
+          request.auth.uid == resource.data.buyerId ||
+          request.auth.uid == resource.data.sellerId
+        );
+      }
+
+      function coreUnchanged() {
+        return request.resource.data.buyerId == resource.data.buyerId &&
+               request.resource.data.sellerId == resource.data.sellerId &&
+               request.resource.data.cardIds == resource.data.cardIds &&
+               request.resource.data.total == resource.data.total &&
+               request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      function sellerSubmitsEvidence() {
+        return request.auth.uid == resource.data.sellerId &&
+               resource.data.status == 'WAITING_STORE_DELIVERY' &&
+               request.resource.data.status == 'WAITING_SINPE_PROOF' &&
+               request.resource.data.sellerEvidenceUrl != '';
+      }
+
+      function buyerSubmitsProof() {
+        return request.auth.uid == resource.data.buyerId &&
+               resource.data.status == 'WAITING_SINPE_PROOF' &&
+               resource.data.sellerEvidenceUrl != '' &&
+               request.resource.data.status == 'PROOF_RECEIVED' &&
+               request.resource.data.sinpeProofUrl != '';
+      }
+
+      function movesToShipping() {
+        return resource.data.status == 'PROOF_RECEIVED' &&
+               resource.data.sinpeProofUrl != '' &&
+               request.resource.data.status == 'SHIPPING';
+      }
+
+      allow read: if isParticipant();
+
+      allow create: if signedIn() &&
+        request.resource.data.buyerId == request.auth.uid &&
+        request.resource.data.status == 'WAITING_STORE_DELIVERY' &&
+        request.resource.data.sellerEvidenceUrl == '' &&
+        request.resource.data.sinpeProofUrl == '';
+
+      allow update: if signedIn() && coreUnchanged() && (
+        sellerSubmitsEvidence() ||
+        buyerSubmitsProof() ||
+        movesToShipping()
+      );
+
+      allow delete: if false;
+    }
+  }
+}

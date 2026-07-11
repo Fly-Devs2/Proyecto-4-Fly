@@ -64,11 +64,13 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun CardDetailScreen(
+    userId: String,
     cardId: String,
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = koinViewModel(),
     onBack: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onGoToEnvelope: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboardManager.current
@@ -80,6 +82,18 @@ fun CardDetailScreen(
         if (state.idCopied) {
             snackbarHostState.showSnackbar("ID copiado al portapapeles")
             viewModel.clearIdCopied()
+        }
+    }
+    LaunchedEffect(state.actionErrorMessage) {
+        state.actionErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearEnvelopeNavigation()
+        }
+    }
+    LaunchedEffect(state.targetEnvelopeId) {
+        state.targetEnvelopeId?.let { envelopeId ->
+            viewModel.clearEnvelopeNavigation()
+            onGoToEnvelope(envelopeId)
         }
     }
 
@@ -184,31 +198,41 @@ fun CardDetailScreen(
                     SellerSection(card.sellerId)
 
                     Button(
-                        onClick = { viewModel.addToEnvelope() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                        onClick = {
+                            viewModel.addToEnvelope(
+                                userId = userId,
+                                cardId = card.id
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentViolet
+                        ),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = !state.addedToEnvelope,
+                        enabled = !state.addedToEnvelope && !state.isAddingToEnvelope,
                     ) {
-                        Text(
-                            if (state.addedToEnvelope) "✓ Agregado al sobre" else "✉  Agregar al sobre",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        if (state.isAddingToEnvelope) {
+                            CircularProgressIndicator(
+                                color = TextPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        } else {
+                            Text(
+                                if (state.addedToEnvelope) {
+                                    "✓ Agregado al sobre"
+                                } else {
+                                    "✉  Agregar al sobre"
+                                },
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
 
-                    OutlinedButton(
-                        onClick = { viewModel.reserveCard() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp).border(1.dp, if (state.reserved) AccentMint else TextMuted, RoundedCornerShape(12.dp)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (state.reserved) AccentMint else TextSecondary),
-                        shape = RoundedCornerShape(12.dp),
-                        border = null,
-                        enabled = !state.reserved,
-                    ) {
-                        Text(if (state.reserved) "✓ Carta reservada" else "☐  Reservar carta (48 h)")
-                    }
 
-                    Spacer(Modifier.height(8.dp))
                 }
             }
 

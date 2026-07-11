@@ -7,20 +7,30 @@ import ucenfotec.ac.cr.flydevs.data.repository.FirestoreExpansionRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreRarityRepository
 import ucenfotec.ac.cr.flydevs.data.repository.AuthRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardCatalogRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.CardEnvelopeRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.NotificationRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 
 val dataModule = module {
-    single<IAuthRepository> { AuthRepositoryImpl() }
+    single<IAuthRepository> { AuthRepositoryImpl(get()) }
     single { createHttpClient() }
     single<IGameCardRepository> { GameCardRepositoryImpl() }
     single<IImageStorageRepository> { StorageImageRepository(get()) }
     single<IRarityRepository> { FirestoreRarityRepository() }
     single<IExpansionRepository> { FirestoreExpansionRepository() }
-    single<ICardCatalogRepository> { CardCatalogRepositoryImpl() }
+    single<ICardCatalogRepository> { CardCatalogRepositoryImpl(get()) }
+    single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
+
+    single<IOrderRepository> { OrderRepositoryImpl(get()) }
+    single<INotificationRepository> { NotificationRepositoryImpl() }
 }

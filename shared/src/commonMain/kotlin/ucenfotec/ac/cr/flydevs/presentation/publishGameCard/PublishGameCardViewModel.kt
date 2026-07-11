@@ -17,10 +17,6 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
-import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
-
-// TODO(auth): reemplazar por el id del vendedor autenticado cuando exista sesión.
-private const val TEMP_SELLER_ID = "seller-demo"
 
 class PublishGameCardViewModel(
     private val repository: IGameCardRepository,
@@ -79,38 +75,17 @@ class PublishGameCardViewModel(
     fun decreaseQuantity() = updateForm { it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) }
 
     fun onImagePicked(image: PickedImage) {
-        if (_uiState.value.isUploadingImage) return
-
         _uiState.update {
-            it.copy(
-                isUploadingImage = true,
-                imageError = null,
-                imageUrl = null,
-                feedback = null,
-            )
-        }
-
-        viewModelScope.launch {
-            runCatching { imageStorage.uploadCardImage(image) }
-                .onSuccess { url ->
-                    _uiState.update { it.copy(isUploadingImage = false, imageUrl = url) }
-                }
-                .onFailure { error ->
-                    println("[PublishGameCard] Falló la subida de imagen: ${error.message}")
-                    _uiState.update {
-                        it.copy(isUploadingImage = false, imageError = ImageError.UPLOAD_FAILED)
-                    }
-                }
+            it.copy(pendingImage = image, imageError = null, feedback = null)
         }
     }
 
     fun publish() {
         val current = _uiState.value
-        if (current.isLoading || current.isUploadingImage) return
+        if (current.isLoading) return
 
         // Validación de reglas de negocio
-        val draft = current.toDraftCard()
-        val errors = GameCardValidator.validate(draft)
+        val errors = current.validationErrors
         if (errors.isNotEmpty()) {
             _uiState.update {
                 it.copy(
@@ -120,12 +95,30 @@ class PublishGameCardViewModel(
             }
             return
         }
+        val image = checkNotNull(current.pendingImage)
 
-        _uiState.update { it.copy(isLoading = true, feedback = null) }
+        val currentUid = authRepository.getCurrentUserUid()
+        if (currentUid == null) {
+            _uiState.update { it.copy(feedback = PublishFeedback.PUBLISH_FAILED) }
+            return
+        }
 
-        val card = draft.copy(sellerId = authRepository.getCurrentUserUid().toString())
+        _uiState.update {
+            it.copy(isLoading = true, isUploadingImage = true, feedback = null, imageError = null)
+        }
 
         viewModelScope.launch {
+            val imageUrl = runCatching { imageStorage.uploadCardImage(image) }
+                .getOrElse { error ->
+                    println("[PublishGameCard] Falló la subida de imagen: ${error.message}")
+                    _uiState.update {
+                        it.copy(isLoading = false, isUploadingImage = false, imageError = ImageError.UPLOAD_FAILED)
+                    }
+                    return@launch
+                }
+            _uiState.update { it.copy(isUploadingImage = false) }
+
+            val card = current.toDraftCard(imageUrl = imageUrl).copy(sellerId = currentUid)
             runCatching { repository.saveGameCard(card) }
                 .onSuccess {
                     // Reset del formulario
