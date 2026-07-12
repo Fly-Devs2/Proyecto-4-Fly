@@ -7,16 +7,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 
+
 class CardDetailViewModel(
     private val repository: ICardCatalogRepository,
-    private val cardEnvelopeRepository: ICardEnvelopeRepository
+    private val cardEnvelopeRepository: ICardEnvelopeRepository,
+    private val authRepository: IAuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardDetailUiState())
     val uiState: StateFlow<CardDetailUiState> = _uiState.asStateFlow()
+
+
+    private var loadedSellerId: String? = null
 
     fun loadCard(cardId: String) {
         viewModelScope.launch {
@@ -25,12 +31,16 @@ class CardDetailViewModel(
                 .onSuccess { card ->
                     _uiState.value = _uiState.value.copy(isLoading = false, card = card)
                 }
+
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = error.message ?: "No se pudo cargar la carta",
                     )
                 }
+            loadSeller(_uiState.value.card?.sellerId ?: "")
+
+
         }
     }
 
@@ -90,6 +100,45 @@ class CardDetailViewModel(
             )
         }
     }
+
+    private suspend fun loadSeller(sellerId: String) {
+        if (sellerId.isBlank()) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    seller = null,
+
+                )
+            }
+            return
+        }
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                seller = null,
+
+            )
+        }
+
+        try {
+            val seller = authRepository.getUserProfile(sellerId)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    seller = seller,
+
+                )
+            }
+        } catch (exception: Exception) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    seller = null,
+
+                )
+            }
+        }
+    }
+
+
 
 
     fun reserveCard() {

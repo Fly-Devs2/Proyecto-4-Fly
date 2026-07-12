@@ -237,7 +237,7 @@ fun ProfileScreen(
             state.saveSuccess.let {
                 if (it) {
                     Text(
-                        "✓ Cambios guardados",
+                        "Cambios guardados",
                         color = AccentMint,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -272,7 +272,7 @@ fun ProfileScreen(
                     )
                 } else {
                     Text(
-                        "✓  Guardar cambios",
+                        "Guardar cambios",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,

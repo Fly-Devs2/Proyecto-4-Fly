@@ -431,38 +431,26 @@ private fun MyEnvelopeCardRow(
 private fun MyEnvelopeAddMoreCardsButton(
     onClick: () -> Unit
 ) {
-    Box(
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
-            .dashedBorder(
-                color = AccentVioletLight,
-                radius = 14.dp
-            )
-            .clickable {
-                onClick()
-            },
-        contentAlignment = Alignment.Center
+            .height(54.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                tint = AccentVioletLight,
-                modifier = Modifier.size(18.dp)
-            )
 
-            Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = "Agregar más cartas",
-                color = AccentVioletLight,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
+        Text(
+            text = "Agregar más cartas",
+            style = MaterialTheme.typography.labelLarge
+        )
     }
+
 }
 
 @Composable

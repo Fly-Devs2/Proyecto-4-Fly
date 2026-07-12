@@ -34,7 +34,7 @@ val presentationModule = module {
     viewModel { MyCollectionViewModel(get<ICardCatalogRepository>(), get<IAuthRepository>()) }
     viewModel { ExchangeSellerViewModel(get(), get()) }
     viewModel { ExchangeBuyerViewModel(get(), get()) }
-    viewModel { CardDetailViewModel(get(), get()) }
+    viewModel { CardDetailViewModel(get(), get(), get()) }
     viewModel { CardEnvelopeViewModel(get()) }
     viewModel { CardEnvelopesViewModel(get()) }
     viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), orderId) }

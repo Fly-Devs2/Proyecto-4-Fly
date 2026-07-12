@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.cardDetail
 
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.User
 
 data class CardDetailUiState(
     val isLoading: Boolean = false,
@@ -15,6 +16,7 @@ data class CardDetailUiState(
     val actionSuccessMessage: String? = null,
     val shouldOpenEnvelope: Boolean = false,
     val targetEnvelopeId: String? = null,
+    val seller: User? = null
 
 
 

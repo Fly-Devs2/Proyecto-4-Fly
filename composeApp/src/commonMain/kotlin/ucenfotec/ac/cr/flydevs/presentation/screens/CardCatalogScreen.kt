@@ -132,12 +132,15 @@ fun CardMarketplaceScreen(
             title = "Explorar colección",
             onBack = onBack,
             onFilterClick = {
-                println("DEBUG_FILTER: Filter button clicked")
+
                 showFilters = true
                 onFilterClick()
             }
 
+
         )
+
+
 
         Column(
             modifier = Modifier

@@ -18,6 +18,8 @@ class CardCatalogRepositoryImpl(
     private val gameCardsCollection =
         Firebase.firestore.collection("game_cards")
 
+    private val usersCollection = Firebase.firestore.collection("users")
+
     override suspend fun getCardCatalog(): List<GameCard> {
         println(" DEBUG_CATALOG: Fetching game cards from Firestore...")
 
@@ -40,6 +42,15 @@ class CardCatalogRepositoryImpl(
         val snapshot = gameCardsCollection.where { "sellerId" equalTo sellerId }.get()
         return snapshot.documents.map { document ->
             mapDocumentToCard(document)
+        }
+    }
+
+    override suspend fun getSellerNameById(sellerId: String): String? {
+        val snapshot = usersCollection.document(sellerId).get()
+        return if (snapshot.exists) {
+            snapshot.get<String>("name")
+        } else {
+            null
         }
     }
 
