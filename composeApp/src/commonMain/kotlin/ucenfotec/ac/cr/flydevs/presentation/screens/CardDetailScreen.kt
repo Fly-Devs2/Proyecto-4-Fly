@@ -32,7 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.User
 import ucenfotec.ac.cr.flydevs.presentation.cardDetail.CardDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
@@ -104,14 +107,7 @@ fun CardDetailScreen(
             TopBar(
                 title = "Detalle de carta",
                 onBack = onBack,
-                trailingIcon = {
-                    Text(
-                        text = if (state.isFavorite) "♥" else "♡",
-                        color = if (state.isFavorite) AccentRed else TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.clickable { viewModel.toggleFavorite() }
-                    )
-                }
+
             )
 
             if (state.isLoading) {
@@ -194,9 +190,9 @@ fun CardDetailScreen(
 
                     CardTagPills(card)
 
-                    MarketDataSection()
+                    //MarketDataSection()
 
-                    SellerSection(card.sellerId)
+                    SellerSection(seller = state.seller)
 
                     Button(
                         onClick = {
@@ -223,9 +219,9 @@ fun CardDetailScreen(
                         } else {
                             Text(
                                 if (state.addedToEnvelope) {
-                                    "✓ Agregado al sobre"
+                                    "Agregado al sobre"
                                 } else {
-                                    "✉  Agregar al sobre"
+                                    "Agregar al sobre"
                                 },
                                 color = TextPrimary,
                                 fontWeight = FontWeight.Bold,
@@ -253,7 +249,7 @@ private fun CardTagPills(card: GameCard) {
         add(card.condition.label)
         add(card.language.label)
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         tags.forEach { tag ->
             Text(
                 text = tag,
@@ -265,19 +261,19 @@ private fun CardTagPills(card: GameCard) {
     }
 }
 
-@Composable
-private fun MarketDataSection() {
-    Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text("DATOS DE MERCADO · MOXFIELD API", color = AccentGold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        HorizontalDivider(color = BgSurface)
-        MarketRow("Precio promedio mercado", "₡298 000", TextPrimary)
-        MarketRow("Tendencia 30 días", "+4.2%", AccentMint)
-        MarketRow("Última venta registrada", "₡310 000", TextPrimary)
-    }
-}
+//@Composable
+//private fun MarketDataSection() {
+//    Column(
+//        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(16.dp),
+//        verticalArrangement = Arrangement.spacedBy(10.dp),
+//    ) {
+//        Text("DATOS DE MERCADO · MOXFIELD API", color = AccentGold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+//        HorizontalDivider(color = BgSurface)
+//        MarketRow("Precio promedio mercado", "₡298 000", TextPrimary)
+//        MarketRow("Tendencia 30 días", "+4.2%", AccentMint)
+//        MarketRow("Última venta registrada", "₡310 000", TextPrimary)
+//    }
+//}
 
 @Composable
 private fun MarketRow(label: String, value: String, valueColor: Color) {
@@ -288,7 +284,9 @@ private fun MarketRow(label: String, value: String, valueColor: Color) {
 }
 
 @Composable
-private fun SellerSection(sellerId: String) {
+private fun SellerSection(seller: User?) {
+    val sellerId = seller?.name ?: "Vendedor desconocido"
+
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -306,15 +304,17 @@ private fun SellerSection(sellerId: String) {
             )
         }
         Column(modifier = Modifier.weight(1f)) {
+            Text("Vendedor", color = AccentGold, style = MaterialTheme.typography.labelSmall)
+            Spacer(modifier = Modifier.height(8.dp))
             Text(sellerId, color = TextPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-            Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+           //Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
         }
-        Text(
-            "VERIFICADO",
-            color = AccentViolet,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(BgSurface).padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+//        Text(
+//            "VERIFICADO",
+//            color = AccentViolet,
+//            style = MaterialTheme.typography.labelSmall,
+//            fontWeight = FontWeight.Bold,
+//            modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(BgSurface).padding(horizontal = 8.dp, vertical = 4.dp),
+//        )
     }
 }

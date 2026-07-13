@@ -78,22 +78,22 @@ fun HomeScreen(
                 onNotificationsClick = onNavigateToNotifications,
             )
             
-            Spacer(Modifier.height(24.dp))
+            //Spacer(Modifier.height(24.dp))
             
             // Search Bar
-            SearchBar()
+//            SearchBar()
             
-            Spacer(Modifier.height(28.dp))
+          //  Spacer(Modifier.height(28.dp))
             
             // Featured Section
-            SectionTitle("DESTACADAS DE LA SEMANA")
-            FeaturedCards()
+//            SectionTitle("DESTACADAS DE LA SEMANA")
+//            FeaturedCards()
             
-            Spacer(Modifier.height(28.dp))
+           // Spacer(Modifier.height(28.dp))
             
-            // Categories
-            SectionTitle("CATEGORÍAS")
-            CategoryChips()
+//            // Categories
+//            SectionTitle("CATEGORÍAS")
+//            CategoryChips()
             
             Spacer(Modifier.height(28.dp))
             
@@ -103,7 +103,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SectionTitle("MIS PEDIDOS")
+                SectionTitle("MIS ÚLTIMOS PEDIDOS")
                 Text(
                     "Ver todos",
                     color = AccentViolet,
@@ -128,20 +128,21 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+
                 Spacer(Modifier.width(8.dp))
                 Text("Publicar carta en venta", style = Typography.labelLarge)
             }
             
             Spacer(Modifier.height(16.dp))
             
-            OutlinedButton(
+            Button(
                 onClick = { onNavigateToMyCollection() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 border = androidx.compose.foundation.BorderStroke(1.dp, TextMuted.copy(alpha = 0.3f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Ver mi colección (132 cartas)", color = TextPrimary)
+                Text("Ver mi colección", color = TextPrimary)
             }
             
             Spacer(Modifier.height(40.dp))

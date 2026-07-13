@@ -33,6 +33,20 @@ class OrderRepositoryImpl(
         }
     }
 
+    override fun getOrdersForUserHomePage(userId: String): Flow<List<Order>> {
+        println("DEBUG_ORDERS: Fetching orders for user: $userId")
+        return ordersCollection.snapshots.map { snapshot ->
+            println("DEBUG_ORDERS: Received snapshot with ${snapshot.documents.size} documents")
+            snapshot.documents.mapNotNull { doc ->
+                doc.toOrder()
+            }.filter {
+                val match = it.buyerId.trim() == userId.trim() || it.sellerId.trim() == userId.trim()
+                if (match) println("DEBUG_ORDERS: Match found for order ${it.id}")
+                match
+            }.sortedByDescending { it.createdAt }.take(3)
+        }
+    }
+
     override fun getOrder(orderId: String): Flow<Order?> {
         return ordersCollection.document(orderId).snapshots.map { snapshot ->
             if (snapshot.exists) {

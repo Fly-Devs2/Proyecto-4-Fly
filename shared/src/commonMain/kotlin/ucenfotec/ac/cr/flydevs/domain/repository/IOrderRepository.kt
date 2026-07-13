@@ -6,6 +6,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 
 interface IOrderRepository {
     fun getOrdersForUser(userId: String): Flow<List<Order>>
+    fun getOrdersForUserHomePage(userId: String): Flow<List<Order>>
     fun getOrder(orderId: String): Flow<Order?>
     suspend fun updateOrderStatus(orderId: String, status: OrderStatus)
     

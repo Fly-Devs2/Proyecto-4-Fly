@@ -53,7 +53,7 @@ class HomeViewModel(
         println("DEBUG_ORDERS: Current user UID is: $uid")
         if (uid == null) return
         
-        orderRepository.getOrdersForUser(uid)
+        orderRepository.getOrdersForUserHomePage(uid)
             .onEach { orders ->
                 println("DEBUG_ORDERS: UI receiving ${orders.size} orders")
                 _uiState.value = _uiState.value.copy(orders = orders)
