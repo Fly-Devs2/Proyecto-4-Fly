@@ -7,14 +7,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 
 class CardEnvelopesViewModel(
-    private val cardEnvelopeRepository: ICardEnvelopeRepository
+    private val cardEnvelopeRepository: ICardEnvelopeRepository,
+    private val authRepository: IAuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardEnvelopesUIState())
     val uiState: StateFlow<CardEnvelopesUIState> = _uiState.asStateFlow()
+
 
     fun loadPendingEnvelopes(userId: String) {
         viewModelScope.launch {
@@ -39,12 +42,17 @@ class CardEnvelopesViewModel(
                         envelope.createdAt
                     }
 
+                val sellerNames =  getSellerNames(pendingEnvelopes.map { it.sellerId })
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
-                        envelopes = pendingEnvelopes
+                        envelopes = pendingEnvelopes,
+                        sellerNames = sellerNames
+
                     )
                 }
+
+
             } catch (exception: Exception) {
                 _uiState.update { currentState ->
                     currentState.copy(
@@ -79,11 +87,17 @@ class CardEnvelopesViewModel(
                     .sortedByDescending { envelope ->
                         envelope.createdAt
                     }
+                val sellerNames = getSellerNames(
+                    sellerIds = pendingEnvelopes.map { envelope ->
+                        envelope.sellerId
+                    }
+                )
 
                 _uiState.update { currentState ->
                     currentState.copy(
                         deletingEnvelopeId = null,
                         envelopes = pendingEnvelopes,
+                        sellerNames = sellerNames,
                         successMessage = "Sobre eliminado correctamente."
                     )
                 }
@@ -142,6 +156,49 @@ class CardEnvelopesViewModel(
             }
         }
     }
+    private val sellerNameCache = mutableMapOf<String, String>()
+    private suspend fun getSellerNames(
+        sellerIds: List<String>
+    ): Map<String, String> {
+        val sellerNames = mutableMapOf<String, String>()
+
+
+        sellerIds
+            .filter { sellerId -> sellerId.isNotBlank() }
+            .distinct()
+            .forEach { sellerId ->
+
+                val cachedName = sellerNameCache[sellerId]
+
+                if (cachedName != null) {
+                    sellerNames[sellerId] = cachedName
+                } else {
+                    try {
+                        val seller = authRepository.getUserProfile(sellerId)
+
+                        val sellerName = seller
+                            ?.name
+                            ?.takeIf { name -> name.isNotBlank() }
+                            ?: "Vendedor"
+
+                        sellerNameCache[sellerId] = sellerName
+                        sellerNames[sellerId] = sellerName
+
+                    } catch (exception: Exception) {
+                        println(
+                            "ERROR_SELLER_NAME: No se pudo cargar " +
+                                    "el vendedor $sellerId: ${exception.message}"
+                        )
+
+                        sellerNames[sellerId] = "Vendedor"
+                    }
+                }
+            }
+
+        return sellerNames
+    }
+
+
 
     fun clearMessages() {
         _uiState.update { currentState ->
@@ -152,3 +209,7 @@ class CardEnvelopesViewModel(
         }
     }
 }
+
+
+
+
