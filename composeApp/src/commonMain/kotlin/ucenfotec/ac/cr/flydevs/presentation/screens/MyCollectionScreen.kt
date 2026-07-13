@@ -147,13 +147,12 @@ fun MyCollectionScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             items(
-
-               items= state.filteredCards, key = { cardItem -> cardItem.id })
-            { card ->
+                items = state.filteredCards,
+                key = { card -> card.id }
+            ){ card ->
                 CollectionCardItem(
                     card = card,
-                    onClick = { onCardClick(card.id)
-                              println("DEBUG_COLLECTION: Card clicked: ${card.id}") },
+                    onClick = { onCardClick(card.id) },
                     onDelete = { viewModel.requestDelete(card.id) },
                 )
             }

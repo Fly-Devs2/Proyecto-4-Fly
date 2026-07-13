@@ -11,7 +11,6 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 
-
 class CardDetailViewModel(
     private val repository: ICardCatalogRepository,
     private val cardEnvelopeRepository: ICardEnvelopeRepository,
@@ -24,14 +23,19 @@ class CardDetailViewModel(
 
     private var loadedSellerId: String? = null
 
-    fun loadCard(cardId: String) {
+    fun loadCard(cardId: String, userId: String, fromCollection: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { repository.getCardCatalog().first { it.id == cardId } }
+            runCatching {
+                if (fromCollection) {
+                    repository.getCardsBySeller(userId).first { it.id == cardId }
+                } else {
+                    repository.getCardCatalog().first { it.id == cardId }
+                }
+            }
                 .onSuccess { card ->
                     _uiState.value = _uiState.value.copy(isLoading = false, card = card)
                 }
-
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
