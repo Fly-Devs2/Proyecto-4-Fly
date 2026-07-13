@@ -146,7 +146,10 @@ fun MyCollectionScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            items(state.filteredCards, key = { it.id }) { card ->
+            items(
+                items = state.filteredCards,
+                key = { card -> card.id }
+            ){ card ->
                 CollectionCardItem(
                     card = card,
                     onClick = { onCardClick(card.id) },

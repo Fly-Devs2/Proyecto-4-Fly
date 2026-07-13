@@ -18,10 +18,16 @@ class CardDetailViewModel(
     private val _uiState = MutableStateFlow(CardDetailUiState())
     val uiState: StateFlow<CardDetailUiState> = _uiState.asStateFlow()
 
-    fun loadCard(cardId: String) {
+    fun loadCard(cardId: String, userId: String, fromCollection: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { repository.getCardCatalog().first { it.id == cardId } }
+            runCatching {
+                if (fromCollection) {
+                    repository.getCardsBySeller(userId).first { it.id == cardId }
+                } else {
+                    repository.getCardCatalog().first { it.id == cardId }
+                }
+            }
                 .onSuccess { card ->
                     _uiState.value = _uiState.value.copy(isLoading = false, card = card)
                 }

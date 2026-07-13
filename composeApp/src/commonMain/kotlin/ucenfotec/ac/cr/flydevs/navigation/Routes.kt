@@ -37,7 +37,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable object MyCollection
 
-@Serializable data class CardDetail(val cardId: String)
+@Serializable data class CardDetail(val cardId: String, val fromCollection: Boolean = false)
 @Serializable object PublishCard
 
 @Serializable data class OrderDetail(val orderId: String)

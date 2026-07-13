@@ -113,7 +113,7 @@ fun App(
             composable<MyCollection> {
                 MyCollectionScreen(
                     onBack = { navController.popBackStack() },
-                    onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) },
+                    onCardClick = { cardId -> navController.navigate(CardDetail(cardId, fromCollection = true)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
@@ -122,6 +122,7 @@ fun App(
                 CardDetailScreen(
                     userId = loginViewModel.getCurrentUserId(),
                     cardId = route.cardId,
+                    fromCollection = route.fromCollection,
                     onBack = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
                     onGoToEnvelope = { envelopeId ->

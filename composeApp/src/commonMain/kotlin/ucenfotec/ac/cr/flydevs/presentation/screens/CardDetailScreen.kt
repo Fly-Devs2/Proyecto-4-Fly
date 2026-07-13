@@ -66,6 +66,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 fun CardDetailScreen(
     userId: String,
     cardId: String,
+    fromCollection: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -76,7 +77,7 @@ fun CardDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(cardId) { viewModel.loadCard(cardId) }
+    LaunchedEffect(cardId) { viewModel.loadCard(cardId, userId, fromCollection) }
 
     LaunchedEffect(state.idCopied) {
         if (state.idCopied) {
@@ -211,7 +212,7 @@ fun CardDetailScreen(
                             containerColor = AccentViolet
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = !state.addedToEnvelope && !state.isAddingToEnvelope,
+                        enabled = !fromCollection && !state.addedToEnvelope && !state.isAddingToEnvelope,
                     ) {
                         if (state.isAddingToEnvelope) {
                             CircularProgressIndicator(
