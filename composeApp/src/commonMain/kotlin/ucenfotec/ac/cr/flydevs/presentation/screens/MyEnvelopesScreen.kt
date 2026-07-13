@@ -167,17 +167,24 @@ fun MyEnvelopesScreen(
                         items(
                             items = uiState.envelopes,
                             key = { envelope -> envelope.id }
-                        ) { envelope -> EnvelopeListItem(
-                            envelope = envelope,
-                            isDeleting = uiState.deletingEnvelopeId == envelope.id,
-                            onClick = {
-                                onEnvelopeClick(envelope.id)
-                            },
-                            onDeleteClick = {
-                                envelopeToDelete = envelope
-                            }
-                        )
+                        ) { envelope ->
 
+                            val sellerName = uiState
+                                .sellerNames[envelope.sellerId]
+                                ?.takeIf { name -> name.isNotBlank() }
+                                ?: "Vendedor desconocido"
+
+                            EnvelopeListItem(
+                                envelope = envelope,
+                                sellerName = sellerName,
+                                isDeleting = uiState.deletingEnvelopeId == envelope.id,
+                                onClick = {
+                                    onEnvelopeClick(envelope.id)
+                                },
+                                onDeleteClick = {
+                                    envelopeToDelete = envelope
+                                }
+                            )
                         }
 
                         item {
@@ -391,7 +398,8 @@ private fun EnvelopeListItem(
     envelope: CardEnvelope,
     isDeleting: Boolean,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    sellerName: String
 ) {
     val cardCount = if (envelope.cards.isNotEmpty()) {
         envelope.cards.size
@@ -418,7 +426,7 @@ private fun EnvelopeListItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SellerAvatar(
-                    sellerId = envelope.sellerId
+                    sellerName = sellerName
                 )
 
                 Column(
@@ -433,7 +441,7 @@ private fun EnvelopeListItem(
                     )
 
                     Text(
-                        text = envelope.sellerId.ifBlank { "Vendedor desconocido" },
+                        text = sellerName,
                         color = TextPrimary,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold
@@ -541,7 +549,7 @@ private fun EnvelopeListItem(
 
 @Composable
 private fun SellerAvatar(
-    sellerId: String
+    sellerName: String
 ) {
     Box(
         modifier = Modifier
@@ -551,7 +559,7 @@ private fun SellerAvatar(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = sellerId.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
+            text = sellerName.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
             color = AccentVioletLight,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold

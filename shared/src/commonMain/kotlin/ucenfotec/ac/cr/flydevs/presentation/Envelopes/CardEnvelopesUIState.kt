@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.Envelopes
 
 import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
+import ucenfotec.ac.cr.flydevs.domain.model.User
 
 data class CardEnvelopesUIState(
     val isLoading: Boolean = false,
@@ -9,6 +10,7 @@ data class CardEnvelopesUIState(
     val successMessage: String? = null,
     val deletingEnvelopeId: String? = null,
     val isGeneratingOrders: Boolean = false,
+    val sellerNames: Map<String, String> = emptyMap()
 ) {
     val pendingEnvelopeCount: Int
         get() = envelopes.size
