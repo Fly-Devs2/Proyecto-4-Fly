@@ -125,8 +125,8 @@ fun App(
                     fromCollection = route.fromCollection,
                     onBack = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
-                    onGoToEnvelope = { envelopeId ->
-                        navController.navigate(EnvelopeDetail(envelopeId))
+                    onGoToEnvelope = {
+                        navController.navigate(MyOrders)
                     }
                 )
             }
