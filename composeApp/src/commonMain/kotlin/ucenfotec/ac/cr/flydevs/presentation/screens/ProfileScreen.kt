@@ -176,15 +176,15 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = AccentGold,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text("4.9", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text("·", color = TextSecondary, fontSize = 14.sp)
-                Text("32 ventas", color = TextSecondary, fontSize = 14.sp)
+//                Icon(
+//                    imageVector = Icons.Default.Person,
+//                    contentDescription = null,
+//                    tint = AccentGold,
+//                    modifier = Modifier.size(16.dp),
+//                )
+//                Text("4.9", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+//                Text("·", color = TextSecondary, fontSize = 14.sp)
+//                Text("32 ventas", color = TextSecondary, fontSize = 14.sp)
             }
 
             Spacer(Modifier.height(28.dp))

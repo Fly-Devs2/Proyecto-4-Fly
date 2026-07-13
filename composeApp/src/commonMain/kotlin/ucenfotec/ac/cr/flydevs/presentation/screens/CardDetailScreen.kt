@@ -106,14 +106,7 @@ fun CardDetailScreen(
             TopBar(
                 title = "Detalle de carta",
                 onBack = onBack,
-                trailingIcon = {
-                    Text(
-                        text = if (state.isFavorite) "♥" else "♡",
-                        color = if (state.isFavorite) AccentRed else TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.clickable { viewModel.toggleFavorite() }
-                    )
-                }
+
             )
 
             if (state.isLoading) {
@@ -225,9 +218,9 @@ fun CardDetailScreen(
                         } else {
                             Text(
                                 if (state.addedToEnvelope) {
-                                    "✓ Agregado al sobre"
+                                    "Agregado al sobre"
                                 } else {
-                                    "✉  Agregar al sobre"
+                                    "Agregar al sobre"
                                 },
                                 color = TextPrimary,
                                 fontWeight = FontWeight.Bold,
@@ -310,8 +303,10 @@ private fun SellerSection(seller: User?) {
             )
         }
         Column(modifier = Modifier.weight(1f)) {
+            Text("Vendedor", color = AccentGold, style = MaterialTheme.typography.labelSmall)
+            Spacer(modifier = Modifier.height(8.dp))
             Text(sellerId, color = TextPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-           Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+           //Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
         }
 //        Text(
 //            "VERIFICADO",

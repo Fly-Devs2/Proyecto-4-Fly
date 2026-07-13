@@ -78,18 +78,18 @@ fun HomeScreen(
                 onNotificationsClick = onNavigateToNotifications,
             )
             
-            Spacer(Modifier.height(24.dp))
+            //Spacer(Modifier.height(24.dp))
             
             // Search Bar
 //            SearchBar()
             
-            Spacer(Modifier.height(28.dp))
+          //  Spacer(Modifier.height(28.dp))
             
             // Featured Section
 //            SectionTitle("DESTACADAS DE LA SEMANA")
 //            FeaturedCards()
             
-            Spacer(Modifier.height(28.dp))
+           // Spacer(Modifier.height(28.dp))
             
 //            // Categories
 //            SectionTitle("CATEGORÍAS")
@@ -103,7 +103,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SectionTitle("MIS PEDIDOS")
+                SectionTitle("MIS ÚLTIMOS PEDIDOS")
                 Text(
                     "Ver todos",
                     color = AccentViolet,

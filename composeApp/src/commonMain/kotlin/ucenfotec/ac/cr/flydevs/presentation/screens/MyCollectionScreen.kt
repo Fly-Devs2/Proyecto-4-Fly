@@ -146,10 +146,14 @@ fun MyCollectionScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            items(state.filteredCards, key = { it.id }) { card ->
+            items(
+
+               items= state.filteredCards, key = { cardItem -> cardItem.id })
+            { card ->
                 CollectionCardItem(
                     card = card,
-                    onClick = { onCardClick(card.id) },
+                    onClick = { onCardClick(card.id)
+                              println("DEBUG_COLLECTION: Card clicked: ${card.id}") },
                     onDelete = { viewModel.requestDelete(card.id) },
                 )
             }
