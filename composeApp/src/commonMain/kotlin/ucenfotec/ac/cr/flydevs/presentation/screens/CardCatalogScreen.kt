@@ -32,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -158,7 +160,7 @@ fun CardMarketplaceScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 14.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -174,6 +176,8 @@ fun CardMarketplaceScreen(
                     text = if (sortLowPrice) "Precio: menor" else "Precio: mayor",
                     onClick = { sortLowPrice = !sortLowPrice }
                 )
+
+
             }
             when {
                 uiState.isLoading -> {
@@ -514,44 +518,39 @@ private fun SearchBar(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodySmall.copy(
+            color = TextPrimary
+        ),
+        cursorBrush = SolidColor(AccentViolet),
         modifier = modifier
             .fillMaxWidth()
-            .height(46.dp)
+            .height(50.dp)
             .clip(RoundedCornerShape(13.dp))
-            .background(BgCard)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        androidx.compose.material3.TextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = {
-                Text(
-                    text = "Buscar carta, set o número...",
-                    color = TextMuted,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodySmall.copy(
-                color = TextPrimary
-            ),
-            colors = androidx.compose.material3.TextFieldDefaults.colors(
-                focusedContainerColor = BgCard,
-                unfocusedContainerColor = BgCard,
-                disabledContainerColor = BgCard,
-                focusedIndicatorColor = BgCard,
-                unfocusedIndicatorColor = BgCard,
-                cursorColor = AccentViolet
-            ),
-            modifier = Modifier.weight(1f)
-        )
-    }
+            .background(BgCard),
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = "Buscar carta, set o número...",
+                            color = TextMuted,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    innerTextField()
+                }
+            }
+        }
+    )
 }
 
 

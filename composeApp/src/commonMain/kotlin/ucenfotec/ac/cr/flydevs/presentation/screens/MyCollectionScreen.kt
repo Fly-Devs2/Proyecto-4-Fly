@@ -50,6 +50,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgDarkest
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgSurface
+import ucenfotec.ac.cr.flydevs.presentation.theme.TextLight
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
@@ -119,14 +120,14 @@ fun MyCollectionScreen(
             return@Column
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatChip("${state.totalActivas}", "Activas", TextPrimary, Modifier.weight(1f))
-            StatChip("${state.totalVendidas}", "Vendidas", TextPrimary, Modifier.weight(1f))
-            StatChip("${state.totalVistas}", "Vistas", AccentGold, Modifier.weight(1f))
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+//            horizontalArrangement = Arrangement.spacedBy(10.dp),
+//        ) {
+//            StatChip("${state.totalActivas}", "Activas", TextPrimary, Modifier.weight(1f))
+//            StatChip("${state.totalVendidas}", "Vendidas", TextPrimary, Modifier.weight(1f))
+//            StatChip("${state.totalVistas}", "Vistas", AccentGold, Modifier.weight(1f))
+//        }
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
@@ -223,13 +224,13 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             ) {
-                Text(card.name, color = TextPrimary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(card.name, color = TextLight, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 when (card.status) {
                     CardStatus.AVAILABLE -> StatusBadge("ACTIVA", AccentMint)
                     CardStatus.SOLD      -> StatusBadge("VENDIDA", BgSurface)
-                    CardStatus.RESERVED  -> StatusBadge("PAUSADA", BgSurface)
+                    CardStatus.RESERVED  -> StatusBadge("RESERVADA", AccentGold)
                 }
             }
             Text(
@@ -240,14 +241,14 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
             Spacer(Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("₡${card.price}", color = AccentViolet, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                if (card.status != CardStatus.SOLD) {
-                    Text(
-                        "🗑",
-                        modifier = Modifier.clickable(onClick = onDelete),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted,
-                    )
-                }
+//                if (card.status != CardStatus.SOLD) {
+//                    Text(
+//                        "🗑",
+//                        modifier = Modifier.clickable(onClick = onDelete),
+//                        style = MaterialTheme.typography.bodySmall,
+//                        color = TextMuted,
+//                    )
+//                }
             }
         }
     }
@@ -257,7 +258,7 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
 private fun StatusBadge(text: String, color: Color) {
     Text(
         text = text,
-        color = if (color == AccentMint) BgDarkest else TextSecondary,
+        color =  TextPrimary,
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(color).padding(horizontal = 6.dp, vertical = 2.dp),
@@ -268,5 +269,5 @@ private val CollectionFilter.label: String get() = when (this) {
     CollectionFilter.TODAS    -> "Todas"
     CollectionFilter.ACTIVAS  -> "Activas"
     CollectionFilter.VENDIDAS -> "Vendidas"
-    CollectionFilter.PAUSADAS -> "Pausadas"
+    CollectionFilter.PAUSADAS -> "Reservadas"
 }
