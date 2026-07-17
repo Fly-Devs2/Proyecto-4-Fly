@@ -6,4 +6,5 @@ data class CardCatalogUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val cards: List<GameCard> = emptyList(),
+
 )

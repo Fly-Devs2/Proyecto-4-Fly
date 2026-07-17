@@ -1,13 +1,16 @@
 package ucenfotec.ac.cr.flydevs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
 import ucenfotec.ac.cr.flydevs.navigation.CompleteProfile
@@ -51,8 +54,14 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 @Composable
 @Preview
 fun App(
-    loginViewModel: LoginViewModel = koinViewModel()
+    loginViewModel: LoginViewModel = koinViewModel(),
+    sessionViewModel: SessionViewModel = koinViewModel()
 ) {
+
+    val sessionState by sessionViewModel.uiState.collectAsStateWithLifecycle()
+
+    val currentUser = sessionState.user
+    val userRole = sessionState.userRole
     FlyAppTheme {
         val navController = rememberNavController()
         val startDestination = if (loginViewModel.isUserLoggedIn()) Home else Login
@@ -60,25 +69,32 @@ fun App(
         NavHost(navController = navController, startDestination = startDestination) {
             composable<Login> {
                 LoginScreen(
-                    onLoginSuccess = { navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
+                    onLoginSuccess = {
+                        sessionViewModel.loadCurrentUser()
+                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
                     onRegisterClick = { navController.navigate(Register) },
                     onCompleteProfileRequired = { navController.navigate(CompleteProfile) }
                 )
             }
             composable<Register> {
                 RegisterScreen(
-                    onRegisterSuccess = { navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
+                    onRegisterSuccess = {
+                        sessionViewModel.loadCurrentUser()
+                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
                     onCompleteProfileRequired = { navController.navigate(CompleteProfile) },
                     onLoginClick = { navController.popBackStack() }
                 )
             }
             composable<CompleteProfile> {
                 CompleteProfileScreen(
-                    onSuccess = { navController.navigate(Home) { popUpTo(Login) { inclusive = true } } }
+                    onSuccess = {
+                        sessionViewModel.loadCurrentUser()
+                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } }
                 )
             }
             composable<Home> {
                 HomeScreen(
+                    userRole = userRole,
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
                     onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
@@ -105,6 +121,7 @@ fun App(
             }
             composable<CardCatalog> {
                 CardMarketplaceScreen(
+                    userRole = userRole,
                     onBack = { navController.popBackStack() },
                     onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
@@ -112,6 +129,7 @@ fun App(
             }
             composable<MyCollection> {
                 MyCollectionScreen(
+                    userRole = userRole,
                     onBack = { navController.popBackStack() },
                     onCardClick = { cardId -> navController.navigate(CardDetail(cardId, fromCollection = true)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
@@ -120,6 +138,7 @@ fun App(
             composable<CardDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<CardDetail>()
                 CardDetailScreen(
+                    userRole=userRole,
                     userId = loginViewModel.getCurrentUserId(),
                     cardId = route.cardId,
                     fromCollection = route.fromCollection,
@@ -132,12 +151,14 @@ fun App(
             }
             composable<PublishCard> {
                 PublishGameCardScreen(
+                    userRole=userRole,
                     onBack = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
                 )
             }
             composable<Profile> {
                 ProfileScreen(
+                    userRole=userRole,
                     onBack = { navController.popBackStack() },
                     onSignOutSuccess = {
                         navController.navigate(Login) {
@@ -150,6 +171,7 @@ fun App(
             }
             composable<PurchaseHistory> {
                 PurchaseHistoryScreen(
+                    userRole=userRole,
                     onBack = { navController.popBackStack() },
                     onOrderClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
@@ -158,6 +180,7 @@ fun App(
             composable<OrderDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<OrderDetail>()
                 OrderDetailScreen(
+                    userRole=userRole,
                     orderId = route.orderId,
                     onBack = { navController.popBackStack() },
                     onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
@@ -167,6 +190,7 @@ fun App(
             }
             composable<MyOrders> {
                 MyEnvelopesScreen(
+                    userRole=userRole,
                     userId = loginViewModel.getCurrentUserId(),
                     onBack = {
                         navController.popBackStack()
@@ -186,6 +210,7 @@ fun App(
                 val route = backStackEntry.toRoute<EnvelopeDetail>()
 
                 MyEnvelopeScreen(
+                    userRole=userRole,
                     userId = loginViewModel.getCurrentUserId(),
                     envelopeId = route.envelopeId,
                     onBack = {
@@ -262,5 +287,9 @@ private fun handleBottomNavNavigation(
                 launchSingleTop = true
             }
         }
+
+        else -> {
+            // No hacer nada para destinos no manejados
+        }}
     }
-}
+

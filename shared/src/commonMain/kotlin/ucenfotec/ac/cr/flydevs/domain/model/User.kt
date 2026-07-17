@@ -8,6 +8,11 @@ data class User(
     val name: String,
     val email: String,
     val phone: String,
-    val role: String = "Usuario", // Default role as seen in your theme tokens
+    val role: String = UserRole.USER.name, // Default role as seen in your theme tokens
     val createdAt: Long = 0L
-)
+
+){
+    val userRole: UserRole
+        get() = UserRole.fromFirestore(role)
+}
+

@@ -45,6 +45,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
@@ -69,6 +70,7 @@ import java.util.Locale
 
 @Composable
 fun PurchaseHistoryScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: PurchaseHistoryViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -214,6 +216,7 @@ fun PurchaseHistoryScreen(
         }
 
         BottomNav(
+            userRole = userRole,
             currentDestination = FlyNavDestination.Orders,
             onDestinationSelected = onNavSelect,
         )

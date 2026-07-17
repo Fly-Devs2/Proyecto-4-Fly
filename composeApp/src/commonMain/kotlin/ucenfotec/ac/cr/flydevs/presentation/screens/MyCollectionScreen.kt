@@ -38,6 +38,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
@@ -57,6 +58,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun MyCollectionScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: MyCollectionViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -159,7 +161,7 @@ fun MyCollectionScreen(
             }
         }
 
-        BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
+        BottomNav(userRole = userRole, currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
     }
 }
 

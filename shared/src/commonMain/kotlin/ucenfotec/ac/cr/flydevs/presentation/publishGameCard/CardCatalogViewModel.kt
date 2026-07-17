@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
@@ -14,13 +15,16 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 class CardCatalogViewModel(
     private val repository: ICardCatalogRepository,
     private val expansionRepository: IExpansionRepository,
+    private val authRepository: IAuthRepository,
     private val rarityRepository: IRarityRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardCatalogUiState())
     val uiState: StateFlow<CardCatalogUiState> = _uiState.asStateFlow()
 
+
     init {
         loadCards()
+
     }
 
     fun loadCards() {
@@ -60,4 +64,5 @@ class CardCatalogViewModel(
             }
         }
     }
+
 }
