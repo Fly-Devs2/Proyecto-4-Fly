@@ -25,16 +25,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import flyapp.composeapp.generated.resources.Res
-import flyapp.composeapp.generated.resources.fly_logo
+
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.OrdersSection
 
-@Preview
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
@@ -45,6 +46,7 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToOrders: () -> Unit = {},
+    userRole: UserRole,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -59,6 +61,7 @@ fun HomeScreen(
         containerColor = BgDarkest,
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Home,
                 onDestinationSelected = onNavSelect
             )

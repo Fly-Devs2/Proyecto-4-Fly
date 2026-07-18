@@ -51,6 +51,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
@@ -71,6 +72,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun MyEnvelopesScreen(
+    userRole: UserRole,
     userId: String,
     onBack: () -> Unit = {},
     onEnvelopeClick: (String) -> Unit = {},
@@ -103,6 +105,7 @@ fun MyEnvelopesScreen(
         },
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Orders,
                 onDestinationSelected = onNavSelect
             )

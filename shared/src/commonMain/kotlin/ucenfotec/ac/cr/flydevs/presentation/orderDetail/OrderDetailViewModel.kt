@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
@@ -83,7 +84,7 @@ class OrderDetailViewModel(
                     val role = when {
                         order.buyerId == currentUid -> UserRole.BUYER
                         order.sellerId == currentUid -> UserRole.SELLER
-                        else -> UserRole.UNKNOWN
+                        else -> UserRole.USER
                     }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

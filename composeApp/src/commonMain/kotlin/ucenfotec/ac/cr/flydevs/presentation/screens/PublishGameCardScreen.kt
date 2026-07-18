@@ -25,6 +25,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
 import ucenfotec.ac.cr.flydevs.presentation.components.Dropdown
@@ -43,6 +44,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
 @Composable
 fun PublishGameCardScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: PublishGameCardViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -77,6 +79,7 @@ fun PublishGameCardScreen(
             }
 
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Sell,
                 onDestinationSelected = onNavSelect
             )

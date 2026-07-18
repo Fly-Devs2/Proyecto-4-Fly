@@ -67,9 +67,11 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 import androidx.compose.material.icons.automirrored.filled.Logout
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 
 @Composable
 fun ProfileScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -328,6 +330,7 @@ fun ProfileScreen(
         }
 
         BottomNav(
+            userRole = userRole,
             currentDestination = FlyNavDestination.Profile,
             onDestinationSelected = onNavSelect,
         )

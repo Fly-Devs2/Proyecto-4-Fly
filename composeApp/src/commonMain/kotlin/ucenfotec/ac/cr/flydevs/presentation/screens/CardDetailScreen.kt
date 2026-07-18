@@ -49,6 +49,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.User
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.cardDetail.CardDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
@@ -67,6 +68,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun CardDetailScreen(
+    userRole: UserRole,
     userId: String,
     cardId: String,
     fromCollection: Boolean = false,
@@ -233,7 +235,7 @@ fun CardDetailScreen(
                 }
             }
 
-            BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
+            BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect, userRole = userRole)
         }
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))

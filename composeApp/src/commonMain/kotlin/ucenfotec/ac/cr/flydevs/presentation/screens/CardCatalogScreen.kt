@@ -43,6 +43,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
@@ -73,7 +74,7 @@ private val GameFilters = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardMarketplaceScreen(
-
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     onFilterClick: () -> Unit = {},
@@ -231,6 +232,7 @@ fun CardMarketplaceScreen(
         }
 
         BottomNav(
+            userRole = userRole,
             currentDestination = FlyNavDestination.Explore,
             onDestinationSelected = onNavSelect
         )

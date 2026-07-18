@@ -41,11 +41,13 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.presentation.components.*
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
-import ucenfotec.ac.cr.flydevs.presentation.orderDetail.UserRole
+
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 
 @Composable
 fun OrderDetailScreen(
+    userRole: UserRole,
     orderId: String,
     onBack: () -> Unit = {},
     onNavigateToPay: (String) -> Unit = {},
@@ -69,6 +71,7 @@ fun OrderDetailScreen(
             },
             bottomBar = {
                 BottomNav(
+                    userRole = userRole,
                     currentDestination = FlyNavDestination.Orders,
                     onDestinationSelected = onNavSelect
                 )
@@ -91,7 +94,7 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(16.dp))
                     
                     Text(
-                        text = if (uiState.userRole == UserRole.SELLER) 
+                        text = if (uiState.userRole == UserRole.SELLER)
                             "Estás viendo la compra como vendedor. Ambas partes ven este detalle en tiempo real."
                         else 
                             "Estás viendo la compra como comprador. Ambas partes ven este detalle en tiempo real.",

@@ -67,10 +67,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 
 private const val DELIVERY_SHIPPING_COST = 600L
 @Composable
 fun MyEnvelopeScreen(
+    userRole: UserRole,
     userId: String,
     envelopeId: String,
     viewModel: CardEnvelopeViewModel = koinViewModel(),
@@ -115,6 +117,7 @@ fun MyEnvelopeScreen(
         },
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Orders,
                 onDestinationSelected = onNavSelect
             )
