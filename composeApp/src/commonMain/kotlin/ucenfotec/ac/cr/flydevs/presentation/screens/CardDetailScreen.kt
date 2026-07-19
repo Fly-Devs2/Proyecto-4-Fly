@@ -190,7 +190,7 @@ fun CardDetailScreen(
                         )
                     }
 
-                    CardTagPills(card)
+                    CardTagPills(card, state.sourceStoreName)
 
                     //MarketDataSection()
 
@@ -244,23 +244,39 @@ fun CardDetailScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CardTagPills(card: GameCard) {
-    val tags = buildList {
-        card.expansion?.let { add(it) }
-        card.rarity?.let { add(it) }
-        add(card.condition.label)
-        add(card.language.label)
+private fun CardTagPills(card: GameCard, sourceStoreName: String? = null) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TagPill(
+            text = ("Tienda de origen: " + sourceStoreName) ?: "Desconocido",
+            backgroundColor = AccentMint.copy(alpha = 0.2f),
+            textColor = AccentMint
+        )
+        card.expansion?.let { TagPill(it) }
+        card.rarity?.let { TagPill(it) }
+        TagPill(card.condition.label)
+        TagPill(card.language.label)
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        tags.forEach { tag ->
-            Text(
-                text = tag,
-                color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(BgSurface).padding(horizontal = 12.dp, vertical = 5.dp),
-            )
-        }
-    }
+}
+
+@Composable
+private fun TagPill(
+    text: String,
+    backgroundColor: Color = BgSurface,
+    textColor: Color = TextSecondary
+) {
+    Text(
+        text = text,
+        color = textColor,
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    )
 }
 
 //@Composable

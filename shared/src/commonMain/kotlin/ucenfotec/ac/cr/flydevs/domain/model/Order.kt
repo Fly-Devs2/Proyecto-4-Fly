@@ -23,5 +23,7 @@ data class Order(
     val qrStatus: String = "",
     val qrImageUrl: String = "",
     val qrImagePath: String = "",
-    val currentQrId: String = ""
+    val currentQrId: String = "",
+    val destinationStore: String = "",
+    val sourceStore: String = "",
 )

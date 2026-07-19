@@ -56,4 +56,5 @@ private fun GameCardValidationError.fieldLabel(): String = when (this) {
     GameCardValidationError.RARITY_REQUIRED -> "rareza"
     GameCardValidationError.PRICE_NOT_POSITIVE -> "precio"
     GameCardValidationError.IMAGE_REQUIRED -> "foto"
+    GameCardValidationError.SOURCE_STORE_REQUIRED -> "tienda de origen"
 }

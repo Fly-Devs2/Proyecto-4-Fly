@@ -11,5 +11,6 @@ object GameCardValidator {
         if (card.rarity.isNullOrBlank()) add(GameCardValidationError.RARITY_REQUIRED)
         if (card.price <= 0L) add(GameCardValidationError.PRICE_NOT_POSITIVE)
         if (card.imageUrl.isBlank()) add(GameCardValidationError.IMAGE_REQUIRED)
+        if (card.sourceStore.isBlank()) add(GameCardValidationError.SOURCE_STORE_REQUIRED)
     }
 }

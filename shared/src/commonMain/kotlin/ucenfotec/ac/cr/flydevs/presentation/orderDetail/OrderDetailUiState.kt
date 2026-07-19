@@ -10,5 +10,7 @@ data class OrderDetailUiState(
     val isLoading: Boolean = true,
     val order: Order? = null,
     val userRole: UserRole = UserRole.USER,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val sourceStoreName: String? = null,
+    val destinationStoreName: String? = null
 )

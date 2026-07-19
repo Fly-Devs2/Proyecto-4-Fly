@@ -68,7 +68,8 @@ class CardCatalogRepositoryImpl(
             sellerId = document.get<String>("sellerId") ?: "",
             status = document.get<CardStatus>("status") ?: CardStatus.AVAILABLE,
             game = document.get<CardGame>("game") ?: CardGame.ONE_PIECE,
-            rarity = document.get<String>("rarity") ?: ""
+            rarity = document.get<String>("rarity") ?: "",
+            sourceStore = try { document.get<String>("sourceStore") ?: "" } catch (e: Exception) { "" }
         )
     }
 }

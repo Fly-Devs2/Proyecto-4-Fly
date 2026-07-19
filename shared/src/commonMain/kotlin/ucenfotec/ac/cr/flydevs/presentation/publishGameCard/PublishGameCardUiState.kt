@@ -5,6 +5,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
+import ucenfotec.ac.cr.flydevs.domain.model.Store
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
 
@@ -24,6 +25,9 @@ data class PublishCardUiState(
     val isLoadingExpansions: Boolean = false,
     val rarityOptions: List<String> = emptyList(),
     val isLoadingRarities: Boolean = false,
+
+    val stores: List<Store> = emptyList(),
+    val selectedStore: Store? = null,
 
     // ── Imagen ──
     val pendingImage: PickedImage? = null,
@@ -46,6 +50,7 @@ data class PublishCardUiState(
         quantity = quantity,
         description = description.trim(),
         imageUrl = imageUrl,
+        sourceStore = selectedStore?.id ?: "",
     )
 
     val validationErrors: List<GameCardValidationError>

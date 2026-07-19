@@ -33,6 +33,7 @@ fun <T> SearchableDropdown(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
+    enabled: Boolean = true,
 ) {
     var query by remember { mutableStateOf(value = selected?.let(label) ?: "") }
     var expanded by remember { mutableStateOf(value = false) }
@@ -45,9 +46,9 @@ fun <T> SearchableDropdown(
     }
 
     // Expand when the text field is clicked/pressed
-    LaunchedEffect(interactionSource) {
+    LaunchedEffect(interactionSource, enabled) {
         interactionSource.interactions.collectLatest { interaction ->
-            if (interaction is PressInteraction.Release) {
+            if (interaction is PressInteraction.Release && enabled) {
                 expanded = true
             }
         }
@@ -69,7 +70,7 @@ fun <T> SearchableDropdown(
                 .fillMaxWidth()
                 .height(44.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(BgCard)
+                .background(if (enabled) BgCard else BgCard.copy(alpha = 0.5f))
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -77,11 +78,14 @@ fun <T> SearchableDropdown(
             BasicTextField(
                 value = query,
                 onValueChange = {
-                    query = it
-                    expanded = true
+                    if (enabled) {
+                        query = it
+                        expanded = true
+                    }
                 },
+                enabled = enabled,
                 modifier = Modifier.weight(1f),
-                textStyle = TextStyle(fontSize = 13.sp, color = TextPrimary),
+                textStyle = TextStyle(fontSize = 13.sp, color = if (enabled) TextPrimary else TextMuted),
                 cursorBrush = SolidColor(AccentViolet),
                 singleLine = true,
                 interactionSource = interactionSource,
@@ -101,8 +105,8 @@ fun <T> SearchableDropdown(
                 type = FlyIconType.ChevronDown,
                 modifier = Modifier
                     .size(16.dp)
-                    .clickable { expanded = !expanded },
-                color = TextMuted
+                    .clickable(enabled = enabled) { expanded = !expanded },
+                color = if (enabled) TextMuted else TextMuted.copy(alpha = 0.5f)
             )
         }
 

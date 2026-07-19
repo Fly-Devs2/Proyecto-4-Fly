@@ -17,4 +17,5 @@ data class GameCard(
     val description: String = "",
     val imageUrl: String = "",
     val status: CardStatus = CardStatus.AVAILABLE,
+    val sourceStore: String = "",
 )

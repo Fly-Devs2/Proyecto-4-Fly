@@ -120,6 +120,15 @@ private fun CardFormFields(state: PublishCardUiState, viewModel: PublishGameCard
         FormField("Nombre de la carta", required = true) {
             TextField(state.name, "Ej: Black Lotus", onValueChange = viewModel::onNameChange)
         }
+        FormField("Tienda de origen", required = true) {
+            SearchableDropdown(
+                selected = state.selectedStore,
+                options = state.stores,
+                label = { it.name },
+                onSelect = viewModel::onStoreChange,
+                placeholder = "Seleccionar tienda"
+            )
+        }
         FormField("Tipo de juego", required = true) {
             SearchableDropdown(
                 selected = state.game,

@@ -30,15 +30,15 @@ val presentationModule = module {
     viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { NotificationsViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { PublishGameCardViewModel(get(), get(), get(), get(), get()) }
+    viewModel { PublishGameCardViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CardCatalogViewModel(get(), get(), get(), get()) }
     viewModel { MyCollectionViewModel(get<ICardCatalogRepository>(), get<IAuthRepository>()) }
     viewModel { ExchangeSellerViewModel(get(), get()) }
     viewModel { ExchangeBuyerViewModel(get(), get()) }
-    viewModel { CardDetailViewModel(get(), get(), get()) }
-    viewModel { CardEnvelopeViewModel(get()) }
-    viewModel { CardEnvelopesViewModel(get(), get()) }
-    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), orderId) }
+    viewModel { CardDetailViewModel(get(), get(), get(), get()) }
+    viewModel { CardEnvelopeViewModel(get(), get()) }
+    viewModel { CardEnvelopesViewModel(get(), get(), get()) }
+    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }

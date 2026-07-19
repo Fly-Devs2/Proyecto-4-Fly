@@ -16,6 +16,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
 
 class PublishGameCardViewModel(
@@ -23,11 +24,23 @@ class PublishGameCardViewModel(
     private val imageStorage: IImageStorageRepository,
     private val rarityRepository: IRarityRepository,
     private val expansionRepository: IExpansionRepository,
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val storeRepository: IStoreRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublishCardUiState())
     val uiState: StateFlow<PublishCardUiState> = _uiState.asStateFlow()
+
+    init {
+        loadStores()
+    }
+
+    private fun loadStores() {
+        viewModelScope.launch {
+            val stores = runCatching { storeRepository.getStores() }.getOrElse { emptyList() }
+            _uiState.update { it.copy(stores = stores) }
+        }
+    }
 
     private fun updateForm(transform: (PublishCardUiState) -> PublishCardUiState) =
         _uiState.update { transform(it).copy(feedback = null) }
@@ -71,6 +84,7 @@ class PublishGameCardViewModel(
     fun onLanguageChange(value: CardLanguage) = updateForm { it.copy(language = value) }
     fun onPriceChange(value: String) = updateForm { it.copy(price = value.filter(Char::isDigit)) }
     fun onDescriptionChange(value: String) = updateForm { it.copy(description = value) }
+    fun onStoreChange(value: ucenfotec.ac.cr.flydevs.domain.model.Store) = updateForm { it.copy(selectedStore = value) }
     fun increaseQuantity() = updateForm { it.copy(quantity = it.quantity + 1) }
     fun decreaseQuantity() = updateForm { it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) }
 
