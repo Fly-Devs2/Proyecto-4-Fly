@@ -7,12 +7,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.model.Store
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 class CardEnvelopesViewModel(
     private val cardEnvelopeRepository: ICardEnvelopeRepository,
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val storeRepository: IStoreRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardEnvelopesUIState())
@@ -33,6 +36,7 @@ class CardEnvelopesViewModel(
                     throw Exception("No se encontró el usuario autenticado.")
                 }
 
+                val stores = storeRepository.getStores()
                 val pendingEnvelopes = cardEnvelopeRepository
                     .getCardEnvelopebyUser(userId)
                     .filter { envelope ->
@@ -43,12 +47,15 @@ class CardEnvelopesViewModel(
                     }
 
                 val sellerNames =  getSellerNames(pendingEnvelopes.map { it.sellerId })
+                val sourceStoreNames = getStoreNames(pendingEnvelopes.map { it.sourceStore }, stores)
+                
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
                         envelopes = pendingEnvelopes,
-                        sellerNames = sellerNames
-
+                        sellerNames = sellerNames,
+                        stores = stores,
+                        sourceStoreNames = sourceStoreNames
                     )
                 }
 
@@ -113,6 +120,11 @@ class CardEnvelopesViewModel(
     }
 
     fun generateOrdersForAllEnvelopes(userId: String) {
+        if (_uiState.value.selectedGlobalStore == null) {
+            _uiState.update { it.copy(errorMessage = "Debes seleccionar una tienda de destino global.") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isGeneratingOrders = true, errorMessage = null, successMessage = null) }
 
@@ -198,7 +210,26 @@ class CardEnvelopesViewModel(
         return sellerNames
     }
 
+    private fun getStoreNames(storeIds: List<String>, stores: List<Store>): Map<String, String> {
+        val map = mutableMapOf<String, String>()
+        storeIds.distinct().forEach { id ->
+            stores.find { it.id == id }?.let { store ->
+                map[id] = store.name
+            }
+        }
+        return map
+    }
 
+    fun onGlobalStoreChange(userId: String, store: Store) {
+        _uiState.update { it.copy(selectedGlobalStore = store) }
+        viewModelScope.launch {
+            try {
+                cardEnvelopeRepository.updateAllEnvelopesDestinationStore(userId, store.id)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "No se pudo actualizar la tienda global.") }
+            }
+        }
+    }
 
     fun clearMessages() {
         _uiState.update { currentState ->

@@ -55,6 +55,8 @@ import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.FormField
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentMint
@@ -85,6 +87,7 @@ fun MyEnvelopesScreen(
     var envelopeToDelete by remember {
         mutableStateOf<CardEnvelope?>(null)
     }
+    var showBulkWarning by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         viewModel.loadPendingEnvelopes(userId)
@@ -157,12 +160,24 @@ fun MyEnvelopesScreen(
                             )
                             
                             Spacer(modifier = Modifier.height(16.dp))
+
+                            FormField("Tienda de destino para todos los sobres") {
+                                SearchableDropdown(
+                                    selected = uiState.selectedGlobalStore,
+                                    options = uiState.stores,
+                                    label = { it.name },
+                                    onSelect = { viewModel.onGlobalStoreChange(userId, it) },
+                                    placeholder = "Seleccionar para todos"
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
                             
                             ReserveAllButton(
                                 isLoading = uiState.isGeneratingOrders,
                                 enabled = uiState.envelopes.isNotEmpty(),
                                 onClick = {
-                                    viewModel.generateOrdersForAllEnvelopes(userId)
+                                    showBulkWarning = true
                                 }
                             )
                         }
@@ -176,10 +191,13 @@ fun MyEnvelopesScreen(
                                 .sellerNames[envelope.sellerId]
                                 ?.takeIf { name -> name.isNotBlank() }
                                 ?: "Vendedor desconocido"
+                            
+                            val sourceStoreName = uiState.sourceStoreNames[envelope.sourceStore] ?: "Tienda desconocida"
 
                             EnvelopeListItem(
                                 envelope = envelope,
                                 sellerName = sellerName,
+                                sourceStoreName = sourceStoreName,
                                 isDeleting = uiState.deletingEnvelopeId == envelope.id,
                                 onClick = {
                                     onEnvelopeClick(envelope.id)
@@ -198,6 +216,53 @@ fun MyEnvelopesScreen(
             }
         }
     }
+
+    if (showBulkWarning) {
+        AlertDialog(
+            onDismissRequest = { showBulkWarning = false },
+            title = {
+                Text(
+                    "Confirmar generación masiva",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Se generarán órdenes para todos los sobres pendientes.",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (uiState.selectedGlobalStore != null) {
+                        Text(
+                            "IMPORTANTE: Todos los sobres serán entregados en la tienda: ${uiState.selectedGlobalStore?.name}",
+                            color = AccentGold,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBulkWarning = false
+                        viewModel.generateOrdersForAllEnvelopes(userId)
+                    }
+                ) {
+                    Text("Confirmar", color = AccentViolet, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkWarning = false }) {
+                    Text("Cancelar", color = TextSecondary)
+                }
+            },
+            containerColor = BgCard
+        )
+    }
+
     envelopeToDelete?.let { envelope ->
         AlertDialog(
             onDismissRequest = {
@@ -402,7 +467,8 @@ private fun EnvelopeListItem(
     isDeleting: Boolean,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    sellerName: String
+    sellerName: String,
+    sourceStoreName: String
 ) {
     val cardCount = if (envelope.cards.isNotEmpty()) {
         envelope.cards.size
@@ -447,6 +513,13 @@ private fun EnvelopeListItem(
                         text = sellerName,
                         color = TextPrimary,
                         style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "Tienda de origen: $sourceStoreName",
+                        color = AccentGold,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }

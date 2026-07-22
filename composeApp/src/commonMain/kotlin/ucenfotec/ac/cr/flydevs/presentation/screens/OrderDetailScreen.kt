@@ -116,12 +116,12 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Data Section
-                    OrderDataSection(order, uiState.userRole)
+                    OrderDataSection(order, uiState.userRole, uiState.sourceStoreName, uiState.destinationStoreName)
 
                     Spacer(Modifier.height(28.dp))
 
                     // Tracking Stepper
-                    TrackingStepper(order.status)
+                    TrackingStepper(order.status, uiState.destinationStoreName)
 
                     Spacer(Modifier.height(32.dp))
 
@@ -235,11 +235,13 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
 }
 
 @Composable
-private fun OrderDataSection(order: Order, role: UserRole) {
+private fun OrderDataSection(order: Order, role: UserRole, sourceStore: String?, destinationStore: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle("DATOS DE LA COMPRA")
         DataItem("Vendedor", order.sellerName)
         DataItem("Comprador", if (role == UserRole.BUYER) "Tú (@${order.buyerName})" else order.buyerName)
+        DataItem("Tienda de origen", sourceStore ?: "Cargando...")
+        DataItem("Tienda de destino", destinationStore ?: "Cargando...")
         DataItem("Sobre", "Sobre #${order.sobreId.take(7).uppercase()}")
         DataItem("Monto Total", "₡${order.montoTotal}", valueColor = AccentGold)
         DataItem("SINPE pagado", if (order.sinpePaid) "✓ SÍ" else "PENDIENTE", if (order.sinpePaid) AccentMint else AccentRed)
@@ -260,7 +262,7 @@ private fun DataItem(label: String, value: String, valueColor: Color = TextPrima
 }
 
 @Composable
-private fun TrackingStepper(currentStatus: OrderStatus) {
+private fun TrackingStepper(currentStatus: OrderStatus, destinationStoreName: String?) {
     Column {
         SectionTitle("SEGUIMIENTO")
         val steps = listOf(
@@ -273,18 +275,33 @@ private fun TrackingStepper(currentStatus: OrderStatus) {
         )
         
         steps.forEachIndexed { index, step ->
+            val dynamicMessage = if (step == OrderStatus.WAITING_STORE_SHIPMENT && currentStatus == step) {
+                "Esperando envío a '${destinationStoreName ?: "..."}'"
+            } else if (step == OrderStatus.IN_TRANSIT && currentStatus == step) {
+                "En camino a '${destinationStoreName ?: "..."}'"
+            } else if (step == OrderStatus.DELIVERED_TO_STORE && currentStatus == step) {
+                "Listo para retirar en '${destinationStoreName ?: "..."}'"
+            } else null
+
             TrackingStepItem(
                 status = step,
                 isCompleted = steps.indexOf(currentStatus) >= index,
                 isCurrent = currentStatus == step,
-                isLast = index == steps.size - 1
+                isLast = index == steps.size - 1,
+                dynamicMessage = dynamicMessage
             )
         }
     }
 }
 
 @Composable
-private fun TrackingStepItem(status: OrderStatus, isCompleted: Boolean, isCurrent: Boolean, isLast: Boolean) {
+private fun TrackingStepItem(
+    status: OrderStatus,
+    isCompleted: Boolean,
+    isCurrent: Boolean,
+    isLast: Boolean,
+    dynamicMessage: String? = null
+) {
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
@@ -310,6 +327,15 @@ private fun TrackingStepItem(status: OrderStatus, isCompleted: Boolean, isCurren
                 fontSize = 14.sp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
             )
+            if (dynamicMessage != null) {
+                Text(
+                    text = dynamicMessage,
+                    color = AccentMint,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }

@@ -35,6 +35,7 @@ import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
 import ucenfotec.ac.cr.flydevs.presentation.components.PriceField
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.components.QuantityStepper
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.TextField
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishCardUiState
@@ -52,6 +53,7 @@ fun PublishGameCardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCamera by remember { mutableStateOf(false) }
+
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -118,43 +120,52 @@ private fun CardFormFields(state: PublishCardUiState, viewModel: PublishGameCard
         FormField("Nombre de la carta", required = true) {
             TextField(state.name, "Ej: Black Lotus", onValueChange = viewModel::onNameChange)
         }
+        FormField("Tienda de origen", required = true) {
+            SearchableDropdown(
+                selected = state.selectedStore,
+                options = state.stores,
+                label = { it.name },
+                onSelect = viewModel::onStoreChange,
+                placeholder = "Seleccionar tienda"
+            )
+        }
         FormField("Tipo de juego", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.game,
                 options = CardGame.entries,
                 label = { it.label },
-                placeholder = "Seleccionar juego",
                 onSelect = viewModel::onGameChange,
+                placeholder = "Seleccionar juego"
             )
         }
         FormField("Expansión / Set", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.expansion,
                 options = state.expansionOptions,
                 label = { it },
-                placeholder = expansionPlaceholder(state),
                 onSelect = viewModel::onExpansionChange,
+                placeholder = expansionPlaceholder(state),
             )
         }
         FormField("Rareza", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.rarity,
                 options = state.rarityOptions,
                 label = { it },
-                placeholder = rarityPlaceholder(state),
                 onSelect = viewModel::onRarityChange,
+                placeholder = rarityPlaceholder(state),
             )
         }
-        FormField("Condición") {
-            Dropdown(
+        FormField("Condición", required = true) {
+            SearchableDropdown(
                 selected = state.condition,
                 options = CardCondition.entries,
                 label = { it.label },
-                onSelect = viewModel::onConditionChange,
+                onSelect = viewModel::onConditionChange
             )
         }
-        FormField("Idioma") {
-            Dropdown(
+        FormField("Idioma", required = true) {
+            SearchableDropdown(
                 selected = state.language,
                 options = CardLanguage.entries,
                 label = { it.label },

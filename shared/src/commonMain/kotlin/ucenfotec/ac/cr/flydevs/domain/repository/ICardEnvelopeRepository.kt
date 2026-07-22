@@ -20,6 +20,6 @@ interface ICardEnvelopeRepository {
     suspend fun getCardEnvelopeById(envelopeId: String): CardEnvelope?
     suspend fun deleteEnvelope(envelopeId: String)
 
-
-
+    suspend fun updateEnvelopeDestinationStore(envelopeId: String, destinationStore: String)
+    suspend fun updateAllEnvelopesDestinationStore(userId: String, destinationStore: String)
 }

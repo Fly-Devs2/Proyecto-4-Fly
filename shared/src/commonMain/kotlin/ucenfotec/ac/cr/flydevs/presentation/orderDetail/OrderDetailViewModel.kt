@@ -15,11 +15,13 @@ import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 class OrderDetailViewModel(
     private val orderRepository: IOrderRepository,
     private val authRepository: IAuthRepository,
     private val imageStorage: IImageStorageRepository,
+    private val storeRepository: IStoreRepository,
     private val orderId: String
 ) : ViewModel() {
 
@@ -91,6 +93,7 @@ class OrderDetailViewModel(
                         order = order,
                         userRole = role
                     )
+                    loadStoreNames(order)
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -105,5 +108,22 @@ class OrderDetailViewModel(
                 )
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun loadStoreNames(order: ucenfotec.ac.cr.flydevs.domain.model.Order) {
+        viewModelScope.launch {
+            try {
+                val stores = storeRepository.getStores()
+                val sourceStore = stores.find { it.id == order.sourceStore }
+                val destStore = stores.find { it.id == order.destinationStore }
+                
+                _uiState.value = _uiState.value.copy(
+                    sourceStoreName = sourceStore?.name ?: "Tienda desconocida",
+                    destinationStoreName = destStore?.name ?: "Tienda desconocida"
+                )
+            } catch (e: Exception) {
+                println("ERROR_ORDER_DETAIL: Error loading store names: ${e.message}")
+            }
+        }
     }
 }

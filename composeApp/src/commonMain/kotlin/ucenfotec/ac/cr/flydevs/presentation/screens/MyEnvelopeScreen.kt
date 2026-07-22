@@ -60,7 +60,10 @@ import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.ShippingMethod
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.FormField
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
+import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentVioletLight
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
 import androidx.compose.material3.HorizontalDivider
@@ -133,6 +136,7 @@ fun MyEnvelopeScreen(
         ) {
             MyEnvelopeTopBar(
                 cardCount = uiState.cardCount,
+                sourceStoreName = uiState.sourceStoreName,
                 onBack = onBack
             )
 
@@ -174,8 +178,24 @@ fun MyEnvelopeScreen(
                         selectedShippingMethod = selectedShippingMethod,
                         onSelect = { method ->
                             selectedShippingMethod = method
+                            uiState.envelope?.let { envelope ->
+                                viewModel.onShippingMethodChange(envelope.id, method)
+                            }
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FormField("Tienda", required = true) {
+                        SearchableDropdown(
+                            selected = uiState.selectedStore,
+                            options = uiState.stores,
+                            label = { it.name },
+                            onSelect = { viewModel.onStoreChange(envelopeId, it) },
+                            placeholder = "Seleccionar tienda de destino",
+                            enabled = selectedShippingMethod != ShippingMethod.PICKUP
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -211,6 +231,7 @@ fun MyEnvelopeScreen(
 @Composable
 private fun MyEnvelopeTopBar(
     cardCount: Int,
+    sourceStoreName: String?,
     onBack: () -> Unit
 ) {
     Row(
@@ -230,12 +251,21 @@ private fun MyEnvelopeTopBar(
             )
         }
 
-        Text(
-            text = "Mi sobre",
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Mi sobre",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleLarge
+            )
+            if (sourceStoreName != null) {
+                Text(
+                    text = "Desde: $sourceStoreName",
+                    color = AccentGold,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
         Card(
             shape = RoundedCornerShape(50),
@@ -539,7 +569,7 @@ private fun MyEnvelopeDeliveryOptionCard(
 
     Card(
         modifier = modifier
-            .height(82.dp)
+            .height(96.dp)
             .clickable {
                 onClick()
             },
@@ -555,7 +585,7 @@ private fun MyEnvelopeDeliveryOptionCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

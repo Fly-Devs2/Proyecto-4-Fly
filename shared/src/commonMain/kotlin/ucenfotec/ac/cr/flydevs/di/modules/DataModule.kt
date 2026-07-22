@@ -11,6 +11,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.CardEnvelopeRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.NotificationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.StoreRepositoryImpl
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
@@ -20,6 +21,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 val dataModule = module {
     single<IAuthRepository> { AuthRepositoryImpl(get()) }
@@ -30,6 +32,7 @@ val dataModule = module {
     single<IExpansionRepository> { FirestoreExpansionRepository() }
     single<ICardCatalogRepository> { CardCatalogRepositoryImpl(get()) }
     single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
+    single<IStoreRepository> { StoreRepositoryImpl() }
 
     single<IOrderRepository> { OrderRepositoryImpl(get()) }
     single<INotificationRepository> { NotificationRepositoryImpl() }

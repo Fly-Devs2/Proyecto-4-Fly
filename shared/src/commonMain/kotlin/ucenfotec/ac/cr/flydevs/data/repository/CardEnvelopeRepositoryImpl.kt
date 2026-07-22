@@ -183,6 +183,8 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             montoTotal = totals.second,
             sobreId = envelope.id,
             shippingMethod = envelope.shippingMethod.name,
+            sourceStore = envelope.cards.firstOrNull()?.sourceStore ?: "",
+            destinationStore = envelope.destinationStore,
             sellerEvidenceUrls = emptyList(),
             buyerEvidenceUrls = emptyList()
         )
@@ -332,7 +334,9 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
                 status = getStringValue(document, "status", "PENDING"),
                 shippingMethod = getShippingMethod(document),
                 userId = getStringValue(document, "userId", ""),
-                sellerId = getStringValue(document, "sellerId", "")
+                sellerId = getStringValue(document, "sellerId", ""),
+                destinationStore = getStringValue(document, "destinationStore", ""),
+                sourceStore = getStringValue(document, "sourceStore", "")
             )
         } catch (e: Exception) {
             println("ERROR_ENVELOPE: Error mapping envelope ${document.id}: ${e.message}")
@@ -474,13 +478,27 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
             "total" to total,
             "shippingMethod" to ShippingMethod.DELIVERY.name,
             "status" to "PENDING",
-            "createdAt" to System.currentTimeMillis()
+            "createdAt" to System.currentTimeMillis(),
+            "sourceStore" to (getCardById(cardId)?.sourceStore ?: "")
         )
 
         newEnvelopeDocument.set(envelopeData)
 
         println("DEBUG_ENVELOPE_REPO: createEnvelopeWithCard END SUCCESS")
         return newEnvelopeDocument.id
+    }
+
+    override suspend fun updateEnvelopeDestinationStore(envelopeId: String, destinationStore: String) {
+        cardEnvelopesCollection.document(envelopeId).update("destinationStore" to destinationStore)
+    }
+
+    override suspend fun updateAllEnvelopesDestinationStore(userId: String, destinationStore: String) {
+        val snapshot = cardEnvelopesCollection.where { "userId" equalTo userId }.get()
+        snapshot.documents.forEach { doc ->
+            if (getStringValue(doc, "status") == "PENDING") {
+                cardEnvelopesCollection.document(doc.id).update("destinationStore" to destinationStore)
+            }
+        }
     }
 
     private suspend fun addCardToExistingEnvelope(

@@ -10,11 +10,13 @@ import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 class CardDetailViewModel(
     private val repository: ICardCatalogRepository,
     private val cardEnvelopeRepository: ICardEnvelopeRepository,
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val storeRepository: IStoreRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardDetailUiState())
@@ -42,9 +44,23 @@ class CardDetailViewModel(
                         errorMessage = error.message ?: "No se pudo cargar la carta",
                     )
                 }
-            loadSeller(_uiState.value.card?.sellerId ?: "")
+            
+            val card = _uiState.value.card
+            if (card != null) {
+                loadSeller(card.sellerId)
+                loadStoreName(card.sourceStore)
+            }
+        }
+    }
 
-
+    private suspend fun loadStoreName(storeId: String) {
+        if (storeId.isBlank()) return
+        try {
+            val stores = storeRepository.getStores()
+            val store = stores.find { it.id == storeId }
+            _uiState.update { it.copy(sourceStoreName = store?.name) }
+        } catch (e: Exception) {
+            println("ERROR_CARD_DETAIL: Error loading store name: ${e.message}")
         }
     }
 
