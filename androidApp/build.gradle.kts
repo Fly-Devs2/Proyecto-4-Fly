@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.koin.android)
     debugImplementation(libs.compose.uiTooling)
     implementation("com.google.firebase:firebase-functions")
+    implementation(libs.google.code.scanner)
 
 }
 
