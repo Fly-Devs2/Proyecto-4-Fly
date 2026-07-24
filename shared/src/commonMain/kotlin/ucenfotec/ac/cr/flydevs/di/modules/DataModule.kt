@@ -36,7 +36,8 @@ val dataModule = module {
     single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
     single<IStoreRepository> { StoreRepositoryImpl() }
 
+    single<IBatchRepository> { BatchRepositoryImpl() }
+
     single<IOrderRepository> { OrderRepositoryImpl(get()) }
     single<INotificationRepository> { NotificationRepositoryImpl() }
-    single<IBatchRepository> { BatchRepositoryImpl() }
 }

@@ -58,3 +58,7 @@ import kotlinx.serialization.Serializable
 @Serializable object PurchaseHistory
 
 @Serializable object MessengerHome
+
+@Serializable object MyBatches
+
+@Serializable data class ShipmentDetail(val batchId: String)

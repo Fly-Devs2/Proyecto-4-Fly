@@ -2,6 +2,7 @@ package ucenfotec.ac.cr.flydevs.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidence
+import ucenfotec.ac.cr.flydevs.domain.model.BatchGroup
 import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 
 interface IBatchRepository {
@@ -26,6 +27,11 @@ interface IBatchRepository {
     suspend fun getBatchById(
         batchId: String
     ): DeliveryBatch?
+
+    /**
+     * Agrupaciones de lotes por tienda destino, para la vista de auditoría.
+     */
+    fun observeBatchGroups(): Flow<List<BatchGroup>>
 
     /**
      * Se ejecuta después de validar el QR.

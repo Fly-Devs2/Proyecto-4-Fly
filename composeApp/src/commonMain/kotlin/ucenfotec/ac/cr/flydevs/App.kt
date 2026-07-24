@@ -27,9 +27,11 @@ import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
 import ucenfotec.ac.cr.flydevs.navigation.Profile
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
+import ucenfotec.ac.cr.flydevs.navigation.MyBatches
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MessengerHome
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
+import ucenfotec.ac.cr.flydevs.navigation.ShipmentDetail
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
@@ -43,6 +45,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.HomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.LoginScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.MyBatchesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.MyCollectionScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.NotificationPreferencesScreen
@@ -54,6 +57,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PurchaseHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 
 @Composable
@@ -279,6 +283,23 @@ fun App(
                     onBack = { navController.popBackStack() },
                 )
             }
+            composable<MyBatches> {
+                MyBatchesScreen(
+                    userRole = userRole,
+                    onBack = { navController.popBackStack() },
+                    onBatchClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
+            composable<ShipmentDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<ShipmentDetail>()
+                ShipmentDetailScreen(
+                    userRole = userRole,
+                    batchId = route.batchId,
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                )
+            }
 
 
 
@@ -320,6 +341,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.Orders -> {
             navController.navigate(MyOrders) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.Deliveries -> {
+            navController.navigate(MyBatches) {
                 launchSingleTop = true
             }
         }

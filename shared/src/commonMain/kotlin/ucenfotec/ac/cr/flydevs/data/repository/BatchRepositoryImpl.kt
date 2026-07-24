@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidence
 import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidenceType
+import ucenfotec.ac.cr.flydevs.domain.model.BatchGroup
 import ucenfotec.ac.cr.flydevs.domain.model.BatchQrStatus
 import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
@@ -19,6 +20,9 @@ class BatchRepositoryImpl : IBatchRepository {
 
     private val batchesCollection =
         firestore.collection("batches")
+
+    private val batchGroupsCollection =
+        firestore.collection("batch_group")
 
     override suspend fun createBatch(
         batch: DeliveryBatch
@@ -326,6 +330,16 @@ class BatchRepositoryImpl : IBatchRepository {
         }
     }
 
+    override fun observeBatchGroups(): Flow<List<BatchGroup>> {
+        return batchGroupsCollection
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents.mapNotNull { document ->
+                    mapDocumentToBatchGroup(document)
+                }
+            }
+    }
+
     private fun mapDocumentToBatch(
         document: DocumentSnapshot
     ): DeliveryBatch {
@@ -333,6 +347,35 @@ class BatchRepositoryImpl : IBatchRepository {
             .data<DeliveryBatch>()
             .copy(id = document.id)
     }
+
+    private fun mapDocumentToBatchGroup(
+        document: DocumentSnapshot
+    ): BatchGroup? {
+        runCatching { document.data<BatchGroup>() }
+            .getOrNull()
+            ?.let { return it.copy(documentId = document.id) }
+
+        // Los grupos creados a mano traen `batchList` como string suelto.
+        return runCatching {
+            BatchGroup(
+                documentId = document.id,
+                id = document.safeGet<String>("id").orEmpty(),
+                batchList = document.batchList(),
+                storeDestination = document.safeGet<String>("storeDestination").orEmpty()
+            )
+        }.onFailure {
+            println("DEBUG_BATCHES: No se pudo mapear el grupo ${document.id}: ${it.message}")
+        }.getOrNull()
+    }
+
+    private fun DocumentSnapshot.batchList(): List<String> {
+        safeGet<List<String>>("batchList")?.let { return it }
+        safeGet<String>("batchList")?.let { return listOf(it) }
+        return emptyList()
+    }
+
+    private inline fun <reified T> DocumentSnapshot.safeGet(field: String): T? =
+        runCatching { get<T>(field) }.getOrNull()
 
     private fun validateCourier(
         batch: DeliveryBatch,

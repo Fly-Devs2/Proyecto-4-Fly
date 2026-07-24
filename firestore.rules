@@ -25,6 +25,14 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    match /notifications_preferences/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+
     match /sobres/{sobresId} {
       allow create, update, delete, read: if true;
     }
@@ -54,8 +62,16 @@ service cloud.firestore {
     }
 
     match /expansions/{doc} { allow read: if signedIn(); allow write: if false; }
+    match /stores/{storeId} { allow read: if signedIn(); allow write: if false; }
     match /rarities/{doc}   { allow read: if signedIn(); allow write: if false; }
 
+    match /batches/{batchId} {
+      allow read, write: if signedIn();
+    }
+
+    match /batch_group/{groupId} {
+      allow read, write: if signedIn();
+    }
 
     match /exchanges/{exchangeId} {
 
