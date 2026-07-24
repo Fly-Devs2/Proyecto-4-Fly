@@ -6,9 +6,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
@@ -16,7 +13,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 class ShipmentDetailViewModel(
     private val batchRepository: IBatchRepository,
     private val orderRepository: IOrderRepository,
-    private val batchDocumentId: String,
+    private val batchId: String,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShipmentDetailUiState())
@@ -43,30 +40,32 @@ class ShipmentDetailViewModel(
         loadOrdersPage(page)
     }
 
+    // Una entrega ya realizada no cambia, así que basta con una lectura puntual.
     private fun loadBatch() {
-        batchRepository.getBatch(batchDocumentId)
-            .onEach { batch ->
-                if (batch == null) {
+        viewModelScope.launch {
+            runCatching { batchRepository.getBatchById(batchId) }
+                .onSuccess { batch ->
+                    if (batch == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Lote no encontrado",
+                        )
+                        return@onSuccess
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Lote no encontrado",
+                        batch = batch,
+                        errorMessage = null,
                     )
-                    return@onEach
+                    loadOrdersPage(_uiState.value.ordersPage)
                 }
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    batch = batch,
-                    errorMessage = null,
-                )
-                loadOrdersPage(_uiState.value.ordersPage)
-            }
-            .catch { error ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error de permisos o conexión: ${error.message}",
-                )
-            }
-            .launchIn(viewModelScope)
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Error de permisos o conexión: ${error.message}",
+                    )
+                }
+        }
     }
 
     private fun loadOrdersPage(page: Int) {
@@ -76,6 +75,7 @@ class ShipmentDetailViewModel(
             return
         }
 
+        // Cancelamos la página anterior para que una respuesta tardía no pise a la actual.
         ordersJob?.cancel()
         ordersJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingOrders = true)

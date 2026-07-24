@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import ucenfotec.ac.cr.flydevs.domain.model.Batch
 import ucenfotec.ac.cr.flydevs.domain.model.BatchGroup
+import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 
@@ -49,7 +49,7 @@ class MyBatchesViewModel(
 
     private fun loadBatches() {
         val courierId = authRepository.getCurrentUserUid()
-        if (courierId == null) {
+        if (courierId.isNullOrBlank()) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = "Iniciá sesión para ver tus lotes.",
@@ -57,20 +57,22 @@ class MyBatchesViewModel(
             return
         }
 
-        val groupsFlow = batchRepository.getBatchGroups()
+        // Los grupos son secundarios: si fallan, igual mostramos los lotes agrupados por tienda.
+        val groupsFlow = batchRepository.observeBatchGroups()
             .catch { error ->
                 println("DEBUG_BATCHES: batch_group no disponible (${error.message})")
                 emit(emptyList())
             }
 
         combine(
-            batchRepository.getBatchesForCourier(courierId),
+            batchRepository.observeCourierBatches(courierId),
             groupsFlow,
         ) { batches, groups -> buildGroupItems(batches, groups) }
             .onEach { items ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     groups = items,
+                    // Una recarga puede dejar menos grupos que la página actual.
                     page = _uiState.value.page.coerceAtMost(lastPageIndex(items.size)),
                     errorMessage = null,
                 )
@@ -84,27 +86,31 @@ class MyBatchesViewModel(
             .launchIn(viewModelScope)
     }
 
-    private fun buildGroupItems(batches: List<Batch>, groups: List<BatchGroup>): List<BatchGroupItem> {
+    private fun buildGroupItems(
+        batches: List<DeliveryBatch>,
+        groups: List<BatchGroup>,
+    ): List<BatchGroupItem> {
         val grouped = groups.map { group ->
-            val members = batches.filter { it.documentId in group.batchList || it.batchId in group.batchList }
+            val members = batches.filter { it.id in group.batchList || it.batchId in group.batchList }
             BatchGroupItem(
                 key = group.documentId,
                 storeDestinationName = groupStoreName(group, members),
-                batches = members.sortedByDescending { it.deliveredAt },
+                batches = members.sortedByDescending { it.deliveredAt ?: it.createdAt },
             )
         }
 
         // Un lote sin grupo desaparecería de la vista, así que lo agrupamos por su tienda destino.
-        val claimed = grouped.flatMap { it.batches }.map { it.documentId }.toSet()
-        val orphans = batches.filterNot { it.documentId in claimed }
+        val claimed = grouped.flatMap { it.batches }.map { it.id }.toSet()
+        val orphans = batches.filterNot { it.id in claimed }
             .groupBy { it.destinationStoreId }
             .map { (storeId, storeBatches) ->
                 BatchGroupItem(
                     key = "store:$storeId",
-                    storeDestinationName = storeBatches.firstOrNull { it.destinationStoreName.isNotBlank() }
+                    storeDestinationName = storeBatches
+                        .firstOrNull { it.destinationStoreName.isNotBlank() }
                         ?.destinationStoreName
                         ?: storeId.ifBlank { "Sin tienda destino" },
-                    batches = storeBatches.sortedByDescending { it.deliveredAt },
+                    batches = storeBatches.sortedByDescending { it.deliveredAt ?: it.createdAt },
                 )
             }
 
@@ -114,7 +120,7 @@ class MyBatchesViewModel(
     }
 
     /** `storeDestination` del grupo puede traer un id o un nombre suelto; el lote es más fiable. */
-    private fun groupStoreName(group: BatchGroup, members: List<Batch>): String =
+    private fun groupStoreName(group: BatchGroup, members: List<DeliveryBatch>): String =
         members.firstOrNull { it.destinationStoreName.isNotBlank() }?.destinationStoreName
             ?: group.storeDestination.ifBlank { "Sin tienda destino" }
 

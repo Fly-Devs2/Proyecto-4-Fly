@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
-import ucenfotec.ac.cr.flydevs.domain.model.Batch
+import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.myBatches.BatchGroupItem
@@ -196,7 +196,7 @@ private fun BatchGroupCard(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     group.batches.forEach { batch ->
-                        BatchRow(batch = batch, onClick = { onBatchClick(batch.documentId) })
+                        BatchRow(batch = batch, onClick = { onBatchClick(batch.id) })
                     }
                 }
             }
@@ -205,7 +205,7 @@ private fun BatchGroupCard(
 }
 
 @Composable
-private fun BatchRow(batch: Batch, onClick: () -> Unit) {
+private fun BatchRow(batch: DeliveryBatch, onClick: () -> Unit) {
     Surface(
         color = BgSurface,
         shape = RoundedCornerShape(14.dp),
@@ -214,14 +214,14 @@ private fun BatchRow(batch: Batch, onClick: () -> Unit) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Lote #${batchCode(batch.displayId)}",
+                    "Lote #${batchCode(batch.batchId.ifBlank { batch.id })}",
                     color = TextPrimary,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    "${batch.orderCount} sobres · ${formatDateTime(batch.deliveredAt)}",
+                    "${batch.orderIds.size} sobres · ${formatDateTime(batch.deliveredAt ?: 0L)}",
                     color = TextMuted,
                     fontSize = 12.sp,
                 )
@@ -243,7 +243,7 @@ internal fun BatchStatusBadge(status: BatchStatus) {
             Box(Modifier.size(6.dp).clip(CircleShape).background(color))
             Spacer(Modifier.size(6.dp))
             Text(
-                status.label.uppercase(),
+                batchStatusLabel(status).uppercase(),
                 color = color,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
@@ -252,9 +252,18 @@ internal fun BatchStatusBadge(status: BatchStatus) {
     }
 }
 
+internal fun batchStatusLabel(status: BatchStatus): String = when (status) {
+    BatchStatus.READY_FOR_PICKUP -> "Disponible"
+    BatchStatus.ACCEPTED -> "Aceptado"
+    BatchStatus.PICKED_UP -> "Recogido"
+    BatchStatus.IN_TRANSIT -> "En camino"
+    BatchStatus.DELIVERED -> "Entregado"
+    BatchStatus.CANCELLED -> "Cancelado"
+}
+
 internal fun batchStatusColor(status: BatchStatus): Color = when (status) {
     BatchStatus.DELIVERED -> AccentMint
-    BatchStatus.PICKED_UP -> AccentGold
+    BatchStatus.PICKED_UP, BatchStatus.IN_TRANSIT -> AccentGold
     BatchStatus.CANCELLED -> AccentRed
     BatchStatus.READY_FOR_PICKUP, BatchStatus.ACCEPTED -> AccentVioletLight
 }

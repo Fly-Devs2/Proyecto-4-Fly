@@ -40,5 +40,4 @@ val dataModule = module {
 
     single<IOrderRepository> { OrderRepositoryImpl(get()) }
     single<INotificationRepository> { NotificationRepositoryImpl() }
-    single<IBatchRepository> { BatchRepositoryImpl() }
 }

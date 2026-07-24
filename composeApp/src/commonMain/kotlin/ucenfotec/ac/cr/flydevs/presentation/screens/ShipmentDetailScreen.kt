@@ -45,7 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ucenfotec.ac.cr.flydevs.domain.model.Batch
+import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidence
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
@@ -197,7 +197,7 @@ private fun ReadOnlyNotice() {
 }
 
 @Composable
-private fun BatchIdentityHeader(batch: Batch) {
+private fun BatchIdentityHeader(batch: DeliveryBatch) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -205,14 +205,14 @@ private fun BatchIdentityHeader(batch: Batch) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                "Lote #${batchCode(batch.displayId)}",
+                "Lote #${batchCode(batch.batchId.ifBlank { batch.id })}",
                 color = TextPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "${batch.orderCount} sobres sellados",
+                "${batch.orderIds.size} sobres sellados",
                 color = TextSecondary,
                 fontSize = 13.sp,
             )
@@ -223,7 +223,7 @@ private fun BatchIdentityHeader(batch: Batch) {
 }
 
 @Composable
-private fun ShipmentDataSection(batch: Batch) {
+private fun ShipmentDataSection(batch: DeliveryBatch) {
     Surface(color = BgCard, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ShipmentSectionTitle("DATOS DEL ENVÍO")
@@ -238,10 +238,10 @@ private fun ShipmentDataSection(batch: Batch) {
 
             HorizontalDivider(color = BgSurface)
 
-            ShipmentDataItem("Recogido", formatDateTime(batch.pickupAt))
+            ShipmentDataItem("Recogido", formatDateTime(batch.pickupAt ?: 0L))
             ShipmentDataItem(
                 label = "Entregado",
-                value = formatDateTime(batch.deliveredAt),
+                value = formatDateTime(batch.deliveredAt ?: 0L),
                 valueColor = batchStatusColor(batch.status),
             )
         }
