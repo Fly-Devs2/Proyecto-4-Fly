@@ -12,8 +12,10 @@ import ucenfotec.ac.cr.flydevs.presentation.myCollection.MyCollectionViewModel
 import ucenfotec.ac.cr.flydevs.presentation.notifications.NotificationsViewModel
 import ucenfotec.ac.cr.flydevs.presentation.notifications.NotificationPreferencesViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.presentation.myBatches.MyBatchesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.profile.ProfileViewModel
+import ucenfotec.ac.cr.flydevs.presentation.shipmentDetail.ShipmentDetailViewModel
 
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewModel
@@ -41,6 +43,8 @@ val presentationModule = module {
     viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
+    viewModel { MyBatchesViewModel(get(), get()) }
+    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), batchDocumentId) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
     viewModel { SessionViewModel(get()) }
 }

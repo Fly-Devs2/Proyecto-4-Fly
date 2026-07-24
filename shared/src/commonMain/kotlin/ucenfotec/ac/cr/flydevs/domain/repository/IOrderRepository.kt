@@ -8,6 +8,9 @@ interface IOrderRepository {
     fun getOrdersForUser(userId: String): Flow<List<Order>>
     fun getOrdersForUserHomePage(userId: String): Flow<List<Order>>
     fun getOrder(orderId: String): Flow<Order?>
+
+    /** Resuelve los sobres de un lote a partir de `orderIds`; omite los que ya no existen. */
+    suspend fun getOrdersByIds(orderIds: List<String>): List<Order>
     suspend fun updateOrderStatus(orderId: String, status: OrderStatus)
     
     /**

@@ -56,3 +56,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class PaySinpe(val exchangeId: String)
 
 @Serializable object PurchaseHistory
+
+@Serializable object MyBatches
+
+@Serializable data class ShipmentDetail(val batchId: String)

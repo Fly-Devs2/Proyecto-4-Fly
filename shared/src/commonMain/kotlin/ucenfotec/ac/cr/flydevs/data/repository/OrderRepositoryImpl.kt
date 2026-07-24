@@ -3,6 +3,9 @@ package ucenfotec.ac.cr.flydevs.data.repository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ucenfotec.ac.cr.flydevs.domain.model.Order
@@ -53,6 +56,13 @@ class OrderRepositoryImpl(
                 snapshot.toOrder()
             } else null
         }
+    }
+
+    override suspend fun getOrdersByIds(orderIds: List<String>): List<Order> = coroutineScope {
+        orderIds
+            .map { orderId -> async { runCatching { fetchOrderOnce(orderId) }.getOrNull() } }
+            .awaitAll()
+            .filterNotNull()
     }
 
     private suspend fun fetchOrderOnce(orderId: String): Order? {

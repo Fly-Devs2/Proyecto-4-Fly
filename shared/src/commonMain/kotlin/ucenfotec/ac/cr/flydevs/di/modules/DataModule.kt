@@ -6,6 +6,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.StorageImageRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreExpansionRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreRarityRepository
 import ucenfotec.ac.cr.flydevs.data.repository.AuthRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.BatchRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardCatalogRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardEnvelopeRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
@@ -13,6 +14,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.NotificationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.StoreRepositoryImpl
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
@@ -33,6 +35,8 @@ val dataModule = module {
     single<ICardCatalogRepository> { CardCatalogRepositoryImpl(get()) }
     single<ICardEnvelopeRepository> { CardEnvelopeRepositoryImpl() }
     single<IStoreRepository> { StoreRepositoryImpl() }
+
+    single<IBatchRepository> { BatchRepositoryImpl() }
 
     single<IOrderRepository> { OrderRepositoryImpl(get()) }
     single<INotificationRepository> { NotificationRepositoryImpl() }
