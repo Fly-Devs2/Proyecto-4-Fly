@@ -56,3 +56,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class PaySinpe(val exchangeId: String)
 
 @Serializable object PurchaseHistory
+
+@Serializable object MessengerHome
