@@ -5,91 +5,369 @@ import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import ucenfotec.ac.cr.flydevs.domain.model.Batch
 import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidence
+import ucenfotec.ac.cr.flydevs.domain.model.BatchEvidenceType
 import ucenfotec.ac.cr.flydevs.domain.model.BatchGroup
+import ucenfotec.ac.cr.flydevs.domain.model.BatchQrStatus
 import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
+import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
+import kotlin.time.Clock
 
 class BatchRepositoryImpl : IBatchRepository {
+
     private val firestore = Firebase.firestore
-    private val batchesCollection = firestore.collection("batches")
-    private val batchGroupsCollection = firestore.collection("batch_group")
 
-    override fun getBatchesForCourier(courierId: String): Flow<List<Batch>> {
-        return batchesCollection.snapshots.map { snapshot ->
-            snapshot.documents
-                .mapNotNull { it.toBatch() }
-                .filter { it.courierId?.trim() == courierId.trim() }
-                .sortedByDescending { it.deliveredAt.takeIf { at -> at > 0L } ?: it.createdAt }
+    private val batchesCollection =
+        firestore.collection("batches")
+
+    private val batchGroupsCollection =
+        firestore.collection("batch_group")
+
+    override suspend fun createBatch(
+        batch: DeliveryBatch
+    ): String {
+        require(batch.orderIds.isNotEmpty()) {
+            "El lote debe contener al menos una orden."
         }
+
+        require(batch.sourceStoreId.isNotBlank()) {
+            "La tienda de origen es obligatoria."
+        }
+
+        require(batch.destinationStoreId.isNotBlank()) {
+            "La tienda de destino es obligatoria."
+        }
+
+        require(batch.sourceStoreId != batch.destinationStoreId) {
+            "La tienda de origen y destino no pueden ser iguales."
+        }
+
+        val now = currentTimeMillis()
+
+        val newBatch = batch.copy(
+            status = BatchStatus.READY_FOR_PICKUP,
+            courierId = null,
+            courierName = null,
+            pickupEvidence = null,
+            deliveryEvidence = null,
+            acceptedAt = null,
+            pickupAt = null,
+            inTransitAt = null,
+            deliveredAt = null,
+            createdAt = now,
+            updatedAt = now
+        )
+
+        val documentReference = batchesCollection.add(newBatch)
+
+        return documentReference.id
     }
 
-    override fun getBatch(documentId: String): Flow<Batch?> {
-        return batchesCollection.document(documentId).snapshots.map { snapshot ->
-            if (snapshot.exists) snapshot.toBatch() else null
-        }
+    override fun observeAvailableBatches(): Flow<List<DeliveryBatch>> {
+        return batchesCollection
+            .where {
+                "status" equalTo BatchStatus.READY_FOR_PICKUP.name
+            }
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents
+                    .map { document ->
+                        mapDocumentToBatch(document)
+                    }
+                    .filter { batch ->
+                        batch.courierId.isNullOrBlank()
+                    }
+                    .sortedBy { batch ->
+                        batch.createdAt
+                    }
+            }
     }
 
-    override fun getBatchGroups(): Flow<List<BatchGroup>> {
-        return batchGroupsCollection.snapshots.map { snapshot ->
-            snapshot.documents.mapNotNull { it.toBatchGroup() }
+    override fun observeCourierBatches(
+        courierId: String
+    ): Flow<List<DeliveryBatch>> {
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
         }
+
+        return batchesCollection
+            .where {
+                "courierId" equalTo courierId
+            }
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents
+                    .map { document ->
+                        mapDocumentToBatch(document)
+                    }
+                    .sortedByDescending { batch ->
+                        batch.updatedAt
+                    }
+            }
     }
 
-    private fun DocumentSnapshot.toBatch(): Batch? {
-        runCatching { data(Batch.serializer()) }.getOrNull()?.let { return it.copy(documentId = id) }
+    override suspend fun getBatchById(
+        batchId: String
+    ): DeliveryBatch? {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
 
-        return runCatching {
-            Batch(
-                documentId = id,
-                batchId = safeGet<String>("batchId").orEmpty(),
-                status = BatchStatus.fromFirestore(safeGet<String>("status")),
-                orderIds = safeGet<List<String>>("orderIds") ?: emptyList(),
-                courierId = safeGet<String>("courierId"),
-                courierName = safeGet<String>("courierName"),
-                courierReward = safeGet<Long>("courierReward") ?: 0L,
-                sourceStoreId = safeGet<String>("sourceStoreId").orEmpty(),
-                sourceStoreName = safeGet<String>("sourceStoreName").orEmpty(),
-                sourceStoreAddress = safeGet<String>("sourceStoreAddress").orEmpty(),
-                destinationStoreId = safeGet<String>("destinationStoreId").orEmpty(),
-                destinationStoreName = safeGet<String>("destinationStoreName").orEmpty(),
-                destinationStoreAddress = safeGet<String>("destinationStoreAddress").orEmpty(),
-                pickupEvidence = safeGet<BatchEvidence>("pickupEvidence"),
-                deliveryEvidence = safeGet<BatchEvidence>("deliveryEvidence"),
-                createdAt = safeGet<Long>("createdAt") ?: 0L,
-                updatedAt = safeGet<Long>("updatedAt") ?: 0L,
-                acceptedAt = safeGet<Long>("acceptedAt") ?: 0L,
-                inTransitAt = safeGet<Long>("inTransitAt") ?: 0L,
-                pickupAt = safeGet<Long>("pickupAt") ?: 0L,
-                deliveredAt = safeGet<Long>("deliveredAt") ?: 0L,
-                qrStatus = safeGet<String>("qrStatus").orEmpty(),
-                qrImageUrl = safeGet<String>("qrImageUrl").orEmpty(),
-                qrImagePath = safeGet<String>("qrImagePath").orEmpty(),
-                qrExpiresAt = safeGet<Long>("qrExpiresAt"),
+        val document = batchesCollection
+            .document(batchId)
+            .get()
+
+        if (!document.exists) {
+            return null
+        }
+
+        return mapDocumentToBatch(document)
+    }
+
+    override suspend fun acceptBatch(
+        batchId: String,
+        courierId: String,
+        courierName: String
+    ) {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
+
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
+        }
+
+        require(courierName.isNotBlank()) {
+            "El nombre del mensajero es obligatorio."
+        }
+
+        val batchReference = batchesCollection.document(batchId)
+        val now = currentTimeMillis()
+
+        firestore.runTransaction {
+            val snapshot = get(batchReference)
+
+            check(snapshot.exists) {
+                "El lote no existe."
+            }
+
+            val currentBatch = mapDocumentToBatch(snapshot)
+
+            check(
+                currentBatch.status == BatchStatus.READY_FOR_PICKUP
+            ) {
+                "El lote ya no está disponible."
+            }
+
+            check(currentBatch.courierId.isNullOrBlank()) {
+                "El lote ya fue asignado a otro mensajero."
+            }
+
+            set(
+                documentRef = batchReference,
+                data = currentBatch.copy(
+                    courierId = courierId,
+                    courierName = courierName,
+                    status = BatchStatus.ACCEPTED,
+                    acceptedAt = now,
+                    updatedAt = now,
+                    qrStatus = BatchQrStatus.USED
+                )
             )
-        }.onFailure {
-            println("DEBUG_BATCHES: No se pudo mapear el lote $id: ${it.message}")
-        }.getOrNull()
+        }
     }
 
-    private fun DocumentSnapshot.toBatchGroup(): BatchGroup? {
-        runCatching { data(BatchGroup.serializer()) }.getOrNull()
-            ?.let { return it.copy(documentId = id) }
+    override suspend fun confirmPickup(
+        batchId: String,
+        courierId: String,
+        evidence: BatchEvidence
+    ) {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
 
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
+        }
+
+        require(evidence.storagePath.isNotBlank()) {
+            "La evidencia de recogida es obligatoria."
+        }
+
+        val batchReference = batchesCollection.document(batchId)
+        val now = currentTimeMillis()
+
+        firestore.runTransaction {
+            val snapshot = get(batchReference)
+
+            check(snapshot.exists) {
+                "El lote no existe."
+            }
+
+            val currentBatch = mapDocumentToBatch(snapshot)
+
+            validateCourier(
+                batch = currentBatch,
+                courierId = courierId
+            )
+
+            check(currentBatch.status == BatchStatus.ACCEPTED) {
+                "El lote no se encuentra en estado aceptado."
+            }
+
+            set(
+                documentRef = batchReference,
+                data = currentBatch.copy(
+                    pickupEvidence = evidence.copy(
+                        type = BatchEvidenceType.PICKUP,
+                        uploadedAt = now,
+                        uploadedBy = courierId
+                    ),
+                    pickupAt = now,
+                    status = BatchStatus.PICKED_UP,
+                    updatedAt = now
+                )
+            )
+        }
+    }
+
+    override suspend fun startDeliveryRoute(
+        batchId: String,
+        courierId: String
+    ) {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
+
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
+        }
+
+        val batchReference = batchesCollection.document(batchId)
+        val now = currentTimeMillis()
+
+        firestore.runTransaction {
+            val snapshot = get(batchReference)
+
+            check(snapshot.exists) {
+                "El lote no existe."
+            }
+
+            val currentBatch = mapDocumentToBatch(snapshot)
+
+            validateCourier(
+                batch = currentBatch,
+                courierId = courierId
+            )
+
+            check(currentBatch.status == BatchStatus.PICKED_UP) {
+                "Primero debe confirmarse la recogida del lote."
+            }
+
+            set(
+                documentRef = batchReference,
+                data = currentBatch.copy(
+                    status = BatchStatus.IN_TRANSIT,
+                    inTransitAt = now,
+                    updatedAt = now
+                )
+            )
+        }
+    }
+
+    override suspend fun confirmDelivery(
+        batchId: String,
+        courierId: String,
+        evidence: BatchEvidence
+    ) {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
+
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
+        }
+
+        require(evidence.storagePath.isNotBlank()) {
+            "La evidencia de entrega es obligatoria."
+        }
+
+        val batchReference = batchesCollection.document(batchId)
+        val now = currentTimeMillis()
+
+        firestore.runTransaction {
+            val snapshot = get(batchReference)
+
+            check(snapshot.exists) {
+                "El lote no existe."
+            }
+
+            val currentBatch = mapDocumentToBatch(snapshot)
+
+            validateCourier(
+                batch = currentBatch,
+                courierId = courierId
+            )
+
+            check(currentBatch.status == BatchStatus.IN_TRANSIT) {
+                "El lote no se encuentra en ruta."
+            }
+
+            set(
+                documentRef = batchReference,
+                data = currentBatch.copy(
+                    deliveryEvidence = evidence.copy(
+                        type = BatchEvidenceType.DELIVERY,
+                        uploadedAt = now,
+                        uploadedBy = courierId
+                    ),
+                    deliveredAt = now,
+                    status = BatchStatus.DELIVERED,
+                    updatedAt = now
+                )
+            )
+        }
+    }
+
+    override fun observeBatchGroups(): Flow<List<BatchGroup>> {
+        return batchGroupsCollection
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents.mapNotNull { document ->
+                    mapDocumentToBatchGroup(document)
+                }
+            }
+    }
+
+    private fun mapDocumentToBatch(
+        document: DocumentSnapshot
+    ): DeliveryBatch {
+        return document
+            .data<DeliveryBatch>()
+            .copy(id = document.id)
+    }
+
+    private fun mapDocumentToBatchGroup(
+        document: DocumentSnapshot
+    ): BatchGroup? {
+        runCatching { document.data<BatchGroup>() }
+            .getOrNull()
+            ?.let { return it.copy(documentId = document.id) }
+
+        // Los grupos creados a mano traen `batchList` como string suelto.
         return runCatching {
             BatchGroup(
-                documentId = id,
-                id = safeGet<String>("id").orEmpty(),
-                batchList = batchList(),
-                storeDestination = safeGet<String>("storeDestination").orEmpty(),
+                documentId = document.id,
+                id = document.safeGet<String>("id").orEmpty(),
+                batchList = document.batchList(),
+                storeDestination = document.safeGet<String>("storeDestination").orEmpty()
             )
         }.onFailure {
-            println("DEBUG_BATCHES: No se pudo mapear el grupo $id: ${it.message}")
+            println("DEBUG_BATCHES: No se pudo mapear el grupo ${document.id}: ${it.message}")
         }.getOrNull()
     }
 
-    /** Acepta `batchList` como array o como un único string. */
     private fun DocumentSnapshot.batchList(): List<String> {
         safeGet<List<String>>("batchList")?.let { return it }
         safeGet<String>("batchList")?.let { return listOf(it) }
@@ -98,4 +376,19 @@ class BatchRepositoryImpl : IBatchRepository {
 
     private inline fun <reified T> DocumentSnapshot.safeGet(field: String): T? =
         runCatching { get<T>(field) }.getOrNull()
+
+    private fun validateCourier(
+        batch: DeliveryBatch,
+        courierId: String
+    ) {
+        check(batch.courierId == courierId) {
+            "El lote está asignado a otro mensajero."
+        }
+    }
+
+    private fun currentTimeMillis(): Long {
+        return Clock.System
+            .now()
+            .toEpochMilliseconds()
+    }
 }

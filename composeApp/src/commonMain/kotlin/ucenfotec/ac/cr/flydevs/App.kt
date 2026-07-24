@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.data.debug.BatchTestDataSeeder
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
@@ -27,6 +29,7 @@ import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
 import ucenfotec.ac.cr.flydevs.navigation.MyBatches
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
+import ucenfotec.ac.cr.flydevs.navigation.MessengerHome
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.navigation.ShipmentDetail
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
@@ -34,6 +37,8 @@ import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
+import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
+import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
@@ -210,6 +215,37 @@ fun App(
                     }
                 )
             }
+
+            composable<MessengerHome> {
+
+
+                MessengerHomeRoute(
+                    userRole = userRole,
+
+                    onScanQr = {
+                        println("Escanear QR pendiente")
+                    },
+
+                    onTakePickupPhoto = { batchId ->
+                        println("Foto de recogida pendiente: $batchId")
+                    },
+
+                    onTakeDeliveryPhoto = { batchId ->
+                        println("Foto de entrega pendiente: $batchId")
+                    },
+
+                    onOpenBatch = { batchId ->
+                        println("Detalle del lote pendiente: $batchId")
+                    },
+
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(
+                            navController,
+                            destination
+                        )
+                    }
+                )
+            }
             composable<EnvelopeDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<EnvelopeDetail>()
 
@@ -310,6 +346,12 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.Deliveries -> {
             navController.navigate(MyBatches) {
+                launchSingleTop = true
+            }
+        }
+
+        FlyNavDestination.Deliveries ->{
+            navController.navigate(MessengerHome){
                 launchSingleTop = true
             }
         }

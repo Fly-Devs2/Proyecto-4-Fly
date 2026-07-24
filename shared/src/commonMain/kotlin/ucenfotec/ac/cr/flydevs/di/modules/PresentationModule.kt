@@ -25,6 +25,7 @@ import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.purchaseHistory.PurchaseHistoryViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
 
 val presentationModule = module {
@@ -47,4 +48,5 @@ val presentationModule = module {
     viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), batchDocumentId) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
     viewModel { SessionViewModel(get()) }
+    viewModel { MessengerHomeViewModel(get(), get()) }
 }
