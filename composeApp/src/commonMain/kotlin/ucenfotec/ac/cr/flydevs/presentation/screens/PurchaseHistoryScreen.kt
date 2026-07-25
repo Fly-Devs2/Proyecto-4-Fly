@@ -64,6 +64,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.BgSurface
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
+import ucenfotec.ac.cr.flydevs.presentation.theme.getOrderStatusAccent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -390,20 +391,11 @@ private fun LabelValue(label: String, value: String) {
 
 @Composable
 private fun StatusBadgeOrder(status: OrderStatus) {
-    val (bg, text) = when (status) {
-        OrderStatus.RESERVED                -> Pair(BgSurface, TextSecondary)
-        OrderStatus.WAITING_PAYMENT         -> Pair(AccentGold.copy(alpha = 0.2f), AccentGold)
-        OrderStatus.WAITING_SELLER_DELIVERY -> Pair(AccentGold.copy(alpha = 0.2f), AccentGold)
-        OrderStatus.WAITING_STORE_SHIPMENT  -> Pair(AccentViolet.copy(alpha = 0.2f), AccentVioletLight)
-        OrderStatus.IN_TRANSIT              -> Pair(AccentViolet.copy(alpha = 0.2f), AccentVioletLight)
-        OrderStatus.DELIVERED_TO_STORE      -> Pair(AccentMint.copy(alpha = 0.2f), AccentMint)
-        OrderStatus.PICKED_UP               -> Pair(AccentMint.copy(alpha = 0.2f), AccentMint)
-        OrderStatus.DISPUTED                -> Pair(AccentRed.copy(alpha = 0.2f), AccentRed)
-        OrderStatus.CANCELLED               -> Pair(BgSurface, TextMuted)
-    }
+    val accent = getOrderStatusAccent(status)
+    val bg = accent.copy(alpha = 0.2f)
     Text(
         text = status.label.uppercase(),
-        color = text,
+        color = accent,
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         modifier = Modifier

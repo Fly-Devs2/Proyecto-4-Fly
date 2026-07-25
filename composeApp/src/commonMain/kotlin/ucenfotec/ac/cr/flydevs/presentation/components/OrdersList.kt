@@ -44,12 +44,7 @@ fun OrdersSection(
                     id = "Pedido #$shortId",
                     desc = "$cardName · Vendedor: $sellerName",
                     status = order.status.label.uppercase(),
-                    statusColor = when (order.status) {
-                        OrderStatus.IN_TRANSIT -> AccentGold
-                        OrderStatus.DELIVERED_TO_STORE -> AccentMint
-                        OrderStatus.DISPUTED -> AccentRed
-                        else -> AccentViolet
-                    },
+                                        statusColor = getOrderStatusAccent(order.status),
                     imageUrl = firstCard?.imageUrl ?: "",
                     onClick = { onOrderClick(order.id) }
                 )

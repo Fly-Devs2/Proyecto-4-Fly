@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -146,6 +148,7 @@ fun MyEnvelopeScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 24.dp)
+                   .navigationBarsPadding()
             ) {
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -468,7 +471,7 @@ private fun MyEnvelopeAddMoreCardsButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+                .defaultMinSize(minHeight = 52.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -718,7 +721,7 @@ private fun MyEnvelopeReserveButton(
         enabled = enabled && !isLoading,
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+                        .defaultMinSize(minHeight = 52.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,

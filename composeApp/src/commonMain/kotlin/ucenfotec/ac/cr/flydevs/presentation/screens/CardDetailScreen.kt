@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -128,7 +129,7 @@ fun CardDetailScreen(
 
             val card = state.card ?: return@Column
 
-            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).navigationBarsPadding()) {
 
                 Box(
                     modifier = Modifier.fillMaxWidth().height(240.dp).background(BgSurface),

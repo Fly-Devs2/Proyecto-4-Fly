@@ -224,7 +224,7 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(8.dp))
-                    Text("✦ " + status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                    Text("✦ " + status.label.uppercase(), color = getOrderStatusAccent(status), fontSize = 9.sp, fontWeight = FontWeight.Black)
                 }
                 val cardDisplayName = if (card.name.length > 50) card.name.take(47) + "..." else card.name
                 Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
@@ -321,12 +321,13 @@ private fun TrackingStepItem(
         Spacer(Modifier.width(16.dp))
         
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
-            Text(
-                text = status.label,
-                color = if (isCurrent) AccentGold else if (isCompleted) TextPrimary else TextMuted,
-                fontSize = 14.sp,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
-            )
+            val accent = getOrderStatusAccent(status)
+                        Text(
+                            text = status.label,
+                            color = if (isCurrent) accent else if (isCompleted) TextPrimary else TextMuted,
+                            fontSize = 14.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                        )
             if (dynamicMessage != null) {
                 Text(
                     text = dynamicMessage,
