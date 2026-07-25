@@ -161,8 +161,33 @@ class OrderRepositoryImpl(
 
         val updated = current.copy(
             sinpeReceiptUrl = proofUrl,
+            status = OrderStatus.AWAITING_SINPE_VALIDATION,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun approveSinpeProof(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
             sinpePaid = true,
             status = OrderStatus.WAITING_STORE_SHIPMENT,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun rejectSinpeProof(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            sinpePaid = false,
+            status = OrderStatus.AWAITING_SINPE_VALIDATION,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)

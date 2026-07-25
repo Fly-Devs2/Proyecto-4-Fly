@@ -19,9 +19,24 @@ interface IOrderRepository {
     suspend fun submitSellerEvidence(orderId: String, evidenceUrl: String): Order
 
     /**
-     * El comprador sube el comprobante SINPE. Pasa el estado a WAITING_STORE_SHIPMENT.
+     * El comprador sube el comprobante SINPE.
+     *
+     * La orden pasa al estado AWAITING_SINPE_VALIDATION mientras
+     * el vendedor valida o rechaza el comprobante.
      */
     suspend fun submitSinpeProof(orderId: String, proofUrl: String): Order
+
+    /**
+     * El vendedor aprueba el comprobante SINPE subido por el comprador.
+     * Pasa la orden a WAITING_STORE_SHIPMENT y marca sinpePaid = true.
+     */
+    suspend fun approveSinpeProof(orderId: String): Order
+
+    /**
+     * El vendedor rechaza el comprobante SINPE. Mantiene AWAITING_SINPE_VALIDATION
+     * y asegura sinpePaid = false.
+     */
+    suspend fun rejectSinpeProof(orderId: String): Order
 
     /**
      * Permite al comprador añadir evidencia adicional (fotos).

@@ -8,11 +8,11 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
  * Mapping per requirement:
  *  - PICKED_UP -> AccentMint (green)
  *  - DISPUTED, CANCELLED -> AccentRed (red)
- *  - otherwise -> AccentGold (yellow)
+ *  - otherwise (in-process states) -> AccentGold (yellow)
  */
 
 fun getOrderStatusAccent(status: OrderStatus): Color = when (status) {
     OrderStatus.PICKED_UP -> AccentMint
     OrderStatus.DISPUTED, OrderStatus.CANCELLED -> AccentRed
-    else -> AccentGold
+    else -> AccentGold  // Includes: RESERVED, WAITING_SELLER_DELIVERY, WAITING_PAYMENT, AWAITING_SINPE_VALIDATION, WAITING_STORE_SHIPMENT, IN_TRANSIT, DELIVERED_TO_STORE
 }

@@ -130,7 +130,9 @@ fun OrderDetailScreen(
                         order = order,
                         role = uiState.userRole,
                         onNavigateToPay = onNavigateToPay,
-                        onViewImage = { url -> fullScreenImageUrl = url }
+                        onViewImage = { url -> fullScreenImageUrl = url },
+                        onApprove = { viewModel.approveSinpeProof() },
+                        onReject = { viewModel.rejectSinpeProof() }
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -268,6 +270,7 @@ private fun TrackingStepper(currentStatus: OrderStatus, destinationStoreName: St
         val steps = listOf(
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
+            OrderStatus.AWAITING_SINPE_VALIDATION,
             OrderStatus.WAITING_STORE_SHIPMENT,
             OrderStatus.IN_TRANSIT,
             OrderStatus.DELIVERED_TO_STORE,
@@ -346,7 +349,9 @@ private fun ComprobanteSinpeSection(
     order: Order,
     role: UserRole,
     onNavigateToPay: (String) -> Unit,
-    onViewImage: (String) -> Unit
+    onViewImage: (String) -> Unit,
+    onApprove: () -> Unit,
+    onReject: () -> Unit
 ) {
     Surface(
         color = BgCard,
@@ -367,9 +372,37 @@ private fun ComprobanteSinpeSection(
 
             Spacer(Modifier.height(16.dp))
 
-            if (order.sinpePaid) {
+            if (!order.sinpeReceiptUrl.isNullOrBlank()) {
                 ComprobanteCardPolished(order, onViewImage)
-            } else if (role == UserRole.BUYER) {
+
+                if (order.status == OrderStatus.AWAITING_SINPE_VALIDATION) {
+                    Spacer(Modifier.height(8.dp))
+                    if (role == UserRole.BUYER) {
+                        Text("Esperando validación del vendedor.", color = TextMuted, fontSize = 13.sp)
+                    } else if (role == UserRole.SELLER) {
+                        Text("Revisa el comprobante antes de aprobarlo.", color = TextMuted, fontSize = 13.sp)
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PrimaryButton(
+                                text = "Aprobar comprobante",
+                                onClick = onApprove,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            Button(
+                                onClick = onReject,
+                                modifier = Modifier.weight(1f).height(52.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Rechazar comprobante", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            } else if (role == UserRole.BUYER && order.sinpeReceiptUrl.isNullOrBlank()) {
                 Button(
                     onClick = { onNavigateToPay(order.id) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),

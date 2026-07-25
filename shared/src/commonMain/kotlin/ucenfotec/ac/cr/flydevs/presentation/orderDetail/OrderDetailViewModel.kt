@@ -78,6 +78,38 @@ class OrderDetailViewModel(
         }
     }
 
+    fun approveSinpeProof() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val currentOrder = _uiState.value.order
+            if (currentOrder == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Orden no encontrada")
+                return@launch
+            }
+
+            runCatching { orderRepository.approveSinpeProof(currentOrder.id) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
+    fun rejectSinpeProof() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val currentOrder = _uiState.value.order
+            if (currentOrder == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Orden no encontrada")
+                return@launch
+            }
+
+            runCatching { orderRepository.rejectSinpeProof(currentOrder.id) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
     private fun loadOrder() {
         orderRepository.getOrder(orderId)
             .onEach { order ->

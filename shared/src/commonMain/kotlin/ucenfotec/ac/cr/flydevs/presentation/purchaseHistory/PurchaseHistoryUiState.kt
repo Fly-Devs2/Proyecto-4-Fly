@@ -31,6 +31,7 @@ data class PurchaseHistoryUiState(
                     OrderStatus.RESERVED,
                     OrderStatus.WAITING_PAYMENT,
                     OrderStatus.WAITING_SELLER_DELIVERY,
+                    OrderStatus.AWAITING_SINPE_VALIDATION,
                 )
             }
             PurchaseHistoryFilter.PAGADO -> orders.filter {
