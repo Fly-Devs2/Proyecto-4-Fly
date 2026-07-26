@@ -20,9 +20,12 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +56,10 @@ enum class FlyNavDestination {
     DeliveryHistory,
     Earnings,
 
+    // Tienda
+    StoreBatches,
+    StoreScan,
+    StorePickups,
 
 }
 
@@ -63,7 +70,9 @@ private data class BottomNavOption(
     val destination: FlyNavDestination,
     val label: String,
     val icon: ImageVector,
-    val isFloating: Boolean = false
+    val isFloating: Boolean = false,
+    /** Color del FAB; solo aplica cuando [isFloating] es true. */
+    val floatingColor: Color = AccentViolet
 )
 
 /**
@@ -127,6 +136,38 @@ private fun getBottomNavOptions(
                     destination = FlyNavDestination.Earnings,
                     label = "Ganancias",
                     icon = Icons.Default.AttachMoney
+                ),
+                BottomNavOption(
+                    destination = FlyNavDestination.Profile,
+                    label = "Perfil",
+                    icon = Icons.Default.Person
+                )
+            )
+        }
+
+        UserRole.STORE -> {
+            listOf(
+                BottomNavOption(
+                    destination = FlyNavDestination.Home,
+                    label = "Inicio",
+                    icon = Icons.Default.Home
+                ),
+                BottomNavOption(
+                    destination = FlyNavDestination.StoreBatches,
+                    label = "Lotes",
+                    icon = Icons.Default.Inventory2
+                ),
+                BottomNavOption(
+                    destination = FlyNavDestination.StoreScan,
+                    label = "Escanear",
+                    icon = Icons.Default.QrCodeScanner,
+                    isFloating = true,
+                    floatingColor = AccentMint
+                ),
+                BottomNavOption(
+                    destination = FlyNavDestination.StorePickups,
+                    label = "Retiros",
+                    icon = Icons.Default.Verified
                 ),
                 BottomNavOption(
                     destination = FlyNavDestination.Profile,
@@ -232,7 +273,7 @@ private fun FloatingBottomNavItem(
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            color = AccentViolet,
+            color = option.floatingColor,
             shape = CircleShape,
             modifier = Modifier
                 .size(48.dp)
