@@ -162,6 +162,7 @@ class OrderRepositoryImpl(
         val updated = current.copy(
             sinpeReceiptUrl = proofUrl,
             status = OrderStatus.AWAITING_SINPE_VALIDATION,
+            sinpeRejected = false,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
@@ -175,6 +176,7 @@ class OrderRepositoryImpl(
         val updated = current.copy(
             sinpePaid = true,
             status = OrderStatus.WAITING_STORE_SHIPMENT,
+            sinpeRejected = false,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
@@ -188,6 +190,7 @@ class OrderRepositoryImpl(
         val updated = current.copy(
             sinpePaid = false,
             status = OrderStatus.AWAITING_SINPE_VALIDATION,
+            sinpeRejected = true,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)

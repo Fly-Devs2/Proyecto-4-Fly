@@ -378,26 +378,45 @@ private fun ComprobanteSinpeSection(
                 if (order.status == OrderStatus.AWAITING_SINPE_VALIDATION) {
                     Spacer(Modifier.height(8.dp))
                     if (role == UserRole.BUYER) {
-                        Text("Esperando validación del vendedor.", color = TextMuted, fontSize = 13.sp)
-                    } else if (role == UserRole.SELLER) {
-                        Text("Revisa el comprobante antes de aprobarlo.", color = TextMuted, fontSize = 13.sp)
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado por el vendedor. Adjunta uno nuevo para continuar.", color = TextMuted, fontSize = 13.sp)
 
-                        Spacer(Modifier.height(12.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            PrimaryButton(
-                                text = "Aprobar comprobante",
-                                onClick = onApprove,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Spacer(Modifier.height(12.dp))
 
                             Button(
-                                onClick = onReject,
-                                modifier = Modifier.weight(1f).height(52.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
-                                shape = RoundedCornerShape(12.dp)
+                                onClick = { onNavigateToPay(order.id) },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                                shape = RoundedCornerShape(16.dp)
                             ) {
-                                Text("Rechazar comprobante", color = Color.White)
+                                Text("Pagar con SINPE", style = Typography.labelLarge)
+                            }
+                        } else {
+                            Text("Esperando validación del vendedor.", color = TextMuted, fontSize = 13.sp)
+                        }
+                    } else if (role == UserRole.SELLER) {
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado. Esperando que el comprador suba uno nuevo.", color = TextMuted, fontSize = 13.sp)
+                        } else {
+                            Text("Revisa el comprobante antes de aprobarlo.", color = TextMuted, fontSize = 13.sp)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                PrimaryButton(
+                                    text = "Aprobar",
+                                    onClick = onApprove,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Button(
+                                    onClick = onReject,
+                                    modifier = Modifier.weight(1f).height(52.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Rechazar", color = Color.White)
+                                }
                             }
                         }
                     }

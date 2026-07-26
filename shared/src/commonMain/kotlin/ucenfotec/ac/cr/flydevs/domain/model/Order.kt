@@ -17,6 +17,7 @@ data class Order(
     val sellerEvidenceUrls: List<String> = emptyList(),
     val buyerEvidenceUrls: List<String> = emptyList(),
     val sinpePaid: Boolean = false,
+    val sinpeRejected: Boolean = false,
     val sellerName: String = "",
     val buyerName: String = "",
     val sobreId: String = "",
