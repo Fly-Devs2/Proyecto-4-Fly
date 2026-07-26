@@ -8,6 +8,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
@@ -21,6 +22,7 @@ class OrderRepositoryImpl(
 ) : IOrderRepository {
     private val firestore = Firebase.firestore
     private val ordersCollection = firestore.collection("orders")
+    private val gameCardsCollection = firestore.collection("game_cards")
 
     override fun getOrdersForUser(userId: String): Flow<List<Order>> {
         println("DEBUG_ORDERS: Fetching orders for user: $userId")
@@ -284,16 +286,49 @@ class OrderRepositoryImpl(
             throw IllegalStateException("La orden no está en estado cancelable: ${current.status}")
         }
 
+        val now = getEpochMillis()
+
         // UPDATE parcial: solo cambiar status y modifiedAt
         val updates = mapOf(
             "status" to OrderStatus.CANCELLED.name,
-            "modifiedAt" to getEpochMillis()
+            "modifiedAt" to now
         )
         ordersCollection.document(orderId).update(updates)
 
+        current.cards.forEach { cardSnapshot ->
+            val cardId = cardSnapshot.cardId.trim()
+            if (cardId.isBlank()) {
+                return@forEach
+            }
+
+            try {
+                val cardDocument = gameCardsCollection.document(cardId).get()
+                if (!cardDocument.exists) {
+                    println("DEBUG_ORDERS: Card $cardId no longer exists while cancelling order $orderId")
+                    return@forEach
+                }
+
+                val rawStatus = cardDocument.get<String>("status")
+                val actualStatus = rawStatus?.let { statusName ->
+                    runCatching { CardStatus.valueOf(statusName) }.getOrNull()
+                }
+
+                if (actualStatus != CardStatus.RESERVED) {
+                    println("DEBUG_ORDERS: Card $cardId not reverted on cancel because current status is $actualStatus")
+                    return@forEach
+                }
+
+                gameCardsCollection.document(cardId).update(
+                    mapOf("status" to CardStatus.AVAILABLE.name)
+                )
+            } catch (e: Exception) {
+                println("DEBUG_ORDERS: Failed to revert card $cardId for cancelled order $orderId: ${e.message}")
+            }
+        }
+
         return current.copy(
             status = OrderStatus.CANCELLED,
-            modifiedAt = getEpochMillis()
+            modifiedAt = now
         )
     }
 }

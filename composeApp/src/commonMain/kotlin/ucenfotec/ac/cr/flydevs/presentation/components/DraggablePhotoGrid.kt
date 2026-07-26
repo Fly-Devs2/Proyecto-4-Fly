@@ -11,9 +11,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -107,7 +108,9 @@ private fun PhotoThumbnail(
                 contentDescription = "Foto ${if (isPrincipal) "Principal" else ""}",
                 modifier = Modifier
                     .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
                     .background(BgSurface, RoundedCornerShape(12.dp))
+                    .border(1.dp, AccentGold.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
                     .pointerInput(Unit) {
                         detectDragGesturesAfterLongPress { change, dragAmount ->
                             if (abs(dragAmount.x) > abs(dragAmount.y)) {
@@ -137,7 +140,7 @@ private fun PhotoThumbnail(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(3.dp, AccentGold, RoundedCornerShape(12.dp))
+                    .border(2.dp, AccentGold, RoundedCornerShape(12.dp))
             )
             Surface(
                 modifier = Modifier
