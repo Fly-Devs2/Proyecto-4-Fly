@@ -5,6 +5,7 @@ enum class UserRole {
     DELIVERY,
     SELLER,
     BUYER,
+    STORE,
     ADMIN;
 
     companion object{
@@ -14,6 +15,7 @@ enum class UserRole {
                 "DELIVERY" -> DELIVERY
                 "ADMIN" -> ADMIN
                 "BUYER" -> BUYER
+                "STORE" -> STORE
                 else -> USER // Default role if value is null or unrecognized
             }
         }
