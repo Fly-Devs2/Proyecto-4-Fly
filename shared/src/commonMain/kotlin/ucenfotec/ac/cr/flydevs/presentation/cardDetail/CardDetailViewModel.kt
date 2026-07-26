@@ -36,7 +36,7 @@ class CardDetailViewModel(
                 }
             }
                 .onSuccess { card ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, card = card)
+                    _uiState.value = _uiState.value.copy(isLoading = false, card = card, currentImageIndex = 0)
                 }
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
@@ -119,6 +119,10 @@ class CardDetailViewModel(
                 actionErrorMessage = null
             )
         }
+    }
+
+    fun onImageSwipe(newIndex: Int) {
+        _uiState.update { it.copy(currentImageIndex = newIndex) }
     }
 
     private suspend fun loadSeller(sellerId: String) {

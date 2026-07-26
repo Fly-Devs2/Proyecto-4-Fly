@@ -123,9 +123,44 @@ class OrderRepositoryImpl(
 
     private fun DocumentSnapshot.safeGetCards(field: String): List<OrderCardSnapshot>? {
         return try {
-            get<List<OrderCardSnapshot>>(field)
+            val cards = get<List<OrderCardSnapshot>>(field)
+            // Nuevas órdenes con imageUrls
+            cards
         } catch (e: Exception) {
-            null
+            // Fallback: órdenes antiguas con imageUrl (String) en lugar de imageUrls (List<String>)
+            try {
+                val rawCards = get<List<Map<String, Any?>>>(field)
+                rawCards.map { cardMap ->
+                    val imageUrls = when {
+                        // Si tiene imageUrls (nuevo formato)
+                        cardMap.containsKey("imageUrls") && cardMap["imageUrls"] is List<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            (cardMap["imageUrls"] as List<String>).takeIf { it.isNotEmpty() } ?: emptyList()
+                        }
+                        // Si tiene imageUrl (antiguo formato)
+                        cardMap.containsKey("imageUrl") && cardMap["imageUrl"] is String -> {
+                            val imageUrl = cardMap["imageUrl"] as String
+                            if (imageUrl.isNotEmpty()) listOf(imageUrl) else emptyList()
+                        }
+                        else -> emptyList()
+                    }
+                    OrderCardSnapshot(
+                        cardId = cardMap["cardId"] as? String ?: "",
+                        name = cardMap["name"] as? String ?: "",
+                        imageUrls = imageUrls,
+                        price = when (val p = cardMap["price"]) {
+                            is Long -> p
+                            is Number -> p.toLong()
+                            else -> 0L
+                        },
+                        condition = cardMap["condition"] as? String ?: "",
+                        game = cardMap["game"] as? String ?: ""
+                    )
+                }
+            } catch (e2: Exception) {
+                println("DEBUG_ORDERS: Failed to parse cards from $field: ${e2.message}")
+                null
+            }
         }
     }
 
@@ -231,5 +266,34 @@ class OrderRepositoryImpl(
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
         return updated
+    }
+
+    override suspend fun cancelOrder(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        // Validar que es cancelable
+        if (current.sinpePaid) {
+            throw IllegalStateException("No se puede cancelar una orden pagada confirmada")
+        }
+        if (current.status !in listOf(
+            OrderStatus.WAITING_SELLER_DELIVERY,
+            OrderStatus.WAITING_PAYMENT,
+            OrderStatus.AWAITING_SINPE_VALIDATION
+        )) {
+            throw IllegalStateException("La orden no está en estado cancelable: ${current.status}")
+        }
+
+        // UPDATE parcial: solo cambiar status y modifiedAt
+        val updates = mapOf(
+            "status" to OrderStatus.CANCELLED.name,
+            "modifiedAt" to getEpochMillis()
+        )
+        ordersCollection.document(orderId).update(updates)
+
+        return current.copy(
+            status = OrderStatus.CANCELLED,
+            modifiedAt = getEpochMillis()
+        )
     }
 }

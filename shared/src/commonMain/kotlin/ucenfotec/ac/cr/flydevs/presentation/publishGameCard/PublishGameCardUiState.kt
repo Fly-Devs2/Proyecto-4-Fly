@@ -29,9 +29,9 @@ data class PublishCardUiState(
     val stores: List<Store> = emptyList(),
     val selectedStore: Store? = null,
 
-    // ── Imagen ──
-    val pendingImage: PickedImage? = null,
-    val isUploadingImage: Boolean = false,
+    // ── Imágenes ──
+    val pendingImages: List<PickedImage> = emptyList(),
+    val isUploadingImages: Boolean = false,
     val imageError: ImageError? = null,
 
     // ── Proceso de publicación ──
@@ -39,7 +39,7 @@ data class PublishCardUiState(
     val feedback: PublishFeedback? = null,
 ) {
 
-    fun toDraftCard(imageUrl: String = ""): GameCard = GameCard(
+    fun toDraftCard(imageUrls: List<String> = emptyList()): GameCard = GameCard(
         name = name.trim(),
         game = game,
         expansion = expansion,
@@ -49,14 +49,15 @@ data class PublishCardUiState(
         price = price.toLongOrNull() ?: 0L,
         quantity = quantity,
         description = description.trim(),
-        imageUrl = imageUrl,
+        imageUrls = imageUrls.takeIf { it.isNotEmpty() } ?: emptyList(),
         sourceStore = selectedStore?.id ?: "",
     )
 
     val validationErrors: List<GameCardValidationError>
         get() = GameCardValidator.validate(
-            toDraftCard(imageUrl = if (pendingImage != null) LOCAL_IMAGE_MARKER else "")
+            toDraftCard(imageUrls = if (pendingImages.isNotEmpty()) listOf(LOCAL_IMAGE_MARKER) else emptyList())
         )
 }
 
 private const val LOCAL_IMAGE_MARKER = "local"
+

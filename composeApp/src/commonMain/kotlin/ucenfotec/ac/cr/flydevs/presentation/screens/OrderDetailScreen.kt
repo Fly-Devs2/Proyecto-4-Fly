@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -163,6 +164,52 @@ fun OrderDetailScreen(
                         onAddEvidence = { showCamera = true },
                         onViewImage = { url -> fullScreenImageUrl = url }
                     )
+
+                    // --- Cancel Order Button (Buyer Only) ---
+                    if (uiState.userRole == UserRole.BUYER &&
+                        !order.sinpePaid &&
+                        order.status in listOf(
+                            OrderStatus.WAITING_SELLER_DELIVERY,
+                            OrderStatus.WAITING_PAYMENT,
+                            OrderStatus.AWAITING_SINPE_VALIDATION
+                        )) {
+                        Spacer(Modifier.height(16.dp))
+                        var showCancelConfirm by remember { mutableStateOf(false) }
+                        
+                        OutlinedButton(
+                            onClick = { showCancelConfirm = true },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AccentRed
+                            ),
+                            border = BorderStroke(1.5.dp, AccentRed)
+                        ) {
+                            Text("Cancelar orden", fontWeight = FontWeight.Bold)
+                        }
+
+                        if (showCancelConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showCancelConfirm = false },
+                                title = { Text("¿Cancelar esta orden?") },
+                                text = { Text("Esta acción no se puede deshacer. ¿Deseas continuar?") },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            showCancelConfirm = false
+                                            viewModel.cancelOrder()
+                                        }
+                                    ) {
+                                        Text("Cancelar orden", color = AccentRed)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showCancelConfirm = false }) {
+                                        Text("Mantener")
+                                    }
+                                }
+                            )
+                        }
+                    }
                     
                     Spacer(Modifier.height(40.dp))
                 }

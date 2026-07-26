@@ -2,8 +2,9 @@ package ucenfotec.ac.cr.flydevs.data.repository
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import ucenfotec.ac.cr.flydevs.domain.model.*
 import dev.gitlive.firebase.firestore.DocumentSnapshot
+import ucenfotec.ac.cr.flydevs.data.repository.GameCardMapper.toGameCard
+import ucenfotec.ac.cr.flydevs.domain.model.*
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderQrRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
@@ -171,7 +172,7 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
                 OrderCardSnapshot(
                     cardId = it.id,
                     name = it.name,
-                    imageUrl = it.imageUrl,
+                    imageUrls = it.imageUrls,
                     price = it.price,
                     condition = it.condition.label,
                     game = it.game?.label ?: ""
@@ -432,10 +433,8 @@ class CardEnvelopeRepositoryImpl: ICardEnvelopeRepository {
     private suspend fun getCardById(cardId: String): GameCard? {
         return try {
             val document = gameCardsCollection.document(cardId).get()
-            val card = document.data<GameCard>()
-
-            card.copy(
-                id = card.id.ifBlank { cardId }
+            document.toGameCard().copy(
+                id = cardId
             )
         } catch (exception: Exception) {
             println("ERROR_CARD: Error getting card $cardId: ${exception.message}")

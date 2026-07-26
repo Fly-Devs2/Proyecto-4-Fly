@@ -29,10 +29,10 @@ import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
+import ucenfotec.ac.cr.flydevs.presentation.components.DraggablePhotoGrid
 import ucenfotec.ac.cr.flydevs.presentation.components.Dropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.FormField
-import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
 import ucenfotec.ac.cr.flydevs.presentation.components.PriceField
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.components.QuantityStepper
@@ -71,7 +71,12 @@ fun PublishGameCardScreen(
                                         .verticalScroll(rememberScrollState())
                                         .navigationBarsPadding(),
             ) {
-                PhotoSection(state = state, onTakePhoto = { showCamera = true })
+                PhotoSection(
+                    state = state,
+                    onTakePhoto = { showCamera = true },
+                    onRemoveImage = viewModel::removeImage,
+                    onMoveImage = viewModel::moveImage
+                )
                 CardFormFields(state = state, viewModel = viewModel)
                 PublishStatus(state = state)
 
@@ -102,14 +107,28 @@ fun PublishGameCardScreen(
 }
 
 @Composable
-private fun PhotoSection(state: PublishCardUiState, onTakePhoto: () -> Unit) {
-    PhotoUploadZone(
-        onClick = onTakePhoto,
-        title = photoTitle(state),
-        subtitle = photoSubtitle(state),
-        accentColor = if (state.pendingImage != null) AccentMint else AccentViolet,
-        modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp),
-    )
+private fun PhotoSection(
+    state: PublishCardUiState,
+    onTakePhoto: () -> Unit,
+    onRemoveImage: (Int) -> Unit,
+    onMoveImage: (Int, Int) -> Unit,
+) {
+    Column(modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp)) {
+        DraggablePhotoGrid(
+            images = state.pendingImages,
+            onAddImage = onTakePhoto,
+            onRemoveImage = onRemoveImage,
+            onMoveImage = onMoveImage,
+        )
+        if (state.pendingImages.isEmpty()) {
+            Text(
+                text = photoSubtitle(state),
+                color = TextSecondary,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
     state.imageError?.let { StatusText(imageErrorText(it), AccentRed) }
 }
 

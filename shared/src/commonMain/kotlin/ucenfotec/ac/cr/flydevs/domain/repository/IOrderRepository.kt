@@ -52,4 +52,10 @@ interface IOrderRepository {
      * Marcar el sobre como entregado en la tienda destino.
      */
     suspend fun markAsDeliveredToStore(orderId: String): Order
+
+    /**
+     * El comprador cancela la orden si aún no ha sido pagada confirmada.
+     * Solo cancelable en estados WAITING_SELLER_DELIVERY, WAITING_PAYMENT, AWAITING_SINPE_VALIDATION.
+     */
+    suspend fun cancelOrder(orderId: String): Order
 }

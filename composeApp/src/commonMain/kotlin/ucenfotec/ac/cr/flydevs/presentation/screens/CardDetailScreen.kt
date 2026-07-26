@@ -40,13 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.User
@@ -54,6 +52,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.cardDetail.CardDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.ImageCarousel
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentMint
@@ -131,24 +130,25 @@ fun CardDetailScreen(
 
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).navigationBarsPadding()) {
 
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(240.dp).background(BgSurface),
-                ) {
-                    AsyncImage(
-                        model = card.imageUrl,
-                        contentDescription = card.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    card.rarity?.let { rarity ->
+                ImageCarousel(
+                    imageUrls = card.imageUrls,
+                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    onImageIndexChange = { viewModel.onImageSwipe(it) }
+                )
+
+                card.rarity?.let { rarity ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
                         Text(
                             text = rarity.uppercase(),
                             color = Color.Black,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(10.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(AccentGold)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),

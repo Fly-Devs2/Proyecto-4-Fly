@@ -6,15 +6,15 @@ import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishCardUiState
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishFeedback
 
 internal fun photoTitle(state: PublishCardUiState): String = when {
-    state.isUploadingImage -> "Subiendo imagen..."
-    state.pendingImage != null -> "Foto lista ✓"
-    else -> "Tomar foto de la carta"
+    state.isUploadingImages -> "Subiendo fotos..."
+    state.pendingImages.isNotEmpty() -> "${state.pendingImages.size} foto(s) lista(s) ✓"
+    else -> "Agregar fotos de la carta"
 }
 
 internal fun photoSubtitle(state: PublishCardUiState): String = when {
-    state.isUploadingImage -> "Espera un momento"
-    state.pendingImage != null -> "Toca para volver a tomarla"
-    else -> "Centra la carta en el marco"
+    state.isUploadingImages -> "Espera un momento"
+    state.pendingImages.isNotEmpty() -> "Mantén presionado y arrastra para reordenar"
+    else -> "Toma una o varias fotos"
 }
 
 internal fun expansionPlaceholder(state: PublishCardUiState): String = when {
@@ -30,7 +30,7 @@ internal fun rarityPlaceholder(state: PublishCardUiState): String = when {
 }
 
 internal fun publishButtonText(state: PublishCardUiState): String = when {
-    state.isUploadingImage -> "Subiendo imagen..."
+    state.isUploadingImages -> "Subiendo fotos..."
     state.isLoading -> "Publicando..."
     else -> "Publicar carta"
 }
