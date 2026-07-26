@@ -28,8 +28,13 @@ fun ScanQrRoute(
     LaunchedEffect(uiState.successBatchId) {
         val batchId = uiState.successBatchId
         if (batchId != null) {
-            onSuccess(batchId)
-            viewModel.clearSuccess()
+            if (batchId.startsWith("STORE_SUCCESS:")) {
+                viewModel.clearSuccess()
+                onBack()
+            } else {
+                onSuccess(batchId)
+                viewModel.clearSuccess()
+            }
         }
     }
 

@@ -57,7 +57,7 @@ enum class FlyNavDestination {
     Earnings,
 
     // Tienda
-    StoreBatches,
+    StoreBatchesScreen,
     StoreScan,
     StorePickups,
 
@@ -153,7 +153,7 @@ private fun getBottomNavOptions(
                     icon = Icons.Default.Home
                 ),
                 BottomNavOption(
-                    destination = FlyNavDestination.StoreBatches,
+                    destination = FlyNavDestination.StoreBatchesScreen,
                     label = "Lotes",
                     icon = Icons.Default.Inventory2
                 ),

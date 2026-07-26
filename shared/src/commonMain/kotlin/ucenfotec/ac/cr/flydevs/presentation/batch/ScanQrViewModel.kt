@@ -19,15 +19,61 @@ class ScanQrViewModel(
     val uiState: StateFlow<ScanQrUiState> = _uiState.asStateFlow()
 
     fun onQrScanned(payload: String) {
-        // Expected payload format: flydevs://batch-qr?bid=BATCH_ID_OR_LABEL
-        val labelOrId = extractBatchId(payload)
+        // Expected payload format: 
+        // flydevs://batch-qr?bid=BATCH_ID_OR_LABEL
+        // flydevs://store-qr?sid=STORE_ID
         
-        if (labelOrId == null) {
-            _uiState.update { it.copy(error = "Código QR no válido para un lote.") }
+        when {
+            payload.contains("sid=") -> {
+                val storeId = payload.substringAfter("sid=").substringBefore("&")
+                acceptStoreBatches(storeId)
+            }
+            payload.contains("bid=") -> {
+                val labelOrId = payload.substringAfter("bid=").substringBefore("&")
+                resolveAndAcceptBatch(labelOrId)
+            }
+            else -> {
+                // Fallback for raw batch ID
+                if (payload.length > 5 && !payload.contains("://")) {
+                    resolveAndAcceptBatch(payload)
+                } else {
+                    _uiState.update { it.copy(error = "Código QR no válido.") }
+                }
+            }
+        }
+    }
+
+    private fun acceptStoreBatches(storeId: String) {
+        val courierId = authRepository.getCurrentUserUid()
+        if (courierId == null) {
+            _uiState.update { it.copy(error = "Debes iniciar sesión para aceptar lotes.") }
             return
         }
 
-        resolveAndAcceptBatch(labelOrId)
+        _uiState.update { it.copy(isLoading = true, error = null) }
+
+        viewModelScope.launch {
+            runCatching {
+                val user = authRepository.getUserProfile(courierId)
+                val courierName = user?.name ?: "Mensajero"
+
+                val acceptedCount = batchRepository.acceptAllStoreBatches(
+                    storeId = storeId,
+                    courierId = courierId,
+                    courierName = courierName
+                )
+                
+                if (acceptedCount == 0) {
+                    throw Exception("No hay lotes disponibles para esta tienda.")
+                }
+                
+                acceptedCount
+            }.onSuccess { count ->
+                _uiState.update { it.copy(isLoading = false, successBatchId = "STORE_SUCCESS:$count") }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al aceptar los lotes.") }
+            }
+        }
     }
 
     private fun resolveAndAcceptBatch(labelOrId: String) {
@@ -68,13 +114,8 @@ class ScanQrViewModel(
     }
 
     private fun extractBatchId(payload: String): String? {
-        // Simple extraction for now, can be improved with URI parsing if needed
-        return if (payload.contains("bid=")) {
-            payload.substringAfter("bid=").substringBefore("&")
-        } else {
-            // Fallback if the payload is just the batch ID
-            if (payload.length > 5 && !payload.contains("://")) payload else null
-        }
+        // Obsoleto, ya se maneja en onQrScanned
+        return null
     }
     
     fun clearError() {

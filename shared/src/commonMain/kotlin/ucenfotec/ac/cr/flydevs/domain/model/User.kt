@@ -9,6 +9,8 @@ data class User(
     val email: String,
     val phone: String,
     val role: String = UserRole.USER.name, // Default role as seen in your theme tokens
+    val storeId: String? = null,
+    val storeName: String? = null,
     val createdAt: Long = 0L
 
 ){

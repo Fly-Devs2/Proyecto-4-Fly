@@ -40,6 +40,11 @@ interface IBatchRepository {
     fun observeBatchGroups(): Flow<List<BatchGroup>>
 
     /**
+     * Lotes listos para ser recogidos de una tienda específica.
+     */
+    fun observeOutgoingStoreBatches(storeId: String): Flow<List<DeliveryBatch>>
+
+    /**
      * Se ejecuta después de validar el QR.
      */
     suspend fun acceptBatch(
@@ -47,6 +52,16 @@ interface IBatchRepository {
         courierId: String,
         courierName: String
     )
+
+    /**
+     * Acepta todos los lotes listos para recogida de una tienda.
+     * Retorna la cantidad de lotes aceptados.
+     */
+    suspend fun acceptAllStoreBatches(
+        storeId: String,
+        courierId: String,
+        courierName: String
+    ): Int
 
     /**
      * Se ejecuta después de subir la foto de recogida.
