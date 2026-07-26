@@ -1,8 +1,12 @@
 package ucenfotec.ac.cr.flydevs
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -32,9 +36,13 @@ import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MessengerHome
 import ucenfotec.ac.cr.flydevs.navigation.MyEnvelope
 import ucenfotec.ac.cr.flydevs.navigation.ShipmentDetail
+import ucenfotec.ac.cr.flydevs.navigation.ScanQr
+import ucenfotec.ac.cr.flydevs.navigation.BatchPickupEvidence
+import ucenfotec.ac.cr.flydevs.navigation.BatchDeliveryEvidence
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
@@ -58,6 +66,10 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PurchaseHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.BatchDeliveryEvidenceRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.ScanQrRoute
+import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 
 @Composable
@@ -69,18 +81,28 @@ fun App(
 
     val sessionState by sessionViewModel.uiState.collectAsStateWithLifecycle()
 
-    val currentUser = sessionState.user
     val userRole = sessionState.userRole
     FlyAppTheme {
+        if (sessionState.isLoading && loginViewModel.isUserLoggedIn()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AccentViolet)
+            }
+            return@FlyAppTheme
+        }
+
         val navController = rememberNavController()
-        val startDestination = if (loginViewModel.isUserLoggedIn()) Home else Login
+        val startDestination = if (loginViewModel.isUserLoggedIn()) {
+            if (userRole == UserRole.DELIVERY) MessengerHome else Home
+        } else {
+            Login
+        }
 
         NavHost(navController = navController, startDestination = startDestination) {
             composable<Login> {
                 LoginScreen(
                     onLoginSuccess = {
                         sessionViewModel.loadCurrentUser()
-                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
+                    },
                     onRegisterClick = { navController.navigate(Register) },
                     onCompleteProfileRequired = { navController.navigate(CompleteProfile) }
                 )
@@ -89,7 +111,7 @@ fun App(
                 RegisterScreen(
                     onRegisterSuccess = {
                         sessionViewModel.loadCurrentUser()
-                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
+                    },
                     onCompleteProfileRequired = { navController.navigate(CompleteProfile) },
                     onLoginClick = { navController.popBackStack() }
                 )
@@ -98,7 +120,7 @@ fun App(
                 CompleteProfileScreen(
                     onSuccess = {
                         sessionViewModel.loadCurrentUser()
-                        navController.navigate(Home) { popUpTo(Login) { inclusive = true } } }
+                    }
                 )
             }
             composable<Home> {
@@ -107,7 +129,7 @@ fun App(
                     onSignOutSuccess = { navController.navigate(Login) { popUpTo(Home) { inclusive = true } } },
                     onNavigateToMyCollection = { navController.navigate(MyCollection) },
                     onNavigateToOrder = { orderId -> navController.navigate(OrderDetail(orderId)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
                     onNavigateToProfile = { navController.navigate(Profile) },
                     onNavigateToNotifications = { navController.navigate(Notifications) },
                     onNavigateToOrders = { navController.navigate(PurchaseHistory) }
@@ -133,7 +155,7 @@ fun App(
                     userRole = userRole,
                     onBack = { navController.popBackStack() },
                     onCardClick = { cardId -> navController.navigate(CardDetail(cardId)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<MyCollection> {
@@ -141,7 +163,7 @@ fun App(
                     userRole = userRole,
                     onBack = { navController.popBackStack() },
                     onCardClick = { cardId -> navController.navigate(CardDetail(cardId, fromCollection = true)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<CardDetail> { backStackEntry ->
@@ -152,7 +174,7 @@ fun App(
                     cardId = route.cardId,
                     fromCollection = route.fromCollection,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
                     onGoToEnvelope = {
                         navController.navigate(MyOrders)
                     }
@@ -162,7 +184,7 @@ fun App(
                 PublishGameCardScreen(
                     userRole=userRole,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<Profile> {
@@ -174,7 +196,7 @@ fun App(
                             popUpTo(Home) { inclusive = true }
                         }
                     },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
                     onNavigateToNotificationSettings = { navController.navigate(NotificationSettings) }
                 )
             }
@@ -183,7 +205,7 @@ fun App(
                     userRole=userRole,
                     onBack = { navController.popBackStack() },
                     onOrderClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<OrderDetail> { backStackEntry ->
@@ -194,7 +216,7 @@ fun App(
                     onBack = { navController.popBackStack() },
                     onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
                     onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<MyOrders> {
@@ -211,7 +233,7 @@ fun App(
                         navController.navigate(CardCatalog)
                     },
                     onNavSelect = { destination ->
-                        handleBottomNavNavigation(navController, destination)
+                        handleBottomNavNavigation(navController, destination, userRole)
                     }
                 )
             }
@@ -223,27 +245,61 @@ fun App(
                     userRole = userRole,
 
                     onScanQr = {
-                        println("Escanear QR pendiente")
+                        navController.navigate(ScanQr)
                     },
 
                     onTakePickupPhoto = { batchId ->
-                        println("Foto de recogida pendiente: $batchId")
+                        navController.navigate(BatchPickupEvidence(batchId))
                     },
 
                     onTakeDeliveryPhoto = { batchId ->
-                        println("Foto de entrega pendiente: $batchId")
+                        navController.navigate(BatchDeliveryEvidence(batchId))
                     },
 
                     onOpenBatch = { batchId ->
-                        println("Detalle del lote pendiente: $batchId")
+                        navController.navigate(ShipmentDetail(batchId))
                     },
 
                     onNavSelect = { destination ->
                         handleBottomNavNavigation(
                             navController,
-                            destination
+                            destination,
+                            userRole
                         )
                     }
+                )
+            }
+            
+            composable<ScanQr> {
+                ScanQrRoute(
+                    onSuccess = { batchId ->
+                        navController.navigate(BatchPickupEvidence(batchId)) {
+                            popUpTo(ScanQr) { inclusive = true }
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable<BatchPickupEvidence> { backStackEntry ->
+                val route = backStackEntry.toRoute<BatchPickupEvidence>()
+                BatchPickupEvidenceRoute(
+                    batchId = route.batchId,
+                    onSuccess = {
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable<BatchDeliveryEvidence> { backStackEntry ->
+                val route = backStackEntry.toRoute<BatchDeliveryEvidence>()
+                BatchDeliveryEvidenceRoute(
+                    batchId = route.batchId,
+                    onSuccess = {
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable<EnvelopeDetail> { backStackEntry ->
@@ -265,7 +321,7 @@ fun App(
                         }
                     },
                     onNavSelect = { destination ->
-                        handleBottomNavNavigation(navController, destination)
+                        handleBottomNavNavigation(navController, destination, userRole)
                     }
                 )
             }
@@ -288,7 +344,7 @@ fun App(
                     userRole = userRole,
                     onBack = { navController.popBackStack() },
                     onBatchClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
             composable<ShipmentDetail> { backStackEntry ->
@@ -297,7 +353,13 @@ fun App(
                     userRole = userRole,
                     batchId = route.batchId,
                     onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination) }
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
+                    onTakePickupPhoto = { batchId ->
+                        navController.navigate(BatchPickupEvidence(batchId))
+                    },
+                    onTakeDeliveryPhoto = { batchId ->
+                        navController.navigate(BatchDeliveryEvidence(batchId))
+                    }
                 )
             }
 
@@ -315,12 +377,14 @@ fun App(
  */
 private fun handleBottomNavNavigation(
     navController: NavController,
-    destination: FlyNavDestination
+    destination: FlyNavDestination,
+    userRole: UserRole
 ) {
     when (destination) {
         FlyNavDestination.Home -> {
-            navController.navigate(Home) {
-                popUpTo(Home) { inclusive = true }
+            val homeRoute = if (userRole == UserRole.DELIVERY) MessengerHome else Home
+            navController.navigate(homeRoute) {
+                popUpTo(homeRoute) { inclusive = true }
                 launchSingleTop = true
             }
         }
@@ -345,13 +409,7 @@ private fun handleBottomNavNavigation(
             }
         }
         FlyNavDestination.Deliveries -> {
-            navController.navigate(MyBatches) {
-                launchSingleTop = true
-            }
-        }
-
-        FlyNavDestination.Deliveries ->{
-            navController.navigate(MessengerHome){
+            navController.navigate(MessengerHome) {
                 launchSingleTop = true
             }
         }

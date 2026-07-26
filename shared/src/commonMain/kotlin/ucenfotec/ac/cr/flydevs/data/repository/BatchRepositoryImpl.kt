@@ -11,10 +11,14 @@ import ucenfotec.ac.cr.flydevs.domain.model.BatchGroup
 import ucenfotec.ac.cr.flydevs.domain.model.BatchQrStatus
 import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
+import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import kotlin.time.Clock
 
-class BatchRepositoryImpl : IBatchRepository {
+class BatchRepositoryImpl(
+    private val orderRepository: IOrderRepository
+) : IBatchRepository {
 
     private val firestore = Firebase.firestore
 
@@ -125,6 +129,33 @@ class BatchRepositoryImpl : IBatchRepository {
         return mapDocumentToBatch(document)
     }
 
+    override fun observeBatchById(batchId: String): Flow<DeliveryBatch?> {
+        require(batchId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
+
+        return batchesCollection
+            .document(batchId)
+            .snapshots
+            .map { document ->
+                if (!document.exists) null
+                else mapDocumentToBatch(document)
+            }
+    }
+
+    override suspend fun findBatchIdByLabel(label: String): String? {
+        require(label.isNotBlank()) {
+            "La etiqueta del lote es obligatoria."
+        }
+
+        return batchesCollection
+            .where { "batchId" equalTo label }
+            .get()
+            .documents
+            .firstOrNull()
+            ?.id
+    }
+
     override suspend fun acceptBatch(
         batchId: String,
         courierId: String,
@@ -212,23 +243,27 @@ class BatchRepositoryImpl : IBatchRepository {
                 courierId = courierId
             )
 
-            check(currentBatch.status == BatchStatus.ACCEPTED) {
-                "El lote no se encuentra en estado aceptado."
-            }
 
             set(
                 documentRef = batchReference,
                 data = currentBatch.copy(
-                    pickupEvidence = evidence.copy(
-                        type = BatchEvidenceType.PICKUP,
+                    pickupEvidence = BatchEvidence(
+                        storagePath = evidence.storagePath,
+                        downloadUrl = evidence.downloadUrl,
                         uploadedAt = now,
-                        uploadedBy = courierId
+                        uploadedBy = courierId,
+                        type = BatchEvidenceType.PICKUP,
+                        note = evidence.note
                     ),
                     pickupAt = now,
-                    status = BatchStatus.PICKED_UP,
+                    status = BatchStatus.IN_TRANSIT,
                     updatedAt = now
                 )
             )
+
+            currentBatch.orderIds.forEach { orderId ->
+                orderRepository.updateOrderStatus(orderId, OrderStatus.IN_TRANSIT)
+            }
         }
     }
 
@@ -317,16 +352,23 @@ class BatchRepositoryImpl : IBatchRepository {
             set(
                 documentRef = batchReference,
                 data = currentBatch.copy(
-                    deliveryEvidence = evidence.copy(
-                        type = BatchEvidenceType.DELIVERY,
+                    deliveryEvidence = BatchEvidence(
+                        storagePath = evidence.storagePath,
+                        downloadUrl = evidence.downloadUrl,
                         uploadedAt = now,
-                        uploadedBy = courierId
+                        uploadedBy = courierId,
+                        type = BatchEvidenceType.DELIVERY,
+                        note = evidence.note
                     ),
                     deliveredAt = now,
                     status = BatchStatus.DELIVERED,
                     updatedAt = now
                 )
             )
+
+            currentBatch.orderIds.forEach { orderId ->
+                orderRepository.updateOrderStatus(orderId, OrderStatus.DELIVERED_TO_STORE)
+            }
         }
     }
 

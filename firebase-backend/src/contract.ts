@@ -5,6 +5,8 @@ export const Collections = {
   notifications: "notifications",
   notificationPreferences: "notifications_preferences",
   mail: "mail",
+  batches: "batches",
+  stores: "stores",
 } as const;
 
 export const status = {
@@ -24,6 +26,22 @@ export const CardStatus = {
   AVAILABLE: "AVAILABLE",
   RESERVED: "RESERVED",
   SOLD: "SOLD",
+} as const;
+
+export const BatchStatus = {
+  READY_FOR_PICKUP: "READY_FOR_PICKUP",
+  ACCEPTED: "ACCEPTED",
+  PICKED_UP: "PICKED_UP",
+  IN_TRANSIT: "IN_TRANSIT",
+  DELIVERED: "DELIVERED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export const BatchQrStatus = {
+  ACTIVE: "ACTIVE",
+  USED: "USED",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
 } as const;
 
 export const statusLabels: Record<string, string> = {

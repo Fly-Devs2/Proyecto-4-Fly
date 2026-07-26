@@ -26,4 +26,5 @@ data class Order(
     val currentQrId: String = "",
     val destinationStore: String = "",
     val sourceStore: String = "",
+    val batchId: String? = null,
 )

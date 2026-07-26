@@ -29,93 +29,46 @@ object BatchTestDataSeeder {
             .now()
             .toEpochMilliseconds()
 
-        val activeBatch = DeliveryBatch(
-            batchId = "L-2208",
-            orderIds = listOf(TEST_ORDER_ID),
+        // 1. First, check if "test_batch_available" needs to be reset
+        try {
+            val availableDoc = batchesCollection.document("test_batch_available").get()
+            val existingCourierId = if (availableDoc.exists) availableDoc.get<String?>("courierId") else null
+            
+            if (!availableDoc.exists || existingCourierId.isNullOrBlank()) {
+                val availableBatch = DeliveryBatch(
+                    batchId = "L-2212",
+                    orderIds = listOf(TEST_ORDER_ID),
 
-            sourceStoreId = "perron_store",
-            sourceStoreName = "Perrón Store",
-            sourceStoreAddress = "San Pedro, San José",
+                    sourceStoreId = "vortex_store",
+                    sourceStoreName = "Vortex",
+                    sourceStoreAddress = "Curridabat, San José",
 
-            destinationStoreId = "arzu_bc",
-            destinationStoreName = "Arzu Barrio Chino",
-            destinationStoreAddress = "Escazú, San José",
+                    destinationStoreId = "kira_store",
+                    destinationStoreName = "Kira",
+                    destinationStoreAddress = "Heredia centro",
 
-            courierId = courierId,
-            courierName = courierName,
+                    courierId = null,
+                    courierName = null,
 
-            status = BatchStatus.PICKED_UP,
-            courierReward = 2800L,
+                    status = BatchStatus.READY_FOR_PICKUP,
+                    courierReward = 2500L,
 
-            qrStatus = BatchQrStatus.USED,
+                    qrStatus = BatchQrStatus.ACTIVE,
+                    qrExpiresAt = now + 86_400_000L,
 
-            pickupEvidence = BatchEvidence(
-                storagePath =
-                    "batch-evidence/test_batch_active/pickup/test.jpg",
-                downloadUrl =
-                    "https://example.com/test-pickup.jpg",
-                uploadedAt = now - 1_800_000L,
-                uploadedBy = courierId,
-                type = BatchEvidenceType.PICKUP,
-                note = "Evidencia de prueba"
-            ),
+                    createdAt = now,
+                    updatedAt = now
+                )
+                batchesCollection.document("test_batch_available").set(availableBatch)
+                println("DEBUG_SEEDER: Reset test_batch_available (was empty)")
+            } else {
+                println("DEBUG_SEEDER: Skipped reset of test_batch_available (already accepted by $existingCourierId)")
+            }
+        } catch (e: Exception) {
+            println("DEBUG_SEEDER: Error checking available batch: ${e.message}")
+        }
 
-            createdAt = now - 7_200_000L,
-            acceptedAt = now - 3_600_000L,
-            pickupAt = now - 1_800_000L,
-            updatedAt = now - 1_800_000L
-        )
-
-        val upcomingBatchOne = DeliveryBatch(
-            batchId = "L-2210",
-            orderIds = listOf(TEST_ORDER_ID),
-
-            sourceStoreId = "kira_store",
-            sourceStoreName = "Kira",
-            sourceStoreAddress = "Curridabat, San José",
-
-            destinationStoreId = "vortex_store",
-            destinationStoreName = "Vortex",
-            destinationStoreAddress = "Heredia centro",
-
-            courierId = courierId,
-            courierName = courierName,
-
-            status = BatchStatus.ACCEPTED,
-            courierReward = 1800L,
-
-            qrStatus = BatchQrStatus.USED,
-
-            createdAt = now - 3_600_000L,
-            acceptedAt = now - 900_000L,
-            updatedAt = now - 900_000L
-        )
-
-        val upcomingBatchTwo = DeliveryBatch(
-            batchId = "L-2211",
-            orderIds = listOf(TEST_ORDER_ID),
-
-            sourceStoreId = "vortex_store",
-            sourceStoreName = "Vortex",
-            sourceStoreAddress = "Curridabat, San José",
-
-            destinationStoreId = "kira_store",
-            destinationStoreName = "Kira",
-            destinationStoreAddress = "Heredia centro",
-
-            courierId = courierId,
-            courierName = courierName,
-
-            status = BatchStatus.ACCEPTED,
-            courierReward = 2100L,
-
-            qrStatus = BatchQrStatus.USED,
-
-            createdAt = now - 1_800_000L,
-            acceptedAt = now - 600_000L,
-            updatedAt = now - 600_000L
-        )
-
+        // 2. Seed your history (this is safe as it's separate from the scanned batch)
         val deliveredBatch = DeliveryBatch(
             batchId = "L-2197",
             orderIds = listOf(TEST_ORDER_ID),
@@ -137,23 +90,20 @@ object BatchTestDataSeeder {
             qrStatus = BatchQrStatus.USED,
 
             pickupEvidence = BatchEvidence(
-                storagePath =
-                    "batch-evidence/test_batch_delivered/pickup/test.jpg",
-                downloadUrl =
-                    "https://example.com/test-pickup.jpg",
+                storagePath = "batch-evidence/test_batch_delivered/pickup/test.jpg",
+                downloadUrl = "https://images.unsplash.com/photo-1566576721346-d4a3b4eaad55?q=80&w=1000&auto=format&fit=crop",
                 uploadedAt = now - 18_000_000L,
                 uploadedBy = courierId,
                 type = BatchEvidenceType.PICKUP
             ),
 
             deliveryEvidence = BatchEvidence(
-                storagePath =
-                    "batch-evidence/test_batch_delivered/delivery/test.jpg",
-                downloadUrl =
-                    "https://example.com/test-delivery.jpg",
+                storagePath = "batch-evidence/test_batch_delivered/delivery/test.jpg",
+                downloadUrl = "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=1000&auto=format&fit=crop",
                 uploadedAt = now - 14_400_000L,
                 uploadedBy = courierId,
-                type = BatchEvidenceType.DELIVERY
+                type = BatchEvidenceType.DELIVERY,
+                note = "Entregado a recepcionista en Vortex"
             ),
 
             createdAt = now - 21_600_000L,
@@ -164,49 +114,13 @@ object BatchTestDataSeeder {
             updatedAt = now - 14_400_000L
         )
 
-        val availableBatch = DeliveryBatch(
-            batchId = "L-2212",
-            orderIds = listOf(TEST_ORDER_ID),
+        batchesCollection.document("batch_delivered_$courierId").set(deliveredBatch)
+    }
 
-            sourceStoreId = "vortex_store",
-            sourceStoreName = "Vortex",
-            sourceStoreAddress = "Curridabat, San José",
-
-            destinationStoreId = "kira_store",
-            destinationStoreName = "Kira",
-            destinationStoreAddress = "Heredia centro",
-
-            courierId = null,
-            courierName = null,
-
-            status = BatchStatus.READY_FOR_PICKUP,
-            courierReward = 2500L,
-
-            qrStatus = BatchQrStatus.ACTIVE,
-            qrExpiresAt = now + 86_400_000L,
-
-            createdAt = now,
-            updatedAt = now
-        )
-
-        batchesCollection
-            .document("test_batch_active")
-            .set(activeBatch)
-
-        batchesCollection
-            .document("test_batch_upcoming_1")
-            .set(upcomingBatchOne)
-
-        batchesCollection
-            .document("test_batch_upcoming_2")
-            .set(upcomingBatchTwo)
-
-        batchesCollection
-            .document("test_batch_delivered")
-            .set(deliveredBatch)
-
-        batchesCollection
-            .document("test_batch_available")
-            .set(availableBatch)
+    /**
+     * Genera un payload de QR para pruebas.
+     */
+    fun generateTestQrPayload(batchDocumentId: String): String {
+        return "flydevs://batch-qr?bid=$batchDocumentId"
     }
 }
