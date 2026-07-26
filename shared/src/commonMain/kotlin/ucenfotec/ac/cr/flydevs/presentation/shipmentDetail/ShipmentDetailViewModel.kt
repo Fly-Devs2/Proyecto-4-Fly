@@ -7,22 +7,41 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 
 class ShipmentDetailViewModel(
     private val batchRepository: IBatchRepository,
     private val orderRepository: IOrderRepository,
+    private val authRepository: IAuthRepository,
     private val batchId: String,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShipmentDetailUiState())
     val uiState: StateFlow<ShipmentDetailUiState> = _uiState.asStateFlow()
 
+    private var batchJob: Job? = null
     private var ordersJob: Job? = null
 
     init {
-        loadBatch()
+        observeBatch()
+    }
+
+    fun startRoute() {
+        val courierId = authRepository.getCurrentUserUid() ?: return
+        _uiState.value = _uiState.value.copy(isLoading = true)
+
+        viewModelScope.launch {
+            runCatching {
+                batchRepository.startDeliveryRoute(batchId, courierId)
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Error al iniciar ruta: ${error.message}",
+                )
+            }
+        }
     }
 
     fun nextOrdersPage() {
@@ -40,17 +59,17 @@ class ShipmentDetailViewModel(
         loadOrdersPage(page)
     }
 
-    // Una entrega ya realizada no cambia, así que basta con una lectura puntual.
-    private fun loadBatch() {
-        viewModelScope.launch {
-            runCatching { batchRepository.getBatchById(batchId) }
-                .onSuccess { batch ->
+    private fun observeBatch() {
+        batchJob?.cancel()
+        batchJob = viewModelScope.launch {
+            batchRepository.observeBatchById(batchId)
+                .collect { batch ->
                     if (batch == null) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             errorMessage = "Lote no encontrado",
                         )
-                        return@onSuccess
+                        return@collect
                     }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -58,12 +77,6 @@ class ShipmentDetailViewModel(
                         errorMessage = null,
                     )
                     loadOrdersPage(_uiState.value.ordersPage)
-                }
-                .onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Error de permisos o conexión: ${error.message}",
-                    )
                 }
         }
     }
@@ -91,5 +104,11 @@ class ShipmentDetailViewModel(
                     )
                 }
         }
+    }
+
+    override fun onCleared() {
+        batchJob?.cancel()
+        ordersJob?.cancel()
+        super.onCleared()
     }
 }

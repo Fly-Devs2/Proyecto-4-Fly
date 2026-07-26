@@ -28,6 +28,12 @@ interface IBatchRepository {
         batchId: String
     ): DeliveryBatch?
 
+    fun observeBatchById(
+        batchId: String
+    ): Flow<DeliveryBatch?>
+
+    suspend fun findBatchIdByLabel(label: String): String?
+
     /**
      * Agrupaciones de lotes por tienda destino, para la vista de auditoría.
      */

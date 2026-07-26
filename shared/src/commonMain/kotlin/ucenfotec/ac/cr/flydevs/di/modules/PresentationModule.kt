@@ -14,6 +14,8 @@ import ucenfotec.ac.cr.flydevs.presentation.notifications.NotificationPreference
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.presentation.myBatches.MyBatchesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
+import ucenfotec.ac.cr.flydevs.presentation.batch.BatchEvidenceViewModel
+import ucenfotec.ac.cr.flydevs.presentation.batch.ScanQrViewModel
 import ucenfotec.ac.cr.flydevs.presentation.profile.ProfileViewModel
 import ucenfotec.ac.cr.flydevs.presentation.shipmentDetail.ShipmentDetailViewModel
 
@@ -45,8 +47,10 @@ val presentationModule = module {
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { MyBatchesViewModel(get(), get()) }
-    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), batchDocumentId) }
+    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), get(), batchDocumentId) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
     viewModel { SessionViewModel(get()) }
     viewModel { MessengerHomeViewModel(get(), get()) }
+    viewModel { ScanQrViewModel(get(), get()) }
+    viewModel { BatchEvidenceViewModel(get(), get(), get()) }
 }

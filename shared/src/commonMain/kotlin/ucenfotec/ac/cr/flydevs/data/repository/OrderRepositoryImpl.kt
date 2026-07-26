@@ -89,6 +89,7 @@ class OrderRepositoryImpl(
                     sellerName = safeGet<String>("sellerName") ?: "Vendedor",
                     buyerName = safeGet<String>("buyerName") ?: "Comprador",
                     sobreId = safeGet<String>("sobreId") ?: "",
+                    batchId = safeGet<String>("batchId"),
                     createdAt = 0L, 
                     modifiedAt = 0L
                 )

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.Surface
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Icon
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
@@ -75,6 +83,16 @@ fun MessengerHomeRoute(
 
     val message = uiState.errorMessage
         ?: uiState.successMessage
+
+    LaunchedEffect(uiState.courierId) {
+        if (uiState.courierId == "UPClfzmesdb9zJsu0uqZIVHavbg2") {
+            ucenfotec.ac.cr.flydevs.data.debug.BatchTestDataSeeder.seed(
+                courierId = uiState.courierId,
+                courierName = uiState.courierName.ifBlank { "Mensajero Demo" }
+            )
+            println("DEBUG_SEEDER: Batches seeded for courier ${uiState.courierId}")
+        }
+    }
 
     LaunchedEffect(message) {
         if (!message.isNullOrBlank()) {
@@ -123,7 +141,7 @@ fun MessengerHomeScreen(
         bottomBar = {
             BottomNav(
                 userRole = userRole,
-                currentDestination = FlyNavDestination.Home,
+                currentDestination = FlyNavDestination.Deliveries,
                 onDestinationSelected = onNavSelect
             )
         }
@@ -175,6 +193,7 @@ fun MessengerHomeScreen(
                 )
             }
 
+            /*
             item {
                 val activeBatch = uiState.activeBatch
 
@@ -195,12 +214,14 @@ fun MessengerHomeScreen(
                         },
                         onTakeDeliveryPhoto = {
                             onTakeDeliveryPhoto(activeBatch.id)
-                        }
+                        },
+                        onOpenBatch = onOpenBatch
                     )
                 } else {
                     NoActiveBatchCard()
                 }
             }
+            */
 
             item {
                 ScanQrButton(
@@ -364,17 +385,36 @@ private fun ActiveBatchSection(
     isUpdating: Boolean,
     onTakePickupPhoto: () -> Unit,
     onStartRoute: () -> Unit,
-    onTakeDeliveryPhoto: () -> Unit
+    onTakeDeliveryPhoto: () -> Unit,
+    onOpenBatch: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "ENTREGA ACTIVA · LOTE #${batch.displayCode()}",
-            color = MessengerYellow,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "ENTREGA ACTIVA · LOTE #${batch.displayCode()}",
+                color = MessengerYellow,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            IconButton(
+                onClick = { onOpenBatch(batch.id) },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Visibility,
+                    contentDescription = "Ver detalle",
+                    tint = MessengerTextSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
 
       //  BatchRouteGraphic()
 
@@ -748,7 +788,7 @@ private fun ScanQrButton(
             )
         } else {
             Text(
-                text = "▦  Aceptar lote — escanear QR",
+                text = "Aceptar lote — escanear QR",
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )

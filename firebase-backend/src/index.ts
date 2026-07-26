@@ -5,6 +5,7 @@ initializeApp();
 // ── Intercambio (sobres) ──
 export { releaseUnpaidExchanges } from "./exchange/releaseUnpaidExchanges";
 export { generateOrderQr } from "./exchange/generateOrderQr";
+export { groupOrdersIntoBatches, triggerGroupOrdersIntoBatches } from "./exchange/groupOrdersIntoBatches";
 
 // ── Notificaciones ──
 export { onOrderStatusChange } from "./notifications/onOrderStatusChange";
