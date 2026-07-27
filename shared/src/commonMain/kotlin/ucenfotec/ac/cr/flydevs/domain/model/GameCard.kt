@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.domain.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class GameCard(
@@ -15,7 +16,10 @@ data class GameCard(
     val price: Long = 0L,
     val quantity: Int = 1,
     val description: String = "",
-    val imageUrl: String = "",
+    val imageUrls: List<String> = emptyList(),
     val status: CardStatus = CardStatus.AVAILABLE,
     val sourceStore: String = "",
-)
+) {
+    @Transient
+    val imageUrl: String = imageUrls.firstOrNull() ?: ""
+}

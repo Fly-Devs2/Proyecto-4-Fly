@@ -17,5 +17,6 @@ data class CardDetailUiState(
     val shouldOpenEnvelope: Boolean = false,
     val targetEnvelopeId: String? = null,
     val seller: User? = null,
-    val sourceStoreName: String? = null
+    val sourceStoreName: String? = null,
+    val currentImageIndex: Int = 0
 )

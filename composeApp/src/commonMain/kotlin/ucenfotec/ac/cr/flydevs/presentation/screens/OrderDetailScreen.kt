@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -130,7 +131,9 @@ fun OrderDetailScreen(
                         order = order,
                         role = uiState.userRole,
                         onNavigateToPay = onNavigateToPay,
-                        onViewImage = { url -> fullScreenImageUrl = url }
+                        onViewImage = { url -> fullScreenImageUrl = url },
+                        onApprove = { viewModel.approveSinpeProof() },
+                        onReject = { viewModel.rejectSinpeProof() }
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -161,6 +164,52 @@ fun OrderDetailScreen(
                         onAddEvidence = { showCamera = true },
                         onViewImage = { url -> fullScreenImageUrl = url }
                     )
+
+                    // --- Cancel Order Button (Buyer Only) ---
+                    if (uiState.userRole == UserRole.BUYER &&
+                        !order.sinpePaid &&
+                        order.status in listOf(
+                            OrderStatus.WAITING_SELLER_DELIVERY,
+                            OrderStatus.WAITING_PAYMENT,
+                            OrderStatus.AWAITING_SINPE_VALIDATION
+                        )) {
+                        Spacer(Modifier.height(16.dp))
+                        var showCancelConfirm by remember { mutableStateOf(false) }
+                        
+                        OutlinedButton(
+                            onClick = { showCancelConfirm = true },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AccentRed
+                            ),
+                            border = BorderStroke(1.5.dp, AccentRed)
+                        ) {
+                            Text("Cancelar orden", fontWeight = FontWeight.Bold)
+                        }
+
+                        if (showCancelConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showCancelConfirm = false },
+                                title = { Text("¿Cancelar esta orden?") },
+                                text = { Text("Esta acción no se puede deshacer. ¿Deseas continuar?") },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            showCancelConfirm = false
+                                            viewModel.cancelOrder()
+                                        }
+                                    ) {
+                                        Text("Cancelar orden", color = AccentRed)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showCancelConfirm = false }) {
+                                        Text("Mantener")
+                                    }
+                                }
+                            )
+                        }
+                    }
                     
                     Spacer(Modifier.height(40.dp))
                 }
@@ -224,7 +273,7 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(8.dp))
-                    Text("✦ " + status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                    Text("✦ " + status.label.uppercase(), color = getOrderStatusAccent(status), fontSize = 9.sp, fontWeight = FontWeight.Black)
                 }
                 val cardDisplayName = if (card.name.length > 50) card.name.take(47) + "..." else card.name
                 Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
@@ -268,6 +317,7 @@ private fun TrackingStepper(currentStatus: OrderStatus, destinationStoreName: St
         val steps = listOf(
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
+            OrderStatus.AWAITING_SINPE_VALIDATION,
             OrderStatus.WAITING_STORE_SHIPMENT,
             OrderStatus.IN_TRANSIT,
             OrderStatus.DELIVERED_TO_STORE,
@@ -321,12 +371,13 @@ private fun TrackingStepItem(
         Spacer(Modifier.width(16.dp))
         
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
-            Text(
-                text = status.label,
-                color = if (isCurrent) AccentGold else if (isCompleted) TextPrimary else TextMuted,
-                fontSize = 14.sp,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
-            )
+            val accent = getOrderStatusAccent(status)
+                        Text(
+                            text = status.label,
+                            color = if (isCurrent) accent else if (isCompleted) TextPrimary else TextMuted,
+                            fontSize = 14.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                        )
             if (dynamicMessage != null) {
                 Text(
                     text = dynamicMessage,
@@ -345,7 +396,9 @@ private fun ComprobanteSinpeSection(
     order: Order,
     role: UserRole,
     onNavigateToPay: (String) -> Unit,
-    onViewImage: (String) -> Unit
+    onViewImage: (String) -> Unit,
+    onApprove: () -> Unit,
+    onReject: () -> Unit
 ) {
     Surface(
         color = BgCard,
@@ -366,9 +419,56 @@ private fun ComprobanteSinpeSection(
 
             Spacer(Modifier.height(16.dp))
 
-            if (order.sinpePaid) {
+            if (!order.sinpeReceiptUrl.isNullOrBlank()) {
                 ComprobanteCardPolished(order, onViewImage)
-            } else if (role == UserRole.BUYER) {
+
+                if (order.status == OrderStatus.AWAITING_SINPE_VALIDATION) {
+                    Spacer(Modifier.height(8.dp))
+                    if (role == UserRole.BUYER) {
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado por el vendedor. Adjunta uno nuevo para continuar.", color = TextMuted, fontSize = 13.sp)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Button(
+                                onClick = { onNavigateToPay(order.id) },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text("Pagar con SINPE", style = Typography.labelLarge)
+                            }
+                        } else {
+                            Text("Esperando validación del vendedor.", color = TextMuted, fontSize = 13.sp)
+                        }
+                    } else if (role == UserRole.SELLER) {
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado. Esperando que el comprador suba uno nuevo.", color = TextMuted, fontSize = 13.sp)
+                        } else {
+                            Text("Revisa el comprobante antes de aprobarlo.", color = TextMuted, fontSize = 13.sp)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                PrimaryButton(
+                                    text = "Aprobar",
+                                    onClick = onApprove,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Button(
+                                    onClick = onReject,
+                                    modifier = Modifier.weight(1f).height(52.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Rechazar", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (role == UserRole.BUYER && order.sinpeReceiptUrl.isNullOrBlank()) {
                 Button(
                     onClick = { onNavigateToPay(order.id) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),

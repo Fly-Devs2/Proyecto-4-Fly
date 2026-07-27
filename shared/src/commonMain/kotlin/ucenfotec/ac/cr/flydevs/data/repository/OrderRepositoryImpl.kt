@@ -8,6 +8,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
@@ -21,6 +22,7 @@ class OrderRepositoryImpl(
 ) : IOrderRepository {
     private val firestore = Firebase.firestore
     private val ordersCollection = firestore.collection("orders")
+    private val gameCardsCollection = firestore.collection("game_cards")
 
     override fun getOrdersForUser(userId: String): Flow<List<Order>> {
         println("DEBUG_ORDERS: Fetching orders for user: $userId")
@@ -124,9 +126,44 @@ class OrderRepositoryImpl(
 
     private fun DocumentSnapshot.safeGetCards(field: String): List<OrderCardSnapshot>? {
         return try {
-            get<List<OrderCardSnapshot>>(field)
+            val cards = get<List<OrderCardSnapshot>>(field)
+            // Nuevas órdenes con imageUrls
+            cards
         } catch (e: Exception) {
-            null
+            // Fallback: órdenes antiguas con imageUrl (String) en lugar de imageUrls (List<String>)
+            try {
+                val rawCards = get<List<Map<String, Any?>>>(field)
+                rawCards.map { cardMap ->
+                    val imageUrls = when {
+                        // Si tiene imageUrls (nuevo formato)
+                        cardMap.containsKey("imageUrls") && cardMap["imageUrls"] is List<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            (cardMap["imageUrls"] as List<String>).takeIf { it.isNotEmpty() } ?: emptyList()
+                        }
+                        // Si tiene imageUrl (antiguo formato)
+                        cardMap.containsKey("imageUrl") && cardMap["imageUrl"] is String -> {
+                            val imageUrl = cardMap["imageUrl"] as String
+                            if (imageUrl.isNotEmpty()) listOf(imageUrl) else emptyList()
+                        }
+                        else -> emptyList()
+                    }
+                    OrderCardSnapshot(
+                        cardId = cardMap["cardId"] as? String ?: "",
+                        name = cardMap["name"] as? String ?: "",
+                        imageUrls = imageUrls,
+                        price = when (val p = cardMap["price"]) {
+                            is Long -> p
+                            is Number -> p.toLong()
+                            else -> 0L
+                        },
+                        condition = cardMap["condition"] as? String ?: "",
+                        game = cardMap["game"] as? String ?: ""
+                    )
+                }
+            } catch (e2: Exception) {
+                println("DEBUG_ORDERS: Failed to parse cards from $field: ${e2.message}")
+                null
+            }
         }
     }
 
@@ -162,8 +199,36 @@ class OrderRepositoryImpl(
 
         val updated = current.copy(
             sinpeReceiptUrl = proofUrl,
+            status = OrderStatus.AWAITING_SINPE_VALIDATION,
+            sinpeRejected = false,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun approveSinpeProof(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
             sinpePaid = true,
             status = OrderStatus.WAITING_STORE_SHIPMENT,
+            sinpeRejected = false,
+            modifiedAt = getEpochMillis()
+        )
+        ordersCollection.document(orderId).set(Order.serializer(), updated)
+        return updated
+    }
+
+    override suspend fun rejectSinpeProof(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        val updated = current.copy(
+            sinpePaid = false,
+            status = OrderStatus.AWAITING_SINPE_VALIDATION,
+            sinpeRejected = true,
             modifiedAt = getEpochMillis()
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
@@ -204,5 +269,67 @@ class OrderRepositoryImpl(
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
         return updated
+    }
+
+    override suspend fun cancelOrder(orderId: String): Order {
+        val current = fetchOrderOnce(orderId)
+            ?: throw IllegalStateException("Orden no encontrada: $orderId")
+
+        // Validar que es cancelable
+        if (current.sinpePaid) {
+            throw IllegalStateException("No se puede cancelar una orden pagada confirmada")
+        }
+        if (current.status !in listOf(
+            OrderStatus.WAITING_SELLER_DELIVERY,
+            OrderStatus.WAITING_PAYMENT,
+            OrderStatus.AWAITING_SINPE_VALIDATION
+        )) {
+            throw IllegalStateException("La orden no está en estado cancelable: ${current.status}")
+        }
+
+        val now = getEpochMillis()
+
+        // UPDATE parcial: solo cambiar status y modifiedAt
+        val updates = mapOf(
+            "status" to OrderStatus.CANCELLED.name,
+            "modifiedAt" to now
+        )
+        ordersCollection.document(orderId).update(updates)
+
+        current.cards.forEach { cardSnapshot ->
+            val cardId = cardSnapshot.cardId.trim()
+            if (cardId.isBlank()) {
+                return@forEach
+            }
+
+            try {
+                val cardDocument = gameCardsCollection.document(cardId).get()
+                if (!cardDocument.exists) {
+                    println("DEBUG_ORDERS: Card $cardId no longer exists while cancelling order $orderId")
+                    return@forEach
+                }
+
+                val rawStatus = cardDocument.get<String>("status")
+                val actualStatus = rawStatus?.let { statusName ->
+                    runCatching { CardStatus.valueOf(statusName) }.getOrNull()
+                }
+
+                if (actualStatus != CardStatus.RESERVED) {
+                    println("DEBUG_ORDERS: Card $cardId not reverted on cancel because current status is $actualStatus")
+                    return@forEach
+                }
+
+                gameCardsCollection.document(cardId).update(
+                    mapOf("status" to CardStatus.AVAILABLE.name)
+                )
+            } catch (e: Exception) {
+                println("DEBUG_ORDERS: Failed to revert card $cardId for cancelled order $orderId: ${e.message}")
+            }
+        }
+
+        return current.copy(
+            status = OrderStatus.CANCELLED,
+            modifiedAt = now
+        )
     }
 }

@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -145,7 +147,7 @@ fun MyEnvelopesScreen(
 
                 else -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
                             horizontal = 16.dp,
                             vertical = 12.dp
@@ -576,7 +578,7 @@ private fun EnvelopeListItem(
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                                        .defaultMinSize(minHeight = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentViolet,
                         contentColor = TextPrimary
@@ -595,7 +597,7 @@ private fun EnvelopeListItem(
                     enabled = !isDeleting,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                                        .defaultMinSize(minHeight = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentRed,
                         contentColor = TextPrimary,
@@ -765,7 +767,7 @@ private fun ReserveAllButton(
         enabled = enabled && !isLoading,
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .defaultMinSize(minHeight = 54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AccentViolet,

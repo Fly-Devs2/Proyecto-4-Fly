@@ -85,17 +85,25 @@ fun CardMarketplaceScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var searchQuery by remember { mutableStateOf("") }
-    var sortLowPrice by remember { mutableStateOf(true) }
-    var showFilters by remember { mutableStateOf(false) }
     val maxCatalogPrice = remember(uiState.cards) {
         uiState.cards.maxOfOrNull { it.price }?.coerceAtLeast(1L) ?: 1L
     }
-    var selectedGameFilter by remember { mutableStateOf<GameFilter>(GameFilters.first()) }
 
-    var selectedPriceRange by remember(maxCatalogPrice) {
+    // FILTROS ACTIVOS (aplicados a la lista)
+    var activeSearchQuery by remember { mutableStateOf("") }
+    var activeSortLowPrice by remember { mutableStateOf(true) }
+    var activeSelectedGameFilter by remember { mutableStateOf<GameFilter>(GameFilters.first()) }
+    var activeSelectedPriceRange by remember(maxCatalogPrice) {
         mutableStateOf(0f..maxCatalogPrice.toFloat())
     }
+
+    // FILTROS TEMPORALES (modificados en el BottomSheet)
+    var tempSearchQuery by remember { mutableStateOf(activeSearchQuery) }
+    var tempSortLowPrice by remember { mutableStateOf(activeSortLowPrice) }
+    var tempSelectedGameFilter by remember { mutableStateOf(activeSelectedGameFilter) }
+    var tempSelectedPriceRange by remember { mutableStateOf(activeSelectedPriceRange) }
+
+    var showFilters by remember { mutableStateOf(false) }
     val filterSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
@@ -103,22 +111,22 @@ fun CardMarketplaceScreen(
     val filteredCards = uiState.cards
         .filter { card ->
             val matchesSearch =
-                searchQuery.isBlank() ||
-                        card.name.contains(searchQuery, ignoreCase = true) ||
-                        card.expansion?.contains(searchQuery, ignoreCase = true) == true ||
-                        card.condition.label.contains(searchQuery, ignoreCase = true) ||
-                        card.language.label.contains(searchQuery, ignoreCase = true)
+                activeSearchQuery.isBlank() ||
+                        card.name.contains(activeSearchQuery, ignoreCase = true) ||
+                        card.expansion?.contains(activeSearchQuery, ignoreCase = true) == true ||
+                        card.condition.label.contains(activeSearchQuery, ignoreCase = true) ||
+                        card.language.label.contains(activeSearchQuery, ignoreCase = true)
 
             val matchesPrice =
-                card.price.toFloat() in selectedPriceRange.start..selectedPriceRange.endInclusive
+                card.price.toFloat() in activeSelectedPriceRange.start..activeSelectedPriceRange.endInclusive
             val matchesGame =
-                selectedGameFilter.game == null ||
-                        card.game == selectedGameFilter.game
+                activeSelectedGameFilter.game == null ||
+                        card.game == activeSelectedGameFilter.game
 
             matchesSearch && matchesPrice && matchesGame
         }
         .let { cards ->
-            if (sortLowPrice) {
+            if (activeSortLowPrice) {
                 cards.sortedBy { it.price }
             } else {
                 cards.sortedByDescending { it.price }
@@ -151,8 +159,8 @@ fun CardMarketplaceScreen(
                 .fillMaxWidth()
         ) {
             SearchBar(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = tempSearchQuery,
+                onValueChange = { tempSearchQuery = it },
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp)
             )
 
@@ -174,8 +182,8 @@ fun CardMarketplaceScreen(
                 Spacer(modifier = Modifier.weight(1f))
 
                 SortChip(
-                    text = if (sortLowPrice) "Precio: menor" else "Precio: mayor",
-                    onClick = { sortLowPrice = !sortLowPrice }
+                    text = if (activeSortLowPrice) "Precio: menor" else "Precio: mayor",
+                    onClick = { activeSortLowPrice = !activeSortLowPrice }
                 )
 
 
@@ -239,7 +247,14 @@ fun CardMarketplaceScreen(
     }
     if (showFilters) {
         ModalBottomSheet(
-            onDismissRequest = { showFilters = false },
+            onDismissRequest = {
+                // Restaurar temporales con activos cuando se cierra
+                tempSearchQuery = activeSearchQuery
+                tempSortLowPrice = activeSortLowPrice
+                tempSelectedGameFilter = activeSelectedGameFilter
+                tempSelectedPriceRange = activeSelectedPriceRange
+                showFilters = false
+            },
             sheetState = filterSheetState,
             containerColor = BgCard,
             contentColor = TextPrimary,
@@ -256,19 +271,34 @@ fun CardMarketplaceScreen(
             }
         ) {
             FilterBottomSheetContent(
-                selectedGameFilter = selectedGameFilter,
-                onGameFilterSelected = { selectedGameFilter = it },
-                selectedPriceRange = selectedPriceRange,
+                selectedGameFilter = tempSelectedGameFilter,
+                onGameFilterSelected = { tempSelectedGameFilter = it },
+                selectedPriceRange = tempSelectedPriceRange,
                 maxPrice = maxCatalogPrice.toFloat(),
                 onPriceRangeChange = { newRange ->
-                    selectedPriceRange = newRange
+                    tempSelectedPriceRange = newRange
+                },
+                onApplyClick = {
+                    // Aplicar filtros temporales a los activos
+                    activeSearchQuery = tempSearchQuery
+                    activeSortLowPrice = tempSortLowPrice
+                    activeSelectedGameFilter = tempSelectedGameFilter
+                    activeSelectedPriceRange = tempSelectedPriceRange
+                    showFilters = false
                 },
                 onClearClick = {
-                    selectedGameFilter = GameFilters.first()
-                    selectedPriceRange = 0f..maxCatalogPrice.toFloat()
-                    // luego limpiamos filtros reales
+                    // Limpiar filtros temporales
+                    tempSearchQuery = ""
+                    tempSortLowPrice = true
+                    tempSelectedGameFilter = GameFilters.first()
+                    tempSelectedPriceRange = 0f..maxCatalogPrice.toFloat()
                 },
                 onCloseClick = {
+                    // Restaurar temporales con activos
+                    tempSearchQuery = activeSearchQuery
+                    tempSortLowPrice = activeSortLowPrice
+                    tempSelectedGameFilter = activeSelectedGameFilter
+                    tempSelectedPriceRange = activeSelectedPriceRange
                     showFilters = false
                 }
             )
@@ -348,6 +378,7 @@ private fun CatalogErrorMessage(
 private fun FilterBottomSheetContent(
     onClearClick: () -> Unit,
     onCloseClick: () -> Unit,
+    onApplyClick: () -> Unit,
     selectedPriceRange: ClosedFloatingPointRange<Float>,
     maxPrice: Float,
     onPriceRangeChange: (ClosedFloatingPointRange<Float>) -> Unit,
@@ -450,7 +481,26 @@ private fun FilterBottomSheetContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(13.dp))
+                .background(AccentViolet)
+                .clickable { onApplyClick() }
+                .padding(vertical = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Aplicar filtros",
+                color = TextPrimary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
     }
 }
 
