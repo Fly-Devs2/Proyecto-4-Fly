@@ -41,6 +41,7 @@ import ucenfotec.ac.cr.flydevs.navigation.BatchPickupEvidence
 import ucenfotec.ac.cr.flydevs.navigation.BatchDeliveryEvidence
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
+import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
@@ -66,6 +67,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PurchaseHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.StoreBatchesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchDeliveryEvidenceRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.ScanQrRoute
@@ -197,7 +199,8 @@ fun App(
                         }
                     },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
-                    onNavigateToNotificationSettings = { navController.navigate(NotificationSettings) }
+                    onNavigateToNotificationSettings = { navController.navigate(NotificationSettings) },
+                    onNavigateToStoreBatches = { navController.navigate(StoreBatches) }
                 )
             }
             composable<PurchaseHistory> {
@@ -347,6 +350,14 @@ fun App(
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
+            composable<StoreBatches> {
+                StoreBatchesScreen(
+                    userRole = userRole,
+                    onBack = { navController.popBackStack() },
+                    onBatchClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
             composable<ShipmentDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<ShipmentDetail>()
                 ShipmentDetailScreen(
@@ -410,6 +421,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.Deliveries -> {
             navController.navigate(MessengerHome) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.StoreBatchesScreen -> {
+            navController.navigate(StoreBatches) {
                 launchSingleTop = true
             }
         }

@@ -156,6 +156,22 @@ class BatchRepositoryImpl(
             ?.id
     }
 
+    override fun observeOutgoingStoreBatches(storeId: String): Flow<List<DeliveryBatch>> {
+        require(storeId.isNotBlank()) {
+            "El identificador de la tienda es obligatorio."
+        }
+
+        return batchesCollection
+            .where { "sourceStoreId" equalTo storeId }
+            .where { "status" equalTo BatchStatus.READY_FOR_PICKUP.name }
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents
+                    .map { document -> mapDocumentToBatch(document) }
+                    .sortedBy { it.createdAt }
+            }
+    }
+
     override suspend fun acceptBatch(
         batchId: String,
         courierId: String,
@@ -206,7 +222,59 @@ class BatchRepositoryImpl(
                     qrStatus = BatchQrStatus.USED
                 )
             )
+
+            currentBatch.orderIds.forEach { orderId ->
+                orderRepository.updateOrderStatus(orderId, OrderStatus.WAITING_STORE_SHIPMENT)
+            }
         }
+    }
+
+    override suspend fun acceptAllStoreBatches(
+        storeId: String,
+        courierId: String,
+        courierName: String
+    ): Int {
+        require(storeId.isNotBlank()) {
+            "El identificador de la tienda es obligatorio."
+        }
+        require(courierId.isNotBlank()) {
+            "El identificador del mensajero es obligatorio."
+        }
+
+        val eligibleBatches = batchesCollection
+            .where { "sourceStoreId" equalTo storeId }
+            .where { "status" equalTo BatchStatus.READY_FOR_PICKUP.name }
+            .get()
+            .documents
+            .map { mapDocumentToBatch(it) }
+            .filter { it.courierId.isNullOrBlank() }
+
+        if (eligibleBatches.isEmpty()) return 0
+
+        val now = currentTimeMillis()
+
+        firestore.runTransaction {
+            eligibleBatches.forEach { batch ->
+                val batchRef = batchesCollection.document(batch.id)
+                set(
+                    documentRef = batchRef,
+                    data = batch.copy(
+                        courierId = courierId,
+                        courierName = courierName,
+                        status = BatchStatus.ACCEPTED,
+                        acceptedAt = now,
+                        updatedAt = now,
+                        qrStatus = BatchQrStatus.USED
+                    )
+                )
+
+                batch.orderIds.forEach { orderId ->
+                    orderRepository.updateOrderStatus(orderId, OrderStatus.WAITING_STORE_SHIPMENT)
+                }
+            }
+        }
+
+        return eligibleBatches.size
     }
 
     override suspend fun confirmPickup(

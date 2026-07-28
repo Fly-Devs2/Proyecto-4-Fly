@@ -61,6 +61,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable object MyBatches
 
+@Serializable object StoreBatches
+
 @Serializable data class ShipmentDetail(val batchId: String)
 
 @Serializable object ScanQr

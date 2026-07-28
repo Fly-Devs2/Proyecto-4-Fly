@@ -68,6 +68,8 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 import androidx.compose.material.icons.automirrored.filled.Logout
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
+import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
+import androidx.compose.material.icons.filled.Storefront
 
 @Composable
 fun ProfileScreen(
@@ -78,6 +80,7 @@ fun ProfileScreen(
     onSignOutSuccess: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onNavigateToNotificationSettings: () -> Unit = {},
+    onNavigateToStoreBatches: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -305,6 +308,35 @@ fun ProfileScreen(
             }
 
             Spacer(Modifier.height(16.dp))
+
+            // ── Gestión de Lotes (Tienda) ──────────────────────────────────
+            if (state.user?.storeId != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(BgCard)
+                        .clickable { onNavigateToStoreBatches() }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Storefront,
+                        contentDescription = null,
+                        tint = AccentMint,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Gestionar Lotes (Tienda)",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
 
             // ── Cerrar sesión ─────────────────────────────────────────────────
             Row(
