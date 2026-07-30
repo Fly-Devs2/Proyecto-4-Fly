@@ -23,10 +23,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        initKoin {
-            androidContext(this@MainActivity)
-        }
-
         requestNotificationPermission()
 
         setContent {

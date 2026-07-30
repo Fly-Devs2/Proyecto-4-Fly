@@ -31,6 +31,7 @@ import ucenfotec.ac.cr.flydevs.navigation.PaySinpe
 import ucenfotec.ac.cr.flydevs.navigation.Profile
 import ucenfotec.ac.cr.flydevs.navigation.PublishCard
 import ucenfotec.ac.cr.flydevs.navigation.Register
+import ucenfotec.ac.cr.flydevs.navigation.ReportIncident
 import ucenfotec.ac.cr.flydevs.navigation.MyBatches
 import ucenfotec.ac.cr.flydevs.navigation.MyOrders
 import ucenfotec.ac.cr.flydevs.navigation.MessengerHome
@@ -67,6 +68,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.MyEnvelopesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PublishGameCardScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.PurchaseHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.ReportIncidentScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.StoreBatchesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
@@ -236,6 +238,17 @@ fun App(
                     onBack = { navController.popBackStack() },
                     onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
                     onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
+                    onReportIncident = { id -> navController.navigate(ReportIncident(id)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
+            composable<ReportIncident> { backStackEntry ->
+                val route = backStackEntry.toRoute<ReportIncident>()
+                ReportIncidentScreen(
+                    userRole = userRole,
+                    orderId = route.orderId,
+                    onBack = { navController.popBackStack() },
+                    onSubmitted = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }

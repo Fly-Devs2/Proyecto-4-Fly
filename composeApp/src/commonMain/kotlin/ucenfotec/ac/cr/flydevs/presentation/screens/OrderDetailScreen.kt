@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ fun OrderDetailScreen(
     onBack: () -> Unit = {},
     onNavigateToPay: (String) -> Unit = {},
     onNavigateToDeliver: (String) -> Unit = {},
+    onReportIncident: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) }), reviewViewModel: OrderReviewViewModel =
         koinViewModel()
@@ -263,6 +265,28 @@ fun OrderDetailScreen(
                         }
                     }
                     
+                    // Solo las partes de la orden pueden abrir una incidencia.
+                    if (uiState.userRole == UserRole.BUYER || uiState.userRole == UserRole.SELLER) {
+                        Spacer(Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { onReportIncident(order.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentRed),
+                            border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.55f)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WarningAmber,
+                                contentDescription = null,
+                                tint = AccentRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Reportar incidencia", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
                     Spacer(Modifier.height(40.dp))
                 }
             } else {
