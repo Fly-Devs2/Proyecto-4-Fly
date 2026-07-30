@@ -10,6 +10,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.BatchRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardCatalogRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.CardEnvelopeRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.IncidentRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.NotificationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.StoreRepositoryImpl
@@ -20,6 +21,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.ICardEnvelopeRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IIncidentRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
@@ -41,4 +43,6 @@ val dataModule = module {
     single<IBatchRepository> { BatchRepositoryImpl(get()) }
 
     single<INotificationRepository> { NotificationRepositoryImpl() }
+
+    single<IIncidentRepository> { IncidentRepositoryImpl() }
 }

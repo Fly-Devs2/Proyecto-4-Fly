@@ -7,6 +7,74 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isValidReviewRating(rating) {
+      return rating is number &&
+        rating in [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+    }
+
+    function hasValidReviewFields(data) {
+      return data.keys().hasAll([
+          'id', 'orderId', 'reviewerId', 'reviewerRole', 'reviewedUserId',
+          'reviewedRole', 'rating', 'comment', 'createdAt', 'updatedAt'
+        ]) &&
+
+        // Impide guardar campos adicionales no contemplados en el modelo Review.
+        data.keys().hasOnly([
+          'id', 'orderId', 'reviewerId', 'reviewerRole', 'reviewedUserId',
+          'reviewedRole', 'rating', 'comment', 'createdAt', 'updatedAt'
+        ]) &&
+
+        data.id is string &&
+        data.orderId is string &&
+        data.reviewerId is string &&
+        data.reviewerRole is string &&
+        data.reviewedUserId is string &&
+        data.reviewedRole is string &&
+        data.rating is number &&
+        data.comment is string &&
+        data.createdAt is int &&
+        data.updatedAt is int &&
+
+        data.id.size() > 0 &&
+        data.orderId.size() > 0 &&
+        data.reviewerId.size() > 0 &&
+        data.reviewedUserId.size() > 0 &&
+
+        // El comentario es opcional, pero no puede superar los 500 caracteres.
+        data.comment.size() <= 500 &&
+
+        // updatedAt no puede ser anterior a createdAt.
+        data.updatedAt >= data.createdAt &&
+
+        isValidReviewRating(data.rating);
+    }
+
+    /** Solo las partes de una orden pagada pueden calificarse entre sí. */
+    function reviewMatchesOrder(data) {
+      let order = get(
+        /databases/$(database)/documents/orders/$(data.orderId)
+      ).data;
+
+      return order.sinpePaid == true &&
+        (
+          // El comprador está calificando al vendedor.
+          (
+            data.reviewerId == order.buyerId &&
+            data.reviewerRole == 'BUYER' &&
+            data.reviewedUserId == order.sellerId &&
+            data.reviewedRole == 'SELLER'
+          ) ||
+
+          // El vendedor está calificando al comprador.
+          (
+            data.reviewerId == order.sellerId &&
+            data.reviewerRole == 'SELLER' &&
+            data.reviewedUserId == order.buyerId &&
+            data.reviewedRole == 'BUYER'
+          )
+        );
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow write: if signedIn() && request.auth.uid == uid;
@@ -35,6 +103,19 @@ service cloud.firestore {
       }
     }
 
+    match /incidents/{incidentId} {
+      allow read: if signedIn() && resource.data.reporterId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.reporterId == request.auth.uid &&
+        request.resource.data.orderId is string &&
+        request.resource.data.orderId != '' &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() > 0 &&
+        request.resource.data.description.size() <= 1000 &&
+        request.resource.data.status == 'OPEN';
+      allow update, delete: if false;
+    }
+
     match /notifications/{notificationId} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow update: if signedIn() &&
@@ -49,6 +130,14 @@ service cloud.firestore {
 
     match /mail/{mailId} {
       allow read, write: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read, write: if signedIn();
+    }
+
+    match /user_ratings/{userId} {
+      allow read, write: if signedIn();
     }
 
     match /sobres/{sobresId} {
@@ -127,6 +216,12 @@ service cloud.firestore {
         return resource.data.status == 'PROOF_RECEIVED' &&
                resource.data.sinpeProofUrl != '' &&
                request.resource.data.status == 'SHIPPING';
+      }
+
+      function orderExists(orderId) {
+        return exists(
+          /databases/$(database)/documents/orders/$(orderId)
+        );
       }
 
       allow read: if isParticipant();
