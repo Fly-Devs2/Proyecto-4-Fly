@@ -35,6 +35,21 @@ service cloud.firestore {
       }
     }
 
+    match /incidents/{incidentId} {
+      // El admin las gestiona desde consola / funciones (el Admin SDK ignora estas reglas).
+      // El cliente solo puede leer las que él mismo reportó.
+      allow read: if signedIn() && resource.data.reporterId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.reporterId == request.auth.uid &&
+        request.resource.data.orderId is string &&
+        request.resource.data.orderId != '' &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() > 0 &&
+        request.resource.data.description.size() <= 1000 &&
+        request.resource.data.status == 'OPEN';
+      allow update, delete: if false;
+    }
+
     match /notifications/{notificationId} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow update: if signedIn() &&

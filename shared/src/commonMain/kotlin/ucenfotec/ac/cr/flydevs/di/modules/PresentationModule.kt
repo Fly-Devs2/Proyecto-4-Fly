@@ -16,6 +16,7 @@ import ucenfotec.ac.cr.flydevs.presentation.myBatches.MyBatchesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.batch.BatchEvidenceViewModel
 import ucenfotec.ac.cr.flydevs.presentation.batch.ScanQrViewModel
+import ucenfotec.ac.cr.flydevs.presentation.incident.ReportIncidentViewModel
 import ucenfotec.ac.cr.flydevs.presentation.profile.ProfileViewModel
 import ucenfotec.ac.cr.flydevs.presentation.shipmentDetail.ShipmentDetailViewModel
 
@@ -55,4 +56,5 @@ val presentationModule = module {
     viewModel { ScanQrViewModel(get(), get()) }
     viewModel { StoreBatchesViewModel(get(), get()) }
     viewModel { BatchEvidenceViewModel(get(), get(), get()) }
+    viewModel { (orderId: String) -> ReportIncidentViewModel(get(), get(), get(), orderId) }
 }
