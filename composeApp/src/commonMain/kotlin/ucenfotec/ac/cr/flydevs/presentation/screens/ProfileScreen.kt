@@ -70,12 +70,16 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
 import androidx.compose.material.icons.filled.Storefront
+import ucenfotec.ac.cr.flydevs.presentation.components.ReputationContent
+import ucenfotec.ac.cr.flydevs.presentation.reputation.ReputationViewModel
 
 @Composable
 fun ProfileScreen(
     userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel(),
+    reputationViewModel: ReputationViewModel =
+        koinViewModel(),
     onBack: () -> Unit = {},
     onSignOutSuccess: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
@@ -84,11 +88,23 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val reputationState by
+    reputationViewModel
+        .uiState
+        .collectAsStateWithLifecycle()
+
     var editingName by remember { mutableStateOf(false) }
     var editingPhone by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isSignedOut) {
         if (state.isSignedOut) onSignOutSuccess()
+    }
+    LaunchedEffect(state.user?.uid) {
+        state.user?.uid?.let { userId ->
+            reputationViewModel.loadReputation(
+                userId = userId
+            )
+        }
     }
 
     Column(
@@ -193,6 +209,23 @@ fun ProfileScreen(
             }
 
             Spacer(Modifier.height(28.dp))
+            ReputationContent(
+                state = reputationState,
+                onRoleSelected =
+                    reputationViewModel::selectRole,
+                onLoadMore =
+                    reputationViewModel::loadMoreReviews,
+                onRetry =
+                    reputationViewModel::retry,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                showIdentity = false
+            )
+
+            Spacer(
+                modifier = Modifier.height(28.dp)
+            )
 
             // ── Información personal ──────────────────────────────────────────
             Column(

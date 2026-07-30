@@ -45,6 +45,7 @@ import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
+import ucenfotec.ac.cr.flydevs.navigation.Reputation
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
@@ -72,6 +73,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.StoreBatchesScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchDeliveryEvidenceRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.ReputationScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ScanQrRoute
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
@@ -173,12 +175,27 @@ fun App(
             composable<CardDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<CardDetail>()
                 CardDetailScreen(
-                    userRole=userRole,
+                    userRole = userRole,
                     userId = loginViewModel.getCurrentUserId(),
                     cardId = route.cardId,
                     fromCollection = route.fromCollection,
-                    onBack = { navController.popBackStack() },
-                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onSellerReputationClick = { sellerId ->
+                        navController.navigate(
+                            Reputation(
+                                userId = sellerId
+                            )
+                        )
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(
+                            navController,
+                            destination,
+                            userRole
+                        )
+                    },
                     onGoToEnvelope = {
                         navController.navigate(MyOrders)
                     }
@@ -338,6 +355,17 @@ fun App(
                     },
                     onNavSelect = { destination ->
                         handleBottomNavNavigation(navController, destination, userRole)
+                    }
+                )
+            }
+            composable<Reputation> { backStackEntry ->
+                val route =
+                    backStackEntry.toRoute<Reputation>()
+
+                ReputationScreen(
+                    userId = route.userId,
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }

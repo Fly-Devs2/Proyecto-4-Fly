@@ -8,6 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
+import kotlin.math.roundToInt
+import ucenfotec.ac.cr.flydevs.presentation.components.HalfStarRating
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,6 +82,7 @@ fun CardDetailScreen(
     onBack: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onGoToEnvelope: (String) -> Unit = {},
+    onSellerReputationClick: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboardManager.current
@@ -195,7 +201,18 @@ fun CardDetailScreen(
 
                     //MarketDataSection()
 
-                    SellerSection(seller = state.seller)
+                    SellerSection(
+                        seller = state.seller,
+                        averageRating = state.sellerAverageRating,
+                        reviewCount = state.sellerReviewCount,
+                        isLoadingRating = state.isLoadingSellerRating,
+                        onClick = {
+                            state.seller
+                                ?.uid
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let(onSellerReputationClick)
+                        }
+                    )
 
                     Button(
                         onClick = {
@@ -303,37 +320,172 @@ private fun MarketRow(label: String, value: String, valueColor: Color) {
 }
 
 @Composable
-private fun SellerSection(seller: User?) {
-    val sellerId = seller?.name ?: "Vendedor desconocido"
+private fun SellerSection(
+    seller: User?,
+    averageRating: Double,
+    reviewCount: Int,
+    isLoadingRating: Boolean,
+    onClick: () -> Unit
+) {
+    val sellerName = seller
+        ?.name
+        ?.trim()
+        ?.ifBlank { "Vendedor desconocido" }
+        ?: "Vendedor desconocido"
+
+    val sellerInitial = sellerName
+        .firstOrNull()
+        ?.uppercaseChar()
+        ?.toString()
+        ?: "V"
+
+    val canOpenReputation =
+        seller?.uid?.isNotBlank() == true
 
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .clickable(
+                enabled = canOpenReputation,
+                onClick = onClick
+            )
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
-            modifier = Modifier.size(44.dp).clip(CircleShape).background(BgSurface),
-            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(BgSurface),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                sellerId.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
+                text = sellerInitial,
                 color = AccentVioletLight,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
         }
-        Column(modifier = Modifier.weight(1f)) {
-            Text("Vendedor", color = AccentGold, style = MaterialTheme.typography.labelSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(sellerId, color = TextPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-           //Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Vendedor",
+                color = AccentGold,
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            Text(
+                text = sellerName,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            SellerRatingRow(
+                averageRating = averageRating,
+                reviewCount = reviewCount,
+                isLoading = isLoadingRating
+            )
         }
-//        Text(
-//            "VERIFICADO",
-//            color = AccentViolet,
-//            style = MaterialTheme.typography.labelSmall,
-//            fontWeight = FontWeight.Bold,
-//            modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(BgSurface).padding(horizontal = 8.dp, vertical = 4.dp),
-//        )
+
+        if (canOpenReputation) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Ver reputación del vendedor",
+                tint = TextMuted,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+@Composable
+private fun SellerRatingRow(
+    averageRating: Double,
+    reviewCount: Int,
+    isLoading: Boolean
+) {
+    when {
+        isLoading -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                CircularProgressIndicator(
+                    color = AccentViolet,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(14.dp)
+                )
+
+                Text(
+                    text = "Cargando reputación...",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+
+        reviewCount == 0 -> {
+            Text(
+                text = "Sin reseñas todavía",
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        else -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(0.2.dp)
+            ) {
+                HalfStarRating(
+                    rating = averageRating,
+                    onRatingChanged = {},
+                    enabled = true,
+                    readOnly = true,
+                    starSize = 15.dp,
+                    activeColor = AccentGold,
+                    inactiveColor = TextMuted.copy(
+                        alpha = 0.45f
+                    ),
+                    disabledColor = TextMuted.copy(
+                        alpha = 0.25f
+                    )
+                )
+
+                Text(
+                    text = buildString {
+                        append(formatSellerRating(averageRating))
+                        append(" · ")
+                        append(reviewCount)
+
+                        if (reviewCount == 1) {
+                            append(" reseña")
+                        } else {
+                            append(" reseñas")
+                        }
+                    },
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+private fun formatSellerRating(
+    rating: Double
+): String {
+    val rounded =
+        (rating * 10).roundToInt() / 10.0
+
+    return if (rounded % 1.0 == 0.0) {
+        "${rounded.toInt()}.0"
+    } else {
+        rounded.toString()
     }
 }

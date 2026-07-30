@@ -1,5 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.util
 
+import kotlin.time.Clock
+
 private const val COSTA_RICA_OFFSET_SECONDS = -6L * 3600L
 private const val SECONDS_PER_DAY = 86_400L
 
@@ -51,4 +53,7 @@ private fun civilFromDays(daysSinceEpoch: Long): Triple<Int, Int, Int> {
         month.toInt(),
         day.toInt(),
     )
+}
+fun getCurrentTimeMillis(): Long {
+    return Clock.System.now().toEpochMilliseconds()
 }

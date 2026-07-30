@@ -43,6 +43,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.presentation.components.*
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
+import ucenfotec.ac.cr.flydevs.presentation.review.OrderReviewViewModel
 
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
@@ -56,12 +57,28 @@ fun OrderDetailScreen(
     onNavigateToDeliver: (String) -> Unit = {},
     onReportIncident: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
-    viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) })
+    viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) }), reviewViewModel: OrderReviewViewModel =
+        koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val reviewUiState by
+    reviewViewModel.uiState.collectAsStateWithLifecycle()
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
     var showCamera by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        uiState.order?.id,
+        uiState.order?.sinpePaid
+    ) {
+        val currentOrder =
+            uiState.order ?: return@LaunchedEffect
+
+        reviewViewModel.loadReview(
+            orderId = currentOrder.id
+        )
+    }
+
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -137,6 +154,41 @@ fun OrderDetailScreen(
                         onApprove = { viewModel.approveSinpeProof() },
                         onReject = { viewModel.rejectSinpeProof() }
                     )
+
+                    /*
+ * Sección de calificación.
+ *
+ * Se muestra tanto antes como después de pagar.
+ * Cuando sinpePaid == false, el componente aparecerá
+ * deshabilitado y en escala de grises.
+ */
+                    if (
+                        uiState.userRole == UserRole.BUYER ||
+                        uiState.userRole == UserRole.SELLER
+                    ) {
+                        val reviewedUserName =
+                            if (uiState.userRole == UserRole.BUYER) {
+                                order.sellerName
+                            } else {
+                                order.buyerName
+                            }
+
+                        Spacer(Modifier.height(32.dp))
+
+                        OrderReviewSection(
+                            uiState = reviewUiState,
+                            reviewedUserName = reviewedUserName,
+                            onRatingChanged =
+                                reviewViewModel::onRatingChanged,
+                            onCommentChanged =
+                                reviewViewModel::onCommentChanged,
+                            onSaveClick =
+                                reviewViewModel::saveReview
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+                    }
+
 
                     Spacer(Modifier.height(24.dp))
                     if (order.sinpePaid) {
