@@ -29,6 +29,21 @@ fun formatDate(epochMillis: Long, placeholder: String = "—"): String {
     return formatDateTime(epochMillis).substringBefore(" · ")
 }
 
+/** `true` si ambos epochs caen en el mismo día natural de Costa Rica. */
+fun isSameDay(firstEpochMillis: Long, secondEpochMillis: Long): Boolean {
+    if (firstEpochMillis <= 0L || secondEpochMillis <= 0L) return false
+    return localDay(firstEpochMillis) == localDay(secondEpochMillis)
+}
+
+/** Días naturales completos transcurridos entre dos epochs (hora de Costa Rica). */
+fun daysBetween(fromEpochMillis: Long, toEpochMillis: Long): Int {
+    if (fromEpochMillis <= 0L || toEpochMillis <= 0L) return 0
+    return (localDay(toEpochMillis) - localDay(fromEpochMillis)).toInt()
+}
+
+private fun localDay(epochMillis: Long): Long =
+    floorDiv(epochMillis / 1000L + COSTA_RICA_OFFSET_SECONDS, SECONDS_PER_DAY)
+
 private fun floorDiv(value: Long, divisor: Long): Long {
     val quotient = value / divisor
     return if (value % divisor != 0L && (value xor divisor) < 0L) quotient - 1 else quotient

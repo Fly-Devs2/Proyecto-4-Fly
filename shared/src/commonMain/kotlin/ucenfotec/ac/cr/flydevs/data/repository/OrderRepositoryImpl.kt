@@ -60,6 +60,15 @@ class OrderRepositoryImpl(
         }
     }
 
+    override fun observeStoreOrders(storeId: String): Flow<List<Order>> {
+        return ordersCollection
+            .where { "destinationStore" equalTo storeId }
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.mapNotNull { it.toOrder() }
+            }
+    }
+
     override suspend fun getOrdersByIds(orderIds: List<String>): List<Order> = coroutineScope {
         orderIds
             .map { orderId -> async { runCatching { fetchOrderOnce(orderId) }.getOrNull() } }
@@ -269,6 +278,86 @@ class OrderRepositoryImpl(
         )
         ordersCollection.document(orderId).set(Order.serializer(), updated)
         return updated
+    }
+
+    override suspend fun confirmStorePickup(
+        orderId: String,
+        storeId: String,
+        qrSignature: String?
+    ): Order {
+        val snapshot = ordersCollection.document(orderId).get()
+        if (!snapshot.exists) {
+            throw IllegalStateException("El código QR no corresponde a ninguna orden.")
+        }
+
+        val current = snapshot.toOrder()
+            ?: throw IllegalStateException("No se pudo leer la orden del código QR.")
+
+        // El mapeo de respaldo de `toOrder()` no trae estos campos: se leen del documento.
+        val destinationStore = snapshot.safeGet<String>("destinationStore").orEmpty()
+        val storedSignature = snapshot.safeGet<String>("qrSignature").orEmpty()
+
+        if (storeId.isNotBlank() && destinationStore.isNotBlank() && destinationStore != storeId) {
+            throw IllegalStateException("Esta orden se retira en otra tienda.")
+        }
+
+        if (storedSignature.isNotBlank() && !qrSignature.isNullOrBlank() && storedSignature != qrSignature) {
+            throw IllegalStateException("El código QR no es válido para esta orden.")
+        }
+
+        when (current.status) {
+            OrderStatus.PICKED_UP -> throw IllegalStateException("Esta orden ya fue retirada.")
+            OrderStatus.DELIVERED_TO_STORE -> Unit
+            else -> throw IllegalStateException(
+                "La orden todavía no está lista para retiro (${current.status.label})."
+            )
+        }
+
+        val now = getEpochMillis()
+
+        ordersCollection.document(orderId).update(
+            mapOf(
+                "status" to OrderStatus.PICKED_UP.name,
+                "modifiedAt" to now,
+                "pickedUpAt" to now,
+                "pickedUpByStore" to storeId,
+                "qrStatus" to "USED",
+            )
+        )
+
+        current.cards.forEach { cardSnapshot ->
+            val cardId = cardSnapshot.cardId.trim()
+            if (cardId.isBlank()) {
+                return@forEach
+            }
+
+            try {
+                val cardDocument = gameCardsCollection.document(cardId).get()
+                if (!cardDocument.exists) {
+                    println("DEBUG_ORDERS: Card $cardId no longer exists while picking up order $orderId")
+                    return@forEach
+                }
+
+                val actualStatus = cardDocument.get<String>("status")?.let { statusName ->
+                    runCatching { CardStatus.valueOf(statusName) }.getOrNull()
+                }
+
+                if (actualStatus == CardStatus.SOLD) {
+                    return@forEach
+                }
+
+                gameCardsCollection.document(cardId).update(
+                    mapOf("status" to CardStatus.SOLD.name)
+                )
+            } catch (e: Exception) {
+                println("DEBUG_ORDERS: Failed to mark card $cardId as sold for order $orderId: ${e.message}")
+            }
+        }
+
+        return current.copy(
+            status = OrderStatus.PICKED_UP,
+            modifiedAt = now
+        )
     }
 
     override suspend fun cancelOrder(orderId: String): Order {

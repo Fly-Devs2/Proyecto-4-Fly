@@ -63,6 +63,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable object StoreBatches
 
+@Serializable object StoreHome
+
+@Serializable object StorePickups
+
+@Serializable object StorePickupScan
+
 @Serializable data class ShipmentDetail(val batchId: String)
 
 @Serializable object ScanQr

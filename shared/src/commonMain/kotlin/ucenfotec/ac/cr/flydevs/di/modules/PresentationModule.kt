@@ -20,6 +20,8 @@ import ucenfotec.ac.cr.flydevs.presentation.profile.ProfileViewModel
 import ucenfotec.ac.cr.flydevs.presentation.shipmentDetail.ShipmentDetailViewModel
 
 import ucenfotec.ac.cr.flydevs.presentation.storeBatches.StoreBatchesViewModel
+import ucenfotec.ac.cr.flydevs.presentation.storeHome.StoreHomeViewModel
+import ucenfotec.ac.cr.flydevs.presentation.storeHome.StorePickupScanViewModel
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.CardCatalogViewModel
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishGameCardViewModel
 import ucenfotec.ac.cr.flydevs.presentation.register.RegisterViewModel
@@ -54,5 +56,7 @@ val presentationModule = module {
     viewModel { MessengerHomeViewModel(get(), get()) }
     viewModel { ScanQrViewModel(get(), get()) }
     viewModel { StoreBatchesViewModel(get(), get()) }
+    viewModel { StoreHomeViewModel(get(), get(), get(), get()) }
+    viewModel { StorePickupScanViewModel(get(), get()) }
     viewModel { BatchEvidenceViewModel(get(), get(), get()) }
 }
