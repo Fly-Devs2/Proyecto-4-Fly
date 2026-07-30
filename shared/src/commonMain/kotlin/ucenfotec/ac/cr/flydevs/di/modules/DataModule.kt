@@ -1,5 +1,8 @@
 package ucenfotec.ac.cr.flydevs.di.modules
 
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.firestore.FirebaseFirestore
+import dev.gitlive.firebase.firestore.firestore
 import org.koin.dsl.module
 import ucenfotec.ac.cr.flydevs.data.remote.createHttpClient
 import ucenfotec.ac.cr.flydevs.data.repository.StorageImageRepository
@@ -12,6 +15,8 @@ import ucenfotec.ac.cr.flydevs.data.repository.CardEnvelopeRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.GameCardRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.NotificationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.ReputationRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.ReviewRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.StoreRepositoryImpl
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
@@ -23,6 +28,8 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IReputationRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IReviewRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 val dataModule = module {
@@ -41,4 +48,11 @@ val dataModule = module {
     single<IBatchRepository> { BatchRepositoryImpl(get()) }
 
     single<INotificationRepository> { NotificationRepositoryImpl() }
+    single<FirebaseFirestore> {
+        Firebase.firestore
+    }
+    single<IReviewRepository> { ReviewRepositoryImpl(get(), get()) }
+    single<IReputationRepository> { ReputationRepositoryImpl(get()) }
+
+
 }

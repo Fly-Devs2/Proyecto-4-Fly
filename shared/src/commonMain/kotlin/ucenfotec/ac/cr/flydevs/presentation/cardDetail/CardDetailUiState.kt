@@ -18,5 +18,8 @@ data class CardDetailUiState(
     val targetEnvelopeId: String? = null,
     val seller: User? = null,
     val sourceStoreName: String? = null,
-    val currentImageIndex: Int = 0
+    val currentImageIndex: Int = 0,
+    val sellerAverageRating: Double = 0.0,
+    val sellerReviewCount: Int = 0,
+    val isLoadingSellerRating: Boolean = false
 )
