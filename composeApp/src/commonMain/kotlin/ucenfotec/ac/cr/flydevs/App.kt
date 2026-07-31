@@ -43,6 +43,8 @@ import ucenfotec.ac.cr.flydevs.navigation.BatchDeliveryEvidence
 import ucenfotec.ac.cr.flydevs.navigation.Notifications
 import ucenfotec.ac.cr.flydevs.navigation.PurchaseHistory
 import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
+import ucenfotec.ac.cr.flydevs.navigation.StoreHome
+import ucenfotec.ac.cr.flydevs.navigation.StorePickupScan
 import ucenfotec.ac.cr.flydevs.navigation.StorePickups
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
@@ -72,6 +74,8 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.RegisterScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ReportIncidentScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.StoreBatchesScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.StoreHomeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.StorePickupScanRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.StorePickupsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchDeliveryEvidenceRoute
@@ -100,7 +104,7 @@ fun App(
 
         val navController = rememberNavController()
         val startDestination = if (loginViewModel.isUserLoggedIn()) {
-            if (userRole == UserRole.DELIVERY) MessengerHome else Home
+            homeRouteFor(userRole)
         } else {
             Login
         }
@@ -401,16 +405,32 @@ fun App(
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
-
+            composable<StoreHome> {
+                StoreHomeScreen(
+                    userRole = userRole,
+                    onBatchClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
+                    onPickupClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
+                    onScanPickup = { navController.navigate(StorePickupScan) },
+                    onSeeAllPickups = { navController.navigate(StorePickups) },
+                    onNavigateToNotifications = { navController.navigate(Notifications) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
             composable<StorePickups> {
                 StorePickupsScreen(
                     userRole = userRole,
                     onBack = { navController.popBackStack() },
-                    onCardClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
+                    onPickupClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
+                    onScanPickup = { navController.navigate(StorePickupScan) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
-
+            composable<StorePickupScan> {
+                StorePickupScanRoute(
+                    onFinished = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable<ShipmentDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<ShipmentDetail>()
                 ShipmentDetailScreen(
@@ -435,6 +455,13 @@ fun App(
     }
 
 
+/** Pantalla de inicio de cada rol: mensajero y tienda tienen su propio dashboard. */
+private fun homeRouteFor(userRole: UserRole): Any = when (userRole) {
+    UserRole.DELIVERY -> MessengerHome
+    UserRole.STORE -> StoreHome
+    else -> Home
+}
+
 /**
  * Función helper centralizada para manejar la navegación desde el BottomNav
  * en cualquier pantalla que lo use.
@@ -446,7 +473,7 @@ private fun handleBottomNavNavigation(
 ) {
     when (destination) {
         FlyNavDestination.Home -> {
-            val homeRoute = if (userRole == UserRole.DELIVERY) MessengerHome else Home
+            val homeRoute = homeRouteFor(userRole)
             navController.navigate(homeRoute) {
                 popUpTo(homeRoute) { inclusive = true }
                 launchSingleTop = true
@@ -482,7 +509,11 @@ private fun handleBottomNavNavigation(
                 launchSingleTop = true
             }
         }
-
+        FlyNavDestination.StoreScan -> {
+            navController.navigate(StorePickupScan) {
+                launchSingleTop = true
+            }
+        }
         FlyNavDestination.StorePickups -> {
             navController.navigate(StorePickups) {
                 launchSingleTop = true

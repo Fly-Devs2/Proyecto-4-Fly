@@ -27,6 +27,7 @@ import ucenfotec.ac.cr.flydevs.presentation.components.TextField
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.incident.ReportIncidentViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
+import ucenfotec.ac.cr.flydevs.presentation.util.cardsLabel
 
 @Composable
 fun ReportIncidentScreen(
@@ -181,5 +182,3 @@ private fun AffectedOrderCard(
         }
     }
 }
-
-private fun cardsLabel(count: Int): String = if (count == 1) "1 carta" else "$count cartas"
