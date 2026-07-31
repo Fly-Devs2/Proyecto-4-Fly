@@ -9,6 +9,9 @@ interface IOrderRepository {
     fun getOrdersForUserHomePage(userId: String): Flow<List<Order>>
     fun getOrder(orderId: String): Flow<Order?>
 
+    /** Órdenes cuya tienda destino es [storeId]; alimenta el panel de la tienda. */
+    fun observeStoreOrders(storeId: String): Flow<List<Order>>
+
     /** Resuelve los sobres de un lote a partir de `orderIds`; omite los que ya no existen. */
     suspend fun getOrdersByIds(orderIds: List<String>): List<Order>
     suspend fun updateOrderStatus(orderId: String, status: OrderStatus)
@@ -52,6 +55,19 @@ interface IOrderRepository {
      * Marcar el sobre como entregado en la tienda destino.
      */
     suspend fun markAsDeliveredToStore(orderId: String): Order
+
+    /**
+     * La tienda valida el QR de retiro del comprador: la orden pasa a PICKED_UP
+     * y sus cartas quedan marcadas como vendidas.
+     *
+     * @param qrSignature firma HMAC que viaja dentro del QR; se compara contra la
+     *   almacenada en la orden cuando ambas están disponibles.
+     */
+    suspend fun confirmStorePickup(
+        orderId: String,
+        storeId: String,
+        qrSignature: String?
+    ): Order
 
     /**
      * El comprador cancela la orden si aún no ha sido pagada confirmada.
