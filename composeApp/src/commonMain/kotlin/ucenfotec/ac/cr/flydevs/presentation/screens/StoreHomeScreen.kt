@@ -37,6 +37,7 @@ import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.storeHome.StoreHomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.storeHome.StorePickup
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
+import ucenfotec.ac.cr.flydevs.presentation.util.cardsLabel
 
 @Composable
 fun StoreHomeScreen(
@@ -445,8 +446,6 @@ private fun incomingBatchBadgeLabel(status: BatchStatus): String = when (status)
 
 internal fun orderCode(orderId: String): String =
     if (orderId.length > 7) orderId.take(7).uppercase() else orderId.uppercase()
-
-internal fun cardsLabel(count: Int): String = if (count == 1) "1 carta" else "$count cartas"
 
 internal fun waitingLabel(days: Int): String = when {
     days <= 0 -> "Llegó hoy"
