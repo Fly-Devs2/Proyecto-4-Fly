@@ -420,8 +420,7 @@ fun App(
                 StorePickupsScreen(
                     userRole = userRole,
                     onBack = { navController.popBackStack() },
-                    onPickupClick = { orderId -> navController.navigate(OrderDetail(orderId)) },
-                    onScanPickup = { navController.navigate(StorePickupScan) },
+                    onCardClick = { batchId -> navController.navigate(ShipmentDetail(batchId)) },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }

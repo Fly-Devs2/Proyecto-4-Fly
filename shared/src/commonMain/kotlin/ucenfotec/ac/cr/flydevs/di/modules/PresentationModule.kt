@@ -58,7 +58,7 @@ val presentationModule = module {
     viewModel { SessionViewModel(get()) }
     viewModel { MessengerHomeViewModel(get(), get()) }
     viewModel { ScanQrViewModel(get(), get()) }
-    viewModel { StoreBatchesViewModel(get(), get()) }
+    viewModel { StoreBatchesViewModel(get(), get(), get(), get()) }
     viewModel { StoreHomeViewModel(get(), get(), get(), get()) }
     viewModel { StorePickupScanViewModel(get(), get()) }
     viewModel { BatchEvidenceViewModel(get(), get(), get()) }

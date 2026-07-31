@@ -45,6 +45,11 @@ interface IBatchRepository {
     fun observeOutgoingStoreBatches(storeId: String): Flow<List<DeliveryBatch>>
 
     /**
+     * Lotes ya entregados a una tienda destino y listos para retiro.
+     */
+    fun observeStorePickups(storeId: String): Flow<List<DeliveryBatch>>
+
+    /**
      * Lotes que van en camino a una tienda o que ya fueron entregados en ella.
      */
     fun observeIncomingStoreBatches(storeId: String): Flow<List<DeliveryBatch>>
