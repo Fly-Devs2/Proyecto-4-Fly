@@ -18,6 +18,7 @@ import ucenfotec.ac.cr.flydevs.presentation.components.QrScannerCamera
 import ucenfotec.ac.cr.flydevs.presentation.storeHome.StorePickupScanViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentMint
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgDark
+import ucenfotec.ac.cr.flydevs.presentation.util.cardsLabel
 
 /**
  * Escaneo del QR de retiro en la tienda. Reutiliza la cámara del flujo de lotes
