@@ -172,6 +172,22 @@ class BatchRepositoryImpl(
             }
     }
 
+    override fun observeStorePickups(storeId: String): Flow<List<DeliveryBatch>> {
+        require(storeId.isNotBlank()) {
+            "El identificador de la tienda es obligatorio."
+        }
+
+        return batchesCollection
+            .where { "destinationStoreId" equalTo storeId }
+            .where { "status" equalTo BatchStatus.DELIVERED.name }
+            .snapshots
+            .map { querySnapshot ->
+                querySnapshot.documents
+                    .map { document -> mapDocumentToBatch(document) }
+                    .sortedByDescending { it.deliveredAt ?: it.updatedAt }
+            }
+    }
+
     override suspend fun acceptBatch(
         batchId: String,
         courierId: String,
