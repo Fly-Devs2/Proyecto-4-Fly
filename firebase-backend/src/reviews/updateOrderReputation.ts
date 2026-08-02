@@ -1,19 +1,19 @@
-import {getFirestore} from "firebase-admin/firestore";
+import {getFirestore, Query} from "firebase-admin/firestore";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-
-type TransactionRole = "BUYER" | "SELLER";
 
 interface OrderDocument {
   buyerId?: unknown;
   sellerId?: unknown;
   status?: unknown;
   sinpePaid?: unknown;
+  sellerEvidenceUrls?: unknown;
+  buyerEvidenceUrls?: unknown;
+  modifiedAt?: unknown;
 }
 
 interface TransactionTarget {
   userId: string;
-  role: TransactionRole;
 }
 
 function getStringValue(
@@ -44,8 +44,7 @@ function shouldReviewsBeActive(
 
 function addTransactionTarget(
   targets: Map<string, TransactionTarget>,
-  userId: unknown,
-  role: TransactionRole
+  userId: unknown
 ): void {
   const validUserId = getStringValue(userId);
 
@@ -53,13 +52,7 @@ function addTransactionTarget(
     return;
   }
 
-  targets.set(
-    `${validUserId}_${role}`,
-    {
-      userId: validUserId,
-      role,
-    }
-  );
+  targets.set(validUserId, {userId: validUserId});
 }
 
 async function updateOrderReviewVisibility(
@@ -122,58 +115,96 @@ async function updateOrderReviewVisibility(
   );
 }
 
-async function recalculateCompletedTransactions(
-  target: TransactionTarget
-): Promise<void> {
-  const firestore = getFirestore();
+/**
+ * Calcula estadísticas de transacciones (SINPE + Evidence) y ventas (PICKED_UP).
+ * Filtering in-memory to be resilient to missing modifiedAt fields.
+ */
+async function calculateStats(
+  userId: string,
+  role: "buyer" | "seller"
+): Promise<{allTime: any, lastYear: any, last30Days: any}> {
+  const db = getFirestore();
+  const field = role === "buyer" ? "buyerId" : "sellerId";
 
-  const participantField =
-    target.role === "SELLER" ?
-      "sellerId" :
-      "buyerId";
-
-  const ordersSnapshot = await firestore
-    .collection("orders")
-    .where(participantField, "==", target.userId)
-    .where("status", "==", "PICKED_UP")
+  // Fetch ALL relevant orders for this user
+  const ordersSnap = await db.collection("orders")
+    .where(field, "==", userId)
     .get();
 
-  const completedTransactionCount =
-    ordersSnapshot.size;
+  const now = Date.now();
+  const yearMs = 365 * 24 * 60 * 60 * 1000;
+  const monthMs = 30 * 24 * 60 * 60 * 1000;
 
-  const fields =
-    target.role === "SELLER" ?
-      {
-        sellerCompletedTransactionCount:
-          completedTransactionCount,
-      } :
-      {
-        buyerCompletedTransactionCount:
-          completedTransactionCount,
-      };
+  const results = {
+    allTime: {transactions: 0, sales: 0},
+    lastYear: {transactions: 0, sales: 0},
+    last30Days: {transactions: 0, sales: 0},
+  };
 
-  await firestore
-    .collection("user_ratings")
-    .doc(target.userId)
-    .set(
-      {
-        userId: target.userId,
-        ...fields,
-        updatedAt: Date.now(),
-      },
-      {
-        merge: true,
-      }
-    );
+  ordersSnap.forEach((doc) => {
+    const data = doc.data() as OrderDocument;
 
-  logger.info(
-    "Completed transaction count updated.",
-    {
-      userId: target.userId,
-      role: target.role,
-      completedTransactionCount,
+    // Status-based check for Sales
+    const isSale = role === "seller" && data.status === "PICKED_UP";
+
+    // Evidence-based check for Transactions
+    const hasSellerEvidence = Array.isArray(data.sellerEvidenceUrls) && data.sellerEvidenceUrls.length > 0;
+    const hasBuyerEvidence = Array.isArray(data.buyerEvidenceUrls) && data.buyerEvidenceUrls.length > 0;
+    const isTransaction = data.sinpePaid === true && (hasSellerEvidence || hasBuyerEvidence);
+
+    // Fallback to 0 if modifiedAt is missing
+    const modifiedAt = Number(data.modifiedAt) || 0;
+    const age = now - modifiedAt;
+
+    if (isSale) {
+      results.allTime.sales++;
+      if (age <= yearMs) results.lastYear.sales++;
+      if (age <= monthMs) results.last30Days.sales++;
     }
-  );
+
+    if (isTransaction) {
+      results.allTime.transactions++;
+      if (age <= yearMs) results.lastYear.transactions++;
+      if (age <= monthMs) results.last30Days.transactions++;
+    }
+  });
+
+  return results;
+}
+
+async function recalculateUserStats(
+  userId: string
+): Promise<void> {
+  const db = getFirestore();
+
+  const [buyerStats, sellerStats] = await Promise.all([
+    calculateStats(userId, "buyer"),
+    calculateStats(userId, "seller"),
+  ]);
+
+  // Use dot notation to avoid overwriting rating fields in nested objects
+  const update: any = {
+    userId,
+    updatedAt: Date.now(),
+    totalCompletedTransactionCount: sellerStats.allTime.transactions + buyerStats.allTime.transactions,
+    totalSalesCount: sellerStats.allTime.sales,
+
+    "allTime.buyerCompletedTransactionCount": buyerStats.allTime.transactions,
+    "allTime.sellerCompletedTransactionCount": sellerStats.allTime.transactions,
+    "allTime.sellerSalesCount": sellerStats.allTime.sales,
+
+    "lastYear.buyerCompletedTransactionCount": buyerStats.lastYear.transactions,
+    "lastYear.sellerCompletedTransactionCount": sellerStats.lastYear.transactions,
+    "lastYear.sellerSalesCount": sellerStats.lastYear.sales,
+
+    "last30Days.buyerCompletedTransactionCount": buyerStats.last30Days.transactions,
+    "last30Days.sellerCompletedTransactionCount": sellerStats.last30Days.transactions,
+    "last30Days.sellerSalesCount": sellerStats.last30Days.sales,
+  };
+
+  await db.collection("user_ratings").doc(userId).set(update, {merge: true});
+
+  logger.info(`Updated order stats for ${userId}. Total Trans: ${update.totalCompletedTransactionCount}`);
 }
 
 function completedInformationChanged(
@@ -183,7 +214,12 @@ function completedInformationChanged(
   return (
     before?.status !== after?.status ||
     before?.buyerId !== after?.buyerId ||
-    before?.sellerId !== after?.sellerId
+    before?.sellerId !== after?.sellerId ||
+    before?.sinpePaid !== after?.sinpePaid ||
+    (Array.isArray(before?.sellerEvidenceUrls) && Array.isArray(after?.sellerEvidenceUrls) &&
+     before?.sellerEvidenceUrls.length !== after?.sellerEvidenceUrls.length) ||
+    (Array.isArray(before?.buyerEvidenceUrls) && Array.isArray(after?.buyerEvidenceUrls) &&
+     before?.buyerEvidenceUrls.length !== after?.buyerEvidenceUrls.length)
   );
 }
 
@@ -193,88 +229,30 @@ export const updateOrderReputation =
     async (event): Promise<void> => {
       const change = event.data;
 
-      if (!change) {
-        logger.warn(
-          "The order event did not contain document data.",
-          {
-            orderId: event.params.orderId,
-          }
-        );
+      if (!change) return;
 
-        return;
-      }
+      const beforeOrder = change.before.data() as OrderDocument | undefined;
+      const afterOrder = change.after.data() as OrderDocument | undefined;
 
-      const beforeOrder: OrderDocument | undefined =
-        change.before.exists ?
-          change.before.data() as OrderDocument :
-          undefined;
+      const wasActive = shouldReviewsBeActive(beforeOrder);
+      const isActive = shouldReviewsBeActive(afterOrder);
 
-      const afterOrder: OrderDocument | undefined =
-        change.after.exists ?
-          change.after.data() as OrderDocument :
-          undefined;
-
-      const wasActive =
-        shouldReviewsBeActive(beforeOrder);
-
-      const isActive =
-        shouldReviewsBeActive(afterOrder);
-
-      /*
-       * Solo modifica reviews cuando cambia su visibilidad.
-       */
       if (wasActive !== isActive) {
-        await updateOrderReviewVisibility(
-          event.params.orderId,
-          isActive
-        );
+        await updateOrderReviewVisibility(event.params.orderId, isActive);
       }
 
-      /*
-       * Los contadores solo necesitan recalcularse
-       * cuando cambia status o algún participante.
-       */
-      if (
-        !completedInformationChanged(
-          beforeOrder,
-          afterOrder
-        )
-      ) {
+      if (!completedInformationChanged(beforeOrder, afterOrder)) {
         return;
       }
 
-      const targets =
-        new Map<string, TransactionTarget>();
-
-      addTransactionTarget(
-        targets,
-        beforeOrder?.buyerId,
-        "BUYER"
-      );
-
-      addTransactionTarget(
-        targets,
-        beforeOrder?.sellerId,
-        "SELLER"
-      );
-
-      addTransactionTarget(
-        targets,
-        afterOrder?.buyerId,
-        "BUYER"
-      );
-
-      addTransactionTarget(
-        targets,
-        afterOrder?.sellerId,
-        "SELLER"
-      );
+      const targets = new Map<string, TransactionTarget>();
+      addTransactionTarget(targets, beforeOrder?.buyerId);
+      addTransactionTarget(targets, beforeOrder?.sellerId);
+      addTransactionTarget(targets, afterOrder?.buyerId);
+      addTransactionTarget(targets, afterOrder?.sellerId);
 
       await Promise.all(
-        Array.from(targets.values()).map(
-          (target) =>
-            recalculateCompletedTransactions(target)
-        )
+        Array.from(targets.values()).map((target) => recalculateUserStats(target.userId))
       );
     }
   );

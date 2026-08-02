@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
-import org.koin.android.ext.koin.androidContext
 import ucenfotec.ac.cr.flydevs.di.initKoin
 
 class MainActivity : ComponentActivity() {
