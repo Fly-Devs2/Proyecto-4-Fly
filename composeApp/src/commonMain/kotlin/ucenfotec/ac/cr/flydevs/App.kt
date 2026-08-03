@@ -47,12 +47,16 @@ import ucenfotec.ac.cr.flydevs.navigation.StoreHome
 import ucenfotec.ac.cr.flydevs.navigation.StorePickupScan
 import ucenfotec.ac.cr.flydevs.navigation.StorePickups
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
+import ucenfotec.ac.cr.flydevs.navigation.AdminIncidents
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
+import ucenfotec.ac.cr.flydevs.navigation.AdminIncidentDetail
 import ucenfotec.ac.cr.flydevs.navigation.Reputation
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
@@ -364,6 +368,29 @@ fun App(
                     }
                 )
             }
+
+            composable<AdminIncidents> {
+                AdminIncidentsScreen(
+                    userRole = userRole,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onIncidentClick = { incidentId ->
+                        navController.navigate(
+                            AdminIncidentDetail(
+                                incidentId = incidentId
+                            )
+                        )
+                    },
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(
+                            navController,
+                            destination,
+                            userRole
+                        )
+                    }
+                )
+            }
             composable<Reputation> { backStackEntry ->
                 val route =
                     backStackEntry.toRoute<Reputation>()
@@ -428,6 +455,17 @@ fun App(
                 StorePickupScanRoute(
                     onFinished = { navController.popBackStack() },
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable<AdminIncidentDetail> { backStackEntry ->
+                val route =
+                    backStackEntry.toRoute<AdminIncidentDetail>()
+
+                AdminIncidentDetailScreen(
+                    incidentId = route.incidentId,
+                    onBack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable<ShipmentDetail> { backStackEntry ->
@@ -515,6 +553,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.StorePickups -> {
             navController.navigate(StorePickups) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.AdminIncidents -> {
+            navController.navigate(AdminIncidents) {
                 launchSingleTop = true
             }
         }
