@@ -50,6 +50,8 @@ import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidents
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidentDetail
+import ucenfotec.ac.cr.flydevs.navigation.AdminUserDetail
+import ucenfotec.ac.cr.flydevs.navigation.AdminUsers
 import ucenfotec.ac.cr.flydevs.navigation.Reputation
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
@@ -57,6 +59,8 @@ import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentsScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUserDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUsersScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
@@ -391,6 +395,24 @@ fun App(
                     }
                 )
             }
+            composable<AdminUsers> {
+                AdminUsersScreen(
+                    userRole = userRole,
+                    onBack = { navController.popBackStack() },
+                    onUserClick = { userId -> navController.navigate(AdminUserDetail(userId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
+            composable<AdminUserDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<AdminUserDetail>()
+                AdminUserDetailScreen(
+                    userRole = userRole,
+                    userId = route.userId,
+                    onBack = { navController.popBackStack() },
+                    onDeleted = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
             composable<Reputation> { backStackEntry ->
                 val route =
                     backStackEntry.toRoute<Reputation>()
@@ -558,6 +580,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.AdminIncidents -> {
             navController.navigate(AdminIncidents) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.AdminUsers -> {
+            navController.navigate(AdminUsers) {
                 launchSingleTop = true
             }
         }
