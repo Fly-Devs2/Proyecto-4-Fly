@@ -33,6 +33,8 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IReputationRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IReviewRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IRoleRepository
+import ucenfotec.ac.cr.flydevs.data.repository.RoleRepositoryImpl
 
 val dataModule = module {
     single<IAuthRepository> { AuthRepositoryImpl(get()) }
@@ -55,8 +57,7 @@ val dataModule = module {
     }
     single<IReviewRepository> { ReviewRepositoryImpl(get(), get()) }
     single<IReputationRepository> { ReputationRepositoryImpl(get()) }
-
-
+    single<IRoleRepository> { RoleRepositoryImpl() }
 
     single<IIncidentRepository> { IncidentRepositoryImpl() }
 }
