@@ -1,4 +1,4 @@
-import {getFirestore} from "firebase-admin/firestore";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 
@@ -10,6 +10,8 @@ interface ReviewDocument {
   rating?: unknown;
   comment?: unknown;
   isActive?: unknown;
+  updatedAt?: unknown;
+  createdAt?: unknown;
 }
 
 interface RatingTarget {
@@ -17,64 +19,27 @@ interface RatingTarget {
   role: ReviewRole;
 }
 
-interface RatingDistribution {
-  oneStarCount: number;
-  twoStarCount: number;
-  threeStarCount: number;
-  fourStarCount: number;
-  fiveStarCount: number;
-}
-
 function getRatingTarget(
   review: ReviewDocument | undefined
 ): RatingTarget | null {
-  if (!review) {
-    return null;
-  }
-
+  if (!review) return null;
   const reviewedUserId = review.reviewedUserId;
   const reviewedRole = review.reviewedRole;
-
-  if (
-    typeof reviewedUserId !== "string" ||
-    reviewedUserId.trim().length === 0
-  ) {
-    return null;
-  }
-
-  if (
-    reviewedRole !== "BUYER" &&
-    reviewedRole !== "SELLER"
-  ) {
-    return null;
-  }
-
-  return {
-    userId: reviewedUserId,
-    role: reviewedRole,
-  };
+  if (typeof reviewedUserId !== "string" || reviewedUserId.trim().length === 0) return null;
+  if (reviewedRole !== "BUYER" && reviewedRole !== "SELLER") return null;
+  return {userId: reviewedUserId, role: reviewedRole};
 }
 
 function isValidRating(
   rating: unknown
 ): rating is number {
+  const r = Number(rating);
   return (
-    typeof rating === "number" &&
-    Number.isFinite(rating) &&
-    rating >= 1 &&
-    rating <= 5 &&
-    rating * 2 === Math.floor(rating * 2)
+    !isNaN(r) &&
+    Number.isFinite(r) &&
+    r >= 0 && // Be lenient with 0-star reviews if they exist
+    r <= 5
   );
-}
-
-/**
- * Las reseñas antiguas que todavía no tengan
- * isActive se consideran activas temporalmente.
- */
-function isActiveReview(
-  review: ReviewDocument
-): boolean {
-  return review.isActive !== false;
 }
 
 function hasComment(
@@ -89,29 +54,13 @@ function hasComment(
 function getStarBucket(
   rating: number
 ): 1 | 2 | 3 | 4 | 5 {
-  if (rating >= 4.5) {
-    return 5;
-  }
-
-  if (rating >= 3.5) {
-    return 4;
-  }
-
-  if (rating >= 2.5) {
-    return 3;
-  }
-
-  if (rating >= 1.5) {
-    return 2;
-  }
-
+  if (rating >= 4.5) return 5;
+  if (rating >= 3.5) return 4;
+  if (rating >= 2.5) return 3;
+  if (rating >= 1.5) return 2;
   return 1;
 }
 
-/**
- * Ahora el comentario también afecta el resumen,
- * porque almacenamos commentCount.
- */
 function summaryInformationChanged(
   before: ReviewDocument | undefined,
   after: ReviewDocument | undefined
@@ -128,169 +77,134 @@ function summaryInformationChanged(
 async function recalculateUserRating(
   target: RatingTarget
 ): Promise<void> {
-  const firestore = getFirestore();
+  const db = getFirestore();
   const {userId, role} = target;
 
-  const reviewsSnapshot = await firestore
-    .collection("reviews")
+  // Fetch ALL active reviews for this user to filter in-memory (resilient to missing timestamps)
+  const reviewsSnap = await db.collection("reviews")
     .where("reviewedUserId", "==", userId)
     .where("reviewedRole", "==", role)
+    .where("isActive", "==", true)
     .get();
 
-  let ratingTotal = 0;
-  let validReviewCount = 0;
-  let commentCount = 0;
+  const now = Date.now();
+  const yearMs = 365 * 24 * 60 * 60 * 1000;
+  const monthMs = 30 * 24 * 60 * 60 * 1000;
 
-  const distribution: RatingDistribution = {
-    oneStarCount: 0,
-    twoStarCount: 0,
-    threeStarCount: 0,
-    fourStarCount: 0,
-    fiveStarCount: 0,
+  const buckets = {
+    allTime: createEmptyBucket(),
+    lastYear: createEmptyBucket(),
+    last30Days: createEmptyBucket(),
   };
 
-  for (const reviewSnapshot of reviewsSnapshot.docs) {
-    const review =
-      reviewSnapshot.data() as ReviewDocument;
+  reviewsSnap.forEach((doc) => {
+    const data = doc.data() as ReviewDocument;
+    const rating = Number(data.rating);
 
-    /*
-     * Las reseñas canceladas permanecen almacenadas,
-     * pero no afectan la reputación.
-     */
-    if (!isActiveReview(review)) {
-      continue;
+    if (isValidRating(rating)) {
+      // Use updatedAt or fallback to createdAt or 0
+      const timestamp = Number(data.updatedAt) || Number(data.createdAt) || 0;
+      const age = now - timestamp;
+
+      addToBucket(buckets.allTime, rating, data.comment);
+      if (age <= yearMs) addToBucket(buckets.lastYear, rating, data.comment);
+      if (age <= monthMs) addToBucket(buckets.last30Days, rating, data.comment);
     }
+  });
 
-    const rating = review.rating;
+  const prefix = role === "SELLER" ? "seller" : "buyer";
+  const docRef = db.collection("user_ratings").doc(userId);
 
-    if (!isValidRating(rating)) {
-      logger.warn(
-        "A review with an invalid rating was ignored.",
-        {
-          reviewId: reviewSnapshot.id,
-          reviewedUserId: userId,
-          reviewedRole: role,
-          rating,
-        }
-      );
+  await db.runTransaction(async (transaction) => {
+    const doc = await transaction.get(docRef);
+    const existingData = doc.data() || {};
 
-      continue;
-    }
-
-    ratingTotal += rating;
-    validReviewCount++;
-
-    if (hasComment(review.comment)) {
-      commentCount++;
-    }
-
-    const bucket = getStarBucket(rating);
-
-    whenStarBucket(bucket, distribution);
-  }
-
-  const averageRating =
-    validReviewCount === 0 ?
-      0 :
-      ratingTotal / validReviewCount;
-
-  const roundedAverage =
-    Math.round(averageRating * 100) / 100;
-
-  const ratingFields =
-    role === "SELLER" ?
-      {
-        sellerAverageRating: roundedAverage,
-        sellerReviewCount: validReviewCount,
-        sellerCommentCount: commentCount,
-
-        sellerOneStarCount:
-          distribution.oneStarCount,
-
-        sellerTwoStarCount:
-          distribution.twoStarCount,
-
-        sellerThreeStarCount:
-          distribution.threeStarCount,
-
-        sellerFourStarCount:
-          distribution.fourStarCount,
-
-        sellerFiveStarCount:
-          distribution.fiveStarCount,
-      } :
-      {
-        buyerAverageRating: roundedAverage,
-        buyerReviewCount: validReviewCount,
-        buyerCommentCount: commentCount,
-
-        buyerOneStarCount:
-          distribution.oneStarCount,
-
-        buyerTwoStarCount:
-          distribution.twoStarCount,
-
-        buyerThreeStarCount:
-          distribution.threeStarCount,
-
-        buyerFourStarCount:
-          distribution.fourStarCount,
-
-        buyerFiveStarCount:
-          distribution.fiveStarCount,
-      };
-
-  await firestore
-    .collection("user_ratings")
-    .doc(userId)
-    .set(
-      {
-        userId,
-        ...ratingFields,
-        updatedAt: Date.now(),
-      },
-      {
-        merge: true,
-      }
-    );
-
-  logger.info(
-    "User rating summary updated successfully.",
-    {
+    const update: any = {
       userId,
-      role,
-      averageRating: roundedAverage,
-      reviewCount: validReviewCount,
-      commentCount,
-      distribution,
+      updatedAt: now,
+    };
+
+    // ── Legacy Migration ──
+    // If we detect legacy fields at the root, we migrate them and delete the old ones.
+    const hasLegacyFields = existingData.sellerAverageRating !== undefined ||
+                          existingData.buyerAverageRating !== undefined ||
+                          existingData.sellerReviewCount !== undefined;
+
+    if (hasLegacyFields) {
+      logger.info(`Migrating legacy user_ratings document for ${userId}.`);
+
+      // Ensure root-level totals are initialized if we are moving from flat schema
+      if (existingData.totalCompletedTransactionCount === undefined) {
+        update.totalCompletedTransactionCount =
+          (Number(existingData.sellerCompletedTransactionCount) || 0) +
+          (Number(existingData.buyerCompletedTransactionCount) || 0);
+      }
+
+      if (existingData.totalSalesCount === undefined) {
+        update.totalSalesCount = Number(existingData.sellerSalesCount) || 0;
+      }
+
+      // Mark legacy fields for deletion
+      const fieldsToDelete = [
+        "sellerAverageRating", "sellerReviewCount", "sellerCommentCount",
+        "sellerCompletedTransactionCount", "sellerSalesCount",
+        "sellerFiveStarCount", "sellerFourStarCount", "sellerThreeStarCount",
+        "sellerTwoStarCount", "sellerOneStarCount",
+        "buyerAverageRating", "buyerReviewCount", "buyerCommentCount",
+        "buyerCompletedTransactionCount",
+        "buyerFiveStarCount", "buyerFourStarCount", "buyerThreeStarCount",
+        "buyerTwoStarCount", "buyerOneStarCount"
+      ];
+
+      fieldsToDelete.forEach(f => {
+        if (existingData[f] !== undefined) {
+          update[f] = FieldValue.delete();
+        }
+      });
     }
-  );
+
+    // ── Apply New Stats ──
+    Object.keys(buckets).forEach((key) => {
+      const b = (buckets as any)[key];
+      const avg = b.count === 0 ? 0 : Math.round((b.total / b.count) * 100) / 100;
+
+      update[`${key}.${prefix}AverageRating`] = avg;
+      update[`${key}.${prefix}ReviewCount`] = b.count;
+      update[`${key}.${prefix}CommentCount`] = b.commentCount;
+
+      // Consistent naming matching Kotlin model: sellerFiveStarCount, etc.
+      update[`${key}.${prefix}FiveStarCount`] = b.dist.fiveStarCount;
+      update[`${key}.${prefix}FourStarCount`] = b.dist.fourStarCount;
+      update[`${key}.${prefix}ThreeStarCount`] = b.dist.threeStarCount;
+      update[`${key}.${prefix}TwoStarCount`] = b.dist.twoStarCount;
+      update[`${key}.${prefix}OneStarCount`] = b.dist.oneStarCount;
+    });
+
+    // Use set with merge to ensure nested objects are updated correctly
+    transaction.set(docRef, update, {merge: true});
+  });
+
+  logger.info(`Updated rating summary for ${userId} (${role}).`);
 }
 
-function whenStarBucket(
-  bucket: 1 | 2 | 3 | 4 | 5,
-  distribution: RatingDistribution
-): void {
-  switch (bucket) {
-  case 5:
-    distribution.fiveStarCount++;
-    break;
+function createEmptyBucket() {
+  return {
+    total: 0, count: 0, commentCount: 0,
+    dist: {oneStarCount: 0, twoStarCount: 0, threeStarCount: 0, fourStarCount: 0, fiveStarCount: 0}
+  };
+}
 
-  case 4:
-    distribution.fourStarCount++;
-    break;
-
-  case 3:
-    distribution.threeStarCount++;
-    break;
-
-  case 2:
-    distribution.twoStarCount++;
-    break;
-
-  case 1:
-    distribution.oneStarCount++;
-    break;
+function addToBucket(bucket: any, rating: number, comment: any) {
+  bucket.total += rating;
+  bucket.count++;
+  if (hasComment(comment)) bucket.commentCount++;
+  const star = getStarBucket(rating);
+  switch (star) {
+    case 5: bucket.dist.fiveStarCount++; break;
+    case 4: bucket.dist.fourStarCount++; break;
+    case 3: bucket.dist.threeStarCount++; break;
+    case 2: bucket.dist.twoStarCount++; break;
+    case 1: bucket.dist.oneStarCount++; break;
   }
 }
 
@@ -299,87 +213,22 @@ export const updateUserRatingSummary =
     "reviews/{reviewId}",
     async (event): Promise<void> => {
       const change = event.data;
+      if (!change) return;
 
-      if (!change) {
-        logger.warn(
-          "The Firestore event did not contain document data.",
-          {
-            reviewId: event.params.reviewId,
-          }
-        );
+      const before = change.before.data() as ReviewDocument | undefined;
+      const after = change.after.data() as ReviewDocument | undefined;
 
-        return;
-      }
+      if (!summaryInformationChanged(before, after)) return;
 
-      const beforeReview: ReviewDocument | undefined =
-        change.before.exists ?
-          change.before.data() as ReviewDocument :
-          undefined;
+      const targets = new Map<string, RatingTarget>();
+      const bTarget = getRatingTarget(before);
+      const aTarget = getRatingTarget(after);
 
-      const afterReview: ReviewDocument | undefined =
-        change.after.exists ?
-          change.after.data() as ReviewDocument :
-          undefined;
-
-      /*
-       * Si solamente cambió updatedAt,
-       * no hay que recalcular.
-       */
-      if (
-        !summaryInformationChanged(
-          beforeReview,
-          afterReview
-        )
-      ) {
-        logger.info(
-          "Review changed without affecting the summary.",
-          {
-            reviewId: event.params.reviewId,
-          }
-        );
-
-        return;
-      }
-
-      const targets =
-        new Map<string, RatingTarget>();
-
-      const beforeTarget =
-        getRatingTarget(beforeReview);
-
-      const afterTarget =
-        getRatingTarget(afterReview);
-
-      if (beforeTarget) {
-        targets.set(
-          `${beforeTarget.userId}_${beforeTarget.role}`,
-          beforeTarget
-        );
-      }
-
-      if (afterTarget) {
-        targets.set(
-          `${afterTarget.userId}_${afterTarget.role}`,
-          afterTarget
-        );
-      }
-
-      if (targets.size === 0) {
-        logger.warn(
-          "No valid rating target was found.",
-          {
-            reviewId: event.params.reviewId,
-          }
-        );
-
-        return;
-      }
+      if (bTarget) targets.set(`${bTarget.userId}_${bTarget.role}`, bTarget);
+      if (aTarget) targets.set(`${aTarget.userId}_${aTarget.role}`, aTarget);
 
       await Promise.all(
-        Array.from(targets.values()).map(
-          (target) =>
-            recalculateUserRating(target)
-        )
+        Array.from(targets.values()).map((t) => recalculateUserRating(t))
       );
     }
   );

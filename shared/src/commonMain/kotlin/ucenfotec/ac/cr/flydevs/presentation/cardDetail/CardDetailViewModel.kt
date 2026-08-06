@@ -153,10 +153,10 @@ class CardDetailViewModel(
                     _uiState.update { currentState ->
                         currentState.copy(
                             sellerAverageRating =
-                                summary.sellerAverageRating,
+                                summary.allTime.sellerAverageRating,
 
                             sellerReviewCount =
-                                summary.sellerReviewCount,
+                                summary.allTime.sellerReviewCount,
 
                             isLoadingSellerRating = false
                         )

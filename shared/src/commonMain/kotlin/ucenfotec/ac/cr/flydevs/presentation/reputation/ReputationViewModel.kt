@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucenfotec.ac.cr.flydevs.domain.model.ReputationTimeframe
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IReputationRepository
 
@@ -92,6 +93,28 @@ class ReputationViewModel(
         )
     }
 
+    fun selectTimeframe(
+        timeframe: ReputationTimeframe
+    ) {
+        if (_uiState.value.selectedTimeframe == timeframe) {
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedTimeframe = timeframe,
+                visibleReviewLimit = 3,
+                reviews = emptyList(),
+                hasMoreReviews = false,
+                errorMessage = null
+            )
+        }
+
+        loadReviews(
+            clearCurrentReviews = true
+        )
+    }
+
     fun loadMoreReviews() {
         val currentState =
             _uiState.value
@@ -154,6 +177,20 @@ class ReputationViewModel(
                         }
                     }
                     .collect { (user, summary) ->
+                        val currentRole = _uiState.value.selectedRole
+                        
+                        // Intelligent role selection on first load:
+                        // If current role has no data but other role does, switch to it.
+                        val newRole = if (observedUserId != null && _uiState.value.isLoading) {
+                            val sellerHasData = summary.allTime.sellerReviewCount > 0 || summary.allTime.sellerCompletedTransactionCount > 0
+                            val buyerHasData = summary.allTime.buyerReviewCount > 0 || summary.allTime.buyerCompletedTransactionCount > 0
+                            
+                            if (!sellerHasData && buyerHasData) ReviewRole.BUYER
+                            else ReviewRole.SELLER
+                        } else {
+                            currentRole
+                        }
+
                         _uiState.update {
                             it.copy(
                                 userName =
@@ -163,10 +200,16 @@ class ReputationViewModel(
 
                                 ratingSummary =
                                     summary,
+                                
+                                selectedRole = newRole,
 
                                 isLoading = false,
                                 errorMessage = null
                             )
+                        }
+
+                        if (newRole != currentRole) {
+                            loadReviews(clearCurrentReviews = true)
                         }
                     }
             }
@@ -212,7 +255,9 @@ class ReputationViewModel(
                             role =
                                 latestState.selectedRole,
                             limit =
-                                latestState.visibleReviewLimit
+                                latestState.visibleReviewLimit,
+                            timeframe =
+                                latestState.selectedTimeframe
                         )
 
                     _uiState.update {

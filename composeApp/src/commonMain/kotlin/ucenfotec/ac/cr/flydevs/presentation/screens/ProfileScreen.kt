@@ -213,6 +213,8 @@ fun ProfileScreen(
                 state = reputationState,
                 onRoleSelected =
                     reputationViewModel::selectRole,
+                onTimeframeSelected =
+                    reputationViewModel::selectTimeframe,
                 onLoadMore =
                     reputationViewModel::loadMoreReviews,
                 onRetry =

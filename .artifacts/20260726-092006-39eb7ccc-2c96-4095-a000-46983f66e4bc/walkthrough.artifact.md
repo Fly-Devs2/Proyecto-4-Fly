@@ -1,32 +1,38 @@
-# Walkthrough - QR Code Store Acceptance Flow
+# Walkthrough - Global Transactions & Time-Based Reputation Filters
 
-I have implemented a QR-based acceptance system that allows stores to display a single QR code for all their outgoing batches, and couriers to scan it to accept them all at once.
+I have implemented a comprehensive update to the reputation system, introducing global transaction tracking and time-based filtering.
 
-## Changes Overview
+## Key Features
+
+### 1. Global Transaction Tracking
+- **New Criteria**: A "Transaction" is now strictly defined as an order that is both **SINPE Paid** and has **Seller Delivery Evidence**.
+- **Global Count**: The UI now displays a "Total Transactions" count, which is the sum of all purchases and sales that meet the completion criteria.
+- **Backend Sync**: Updated the Firebase Cloud Functions to automatically recalculate these counts whenever an order's payment or evidence status changes.
+
+### 2. Time-Based Reputation Filters
+- **New Filters**: Users can now filter reputation and stats by:
+    - **Últimos 30 días**
+    - **Último año**
+    - **Todo** (All time)
+- **Efficiency**: The backend now stores pre-calculated summaries for each of these timeframes, ensuring that the app remains fast even as the number of reviews grows.
+- **UI Integration**: Added a timeframe selector (tabs) to the reputation view, allowing users to see how a seller or buyer has performed recently.
+
+## Technical Changes
 
 ### Domain & Data Layer
-- **[User.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/User.kt)**: Added `storeId` and `storeName` fields to associate users with specific stores.
-- **[IBatchRepository.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/repository/IBatchRepository.kt)**: Added `observeOutgoingStoreBatches` and `acceptAllStoreBatches`.
-- **[BatchRepositoryImpl.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/data/repository/BatchRepositoryImpl.kt)**: Implemented the new methods using Firestore transactions for atomic batch acceptance.
+- **[UserRatingSummary.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/UserRatingSummary.kt)**: Refactored to support nested `TimeframeSummary` objects.
+- **[RoleReputationSummary.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/RoleReputationSummary.kt)**: Added `salesCount` and `completedTransactionCount` to the role-specific view.
+- **[ReputationRepositoryImpl.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/data/repository/ReputationRepositoryImpl.kt)**: Updated `getReviews` to include a timeframe filter in the Firestore query.
 
-### Presentation Layer (Shared)
-- **[StoreBatchesViewModel.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/storeBatches/StoreBatchesViewModel.kt)**: Manages the state for the store view, fetching outgoing batches and generating the QR payload (`flydevs://store-qr?sid=STORE_ID`).
-- **[ScanQrViewModel.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/batch/ScanQrViewModel.kt)**: Updated to recognize `store-qr` payloads and trigger the `acceptAllStoreBatches` logic.
+### Backend (Cloud Functions)
+- **[updateOrderReputation.ts](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/firebase-backend/src/reviews/updateOrderReputation.ts)**: Implemented the new "Transaction" vs "Sales" logic. Transactions require payment + evidence, while Sales require `PICKED_UP` status.
+- **[updateUserRatingSummary.ts](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/firebase-backend/src/reviews/updateUserRatingSummary.ts)**: Updated to recalculate star distributions and averages for all three timeframes simultaneously.
 
 ### UI Layer (Compose)
-- **[StoreBatchesScreen.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/screens/StoreBatchesScreen.kt)**: A new screen for store admins featuring a QR code card and a list of outgoing batches with a compact design.
-- **[ProfileScreen.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/screens/ProfileScreen.kt)**: Added a "Gestionar Lotes (Tienda)" button for users linked to a store.
-- **[App.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/App.kt)**: Integrated the new `StoreBatches` route.
+- **[ReputationContent.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/components/ReputationContent.kt)**: Added the `ReputationTimeframeSelector` and updated the summary card to show global stats.
+- **[ProfileScreen.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/screens/ProfileScreen.kt)**: Integrated the updated reputation content into the user profile.
 
 ## Verification Summary
-
-### Automated Tests
-- Ran `:shared:assemble` to verify compilation and dependency integrity. The build finished successfully.
-
-### Manual Verification
-1. **Store QR View**:
-   - Simulated a store user and verified the "Gestionar Lotes" option appears in the profile.
-   - The Store Batches screen correctly displays the QR code and the list of outgoing batches.
-2. **Scanner Integration**:
-   - Verified that scanning a `store-qr` payload correctly triggers the mass-acceptance logic in the repository.
-   - Verified that the courier receives feedback on the number of batches accepted.
+- **Compilation**: Verified that both `shared` and `composeApp` modules compile correctly. Fixed initial issues with `kotlinx-datetime` (switched to project utility) and updated legacy references in `CardDetailViewModel`.
+- **Logic**: The distinction between Sales (`PICKED_UP`) and Transactions (`SINPE` + `Evidence`) is now enforced at the database level.
+- **UI**: Verified that the timeframe tabs correctly trigger a reload of the stats and reviews.
