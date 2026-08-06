@@ -53,6 +53,7 @@ import ucenfotec.ac.cr.flydevs.navigation.AdminSettings
 
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidentDetail
+import ucenfotec.ac.cr.flydevs.navigation.AdminTraceability
 import ucenfotec.ac.cr.flydevs.navigation.AdminUserDetail
 import ucenfotec.ac.cr.flydevs.navigation.AdminUsers
 import ucenfotec.ac.cr.flydevs.navigation.Reputation
@@ -62,6 +63,7 @@ import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeRoute
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentsScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminTraceabilityScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUserDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUsersScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.RolePermissionScreen
@@ -430,6 +432,16 @@ fun App(
                     userId = route.userId,
                     onBack = { navController.popBackStack() },
                     onDeleted = { navController.popBackStack() },
+                    onTraceability = { navController.navigate(AdminTraceability(route.userId)) },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
+                )
+            }
+            composable<AdminTraceability> { backStackEntry ->
+                val route = backStackEntry.toRoute<AdminTraceability>()
+                AdminTraceabilityScreen(
+                    userRole = userRole,
+                    userId = route.userId,
+                    onBack = { navController.popBackStack() },
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }

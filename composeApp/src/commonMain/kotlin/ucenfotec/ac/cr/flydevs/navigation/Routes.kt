@@ -89,6 +89,11 @@ data class AdminUserDetail(
 )
 
 @Serializable
+data class AdminTraceability(
+    val userId: String
+)
+
+@Serializable
 object AdminOrders
 
 

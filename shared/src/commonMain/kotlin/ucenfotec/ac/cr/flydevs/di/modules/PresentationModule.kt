@@ -35,6 +35,7 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IRoleRepository
 import ucenfotec.ac.cr.flydevs.presentation.rolePermission.RolePermissionViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncident.AdminIncidentsViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncidentDetail.AdminIncidentDetailViewModel
+import ucenfotec.ac.cr.flydevs.presentation.adminTraceability.AdminTraceabilityViewModel
 import ucenfotec.ac.cr.flydevs.presentation.adminUserDetail.AdminUserDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.adminUsers.AdminUsersViewModel
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeViewModel
@@ -76,4 +77,5 @@ val presentationModule = module {
     viewModel { RolePermissionViewModel(get<IRoleRepository>()) }
     viewModel { AdminUsersViewModel(get()) }
     viewModel { (userId: String) -> AdminUserDetailViewModel(get(), get(), userId) }
+    viewModel { (userId: String) -> AdminTraceabilityViewModel(get(), userId) }
 }
