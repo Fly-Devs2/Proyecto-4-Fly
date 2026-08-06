@@ -2,6 +2,7 @@ package ucenfotec.ac.cr.flydevs.data.repository
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -9,10 +10,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import ucenfotec.ac.cr.flydevs.domain.model.FlatUserRatingSummary
+import ucenfotec.ac.cr.flydevs.domain.model.toNestedSummary
 import ucenfotec.ac.cr.flydevs.domain.model.Order
 import ucenfotec.ac.cr.flydevs.domain.model.Review
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewEligibility
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewRole
+import ucenfotec.ac.cr.flydevs.domain.model.TimeframeSummary
 import ucenfotec.ac.cr.flydevs.domain.model.UserRatingSummary
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IReviewRepository
@@ -470,16 +474,33 @@ class ReviewRepositoryImpl(
         return userRatingsCollection
             .document(userId)
             .snapshots
-            .map { documentSnapshot ->
-
-                if (documentSnapshot.exists) {
-                    documentSnapshot.data<UserRatingSummary>()
+            .map { snapshot ->
+                if (snapshot.exists) {
+                    mapDocumentToRatingSummary(snapshot)
                 } else {
                     UserRatingSummary(
                         userId = userId
                     )
                 }
             }
+    }
+
+    private fun mapDocumentToRatingSummary(snapshot: DocumentSnapshot): UserRatingSummary {
+        println("REPUTATION_DEBUG | (ReviewRepo) Document ID: ${snapshot.id}")
+
+        return try {
+            val flatSummary = snapshot.data<FlatUserRatingSummary>()
+            val nested = flatSummary.toNestedSummary()
+
+            println("REPUTATION_DEBUG | (ReviewRepo) Flat Mapping SUCCESS")
+            println("REPUTATION_DEBUG | (ReviewRepo) AllTime Rating: ${nested.allTime.sellerAverageRating}")
+
+            nested
+        } catch (e: Exception) {
+            println("REPUTATION_DEBUG | (ReviewRepo) Flat Mapping FAILED: ${e.message}")
+            e.printStackTrace()
+            UserRatingSummary(userId = snapshot.id)
+        }
     }
 
 }

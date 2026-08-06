@@ -1,4 +1,4 @@
-import {getFirestore, Query} from "firebase-admin/firestore";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 
@@ -176,35 +176,69 @@ async function recalculateUserStats(
   userId: string
 ): Promise<void> {
   const db = getFirestore();
+  const docRef = db.collection("user_ratings").doc(userId);
 
   const [buyerStats, sellerStats] = await Promise.all([
     calculateStats(userId, "buyer"),
     calculateStats(userId, "seller"),
   ]);
 
-  // Use dot notation to avoid overwriting rating fields in nested objects
-  const update: any = {
-    userId,
-    updatedAt: Date.now(),
-    totalCompletedTransactionCount: sellerStats.allTime.transactions + buyerStats.allTime.transactions,
-    totalSalesCount: sellerStats.allTime.sales,
+  const now = Date.now();
 
-    "allTime.buyerCompletedTransactionCount": buyerStats.allTime.transactions,
-    "allTime.sellerCompletedTransactionCount": sellerStats.allTime.transactions,
-    "allTime.sellerSalesCount": sellerStats.allTime.sales,
+  await db.runTransaction(async (transaction) => {
+    const doc = await transaction.get(docRef);
+    const existingData = doc.data() || {};
 
-    "lastYear.buyerCompletedTransactionCount": buyerStats.lastYear.transactions,
-    "lastYear.sellerCompletedTransactionCount": sellerStats.lastYear.transactions,
-    "lastYear.sellerSalesCount": sellerStats.lastYear.sales,
+    // Use dot notation to avoid overwriting rating fields in nested objects
+    const update: any = {
+      userId,
+      updatedAt: now,
+      totalCompletedTransactionCount: sellerStats.allTime.transactions + buyerStats.allTime.transactions,
+      totalSalesCount: sellerStats.allTime.sales,
 
-    "last30Days.buyerCompletedTransactionCount": buyerStats.last30Days.transactions,
-    "last30Days.sellerCompletedTransactionCount": sellerStats.last30Days.transactions,
-    "last30Days.sellerSalesCount": sellerStats.last30Days.sales,
-  };
+      "allTime.buyerCompletedTransactionCount": buyerStats.allTime.transactions,
+      "allTime.sellerCompletedTransactionCount": sellerStats.allTime.transactions,
+      "allTime.sellerSalesCount": sellerStats.allTime.sales,
 
-  await db.collection("user_ratings").doc(userId).set(update, {merge: true});
+      "lastYear.buyerCompletedTransactionCount": buyerStats.lastYear.transactions,
+      "lastYear.sellerCompletedTransactionCount": sellerStats.lastYear.transactions,
+      "lastYear.sellerSalesCount": sellerStats.lastYear.sales,
 
-  logger.info(`Updated order stats for ${userId}. Total Trans: ${update.totalCompletedTransactionCount}`);
+      "last30Days.buyerCompletedTransactionCount": buyerStats.last30Days.transactions,
+      "last30Days.sellerCompletedTransactionCount": sellerStats.last30Days.transactions,
+      "last30Days.sellerSalesCount": sellerStats.last30Days.sales,
+    };
+
+    // ── Legacy Migration & Cleanup ──
+    const hasLegacyFields = existingData.sellerCompletedTransactionCount !== undefined ||
+                          existingData.buyerCompletedTransactionCount !== undefined ||
+                          existingData.sellerAverageRating !== undefined;
+
+    if (hasLegacyFields) {
+      logger.info(`Migrating legacy user_ratings document for ${userId} (Order Stats).`);
+
+      const fieldsToDelete = [
+        "sellerAverageRating", "sellerReviewCount", "sellerCommentCount",
+        "sellerCompletedTransactionCount", "sellerSalesCount",
+        "sellerFiveStarCount", "sellerFourStarCount", "sellerThreeStarCount",
+        "sellerTwoStarCount", "sellerOneStarCount",
+        "buyerAverageRating", "buyerReviewCount", "buyerCommentCount",
+        "buyerCompletedTransactionCount",
+        "buyerFiveStarCount", "buyerFourStarCount", "buyerThreeStarCount",
+        "buyerTwoStarCount", "buyerOneStarCount"
+      ];
+
+      fieldsToDelete.forEach(f => {
+        if (existingData[f] !== undefined) {
+          update[f] = FieldValue.delete();
+        }
+      });
+    }
+
+    transaction.set(docRef, update, {merge: true});
+  });
+
+  logger.info(`Updated order stats for ${userId}. Total Trans: ${sellerStats.allTime.transactions + buyerStats.allTime.transactions}`);
 }
 
 function completedInformationChanged(

@@ -10,6 +10,8 @@ import ucenfotec.ac.cr.flydevs.domain.model.ReputationReviewItem
 import ucenfotec.ac.cr.flydevs.domain.model.ReputationReviewsPage
 import ucenfotec.ac.cr.flydevs.domain.model.Review
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewRole
+import ucenfotec.ac.cr.flydevs.domain.model.FlatUserRatingSummary
+import ucenfotec.ac.cr.flydevs.domain.model.toNestedSummary
 import ucenfotec.ac.cr.flydevs.domain.model.User
 import ucenfotec.ac.cr.flydevs.domain.model.TimeframeSummary
 import ucenfotec.ac.cr.flydevs.domain.model.UserRatingSummary
@@ -62,67 +64,23 @@ class ReputationRepositoryImpl(
     }
 
     private fun mapDocumentToRatingSummary(snapshot: DocumentSnapshot): UserRatingSummary {
-        val autoMapped = runCatching { snapshot.data<UserRatingSummary>() }.getOrNull()
-        
-        // If allTime is empty, it's likely a legacy document or hasn't been updated yet.
-        val isLegacy = autoMapped == null || 
-                (autoMapped.allTime.sellerReviewCount == 0 && 
-                 autoMapped.allTime.buyerReviewCount == 0 && 
-                 autoMapped.allTime.sellerCompletedTransactionCount == 0 &&
-                 autoMapped.allTime.buyerCompletedTransactionCount == 0)
+        println("REPUTATION_DEBUG | Document ID: ${snapshot.id}")
 
-        if (isLegacy) {
-            val sellerTrans = snapshot.getSafeInt("sellerCompletedTransactionCount")
-            val buyerTrans = snapshot.getSafeInt("buyerCompletedTransactionCount")
-            val sellerSales = snapshot.getSafeInt("sellerSalesCount")
-            
-            val legacySummary = UserRatingSummary(
-                userId = snapshot.id,
-                totalCompletedTransactionCount = sellerTrans + buyerTrans,
-                totalSalesCount = sellerSales
-            )
-            
-            return legacySummary.copy(
-                allTime = TimeframeSummary(
-                    sellerAverageRating = snapshot.getSafeDouble("sellerAverageRating"),
-                    sellerReviewCount = snapshot.getSafeInt("sellerReviewCount"),
-                    sellerCommentCount = snapshot.getSafeInt("sellerCommentCount"),
-                    sellerCompletedTransactionCount = sellerTrans,
-                    sellerSalesCount = sellerSales,
-                    sellerFiveStarCount = snapshot.getSafeInt("sellerFiveStarCount"),
-                    sellerFourStarCount = snapshot.getSafeInt("sellerFourStarCount"),
-                    sellerThreeStarCount = snapshot.getSafeInt("sellerThreeStarCount"),
-                    sellerTwoStarCount = snapshot.getSafeInt("sellerTwoStarCount"),
-                    sellerOneStarCount = snapshot.getSafeInt("sellerOneStarCount"),
-                    
-                    buyerAverageRating = snapshot.getSafeDouble("buyerAverageRating"),
-                    buyerReviewCount = snapshot.getSafeInt("buyerReviewCount"),
-                    buyerCommentCount = snapshot.getSafeInt("buyerCommentCount"),
-                    buyerCompletedTransactionCount = buyerTrans,
-                    buyerFiveStarCount = snapshot.getSafeInt("buyerFiveStarCount"),
-                    buyerFourStarCount = snapshot.getSafeInt("buyerFourStarCount"),
-                    buyerThreeStarCount = snapshot.getSafeInt("buyerThreeStarCount"),
-                    buyerTwoStarCount = snapshot.getSafeInt("buyerTwoStarCount"),
-                    buyerOneStarCount = snapshot.getSafeInt("buyerOneStarCount")
-                ),
-                updatedAt = snapshot.getSafeLong("updatedAt")
-            )
+        return try {
+            val flatSummary = snapshot.data<FlatUserRatingSummary>()
+            val nested = flatSummary.toNestedSummary()
+
+            println("REPUTATION_DEBUG | Flat Mapping SUCCESS")
+            println("REPUTATION_DEBUG | AllTime Rating: ${nested.allTime.sellerAverageRating}")
+            println("REPUTATION_DEBUG | AllTime Reviews: ${nested.allTime.sellerReviewCount}")
+
+            nested
+        } catch (e: Exception) {
+            println("REPUTATION_DEBUG | Flat Mapping FAILED: ${e.message}")
+            e.printStackTrace()
+            UserRatingSummary(userId = snapshot.id)
         }
-
-        return autoMapped ?: UserRatingSummary(userId = snapshot.id)
     }
-
-    private fun DocumentSnapshot.getSafeInt(field: String): Int =
-        runCatching { get<Int>(field) }.getOrElse { 
-            // Handle cases where it might be stored as Long
-            runCatching { get<Long>(field).toInt() }.getOrElse { 0 }
-        }
-
-    private fun DocumentSnapshot.getSafeLong(field: String): Long =
-        runCatching { get<Long>(field) }.getOrElse { 0L }
-
-    private fun DocumentSnapshot.getSafeDouble(field: String): Double =
-        runCatching { get<Double>(field) }.getOrElse { 0.0 }
 
     override suspend fun getReviews(
         userId: String,

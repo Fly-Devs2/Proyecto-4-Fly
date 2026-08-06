@@ -1,4 +1,4 @@
-import {getFirestore} from "firebase-admin/firestore";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 
@@ -17,14 +17,6 @@ interface ReviewDocument {
 interface RatingTarget {
   userId: string;
   role: ReviewRole;
-}
-
-interface RatingDistribution {
-  oneStarCount: number;
-  twoStarCount: number;
-  threeStarCount: number;
-  fourStarCount: number;
-  fiveStarCount: number;
 }
 
 function getRatingTarget(
@@ -121,27 +113,76 @@ async function recalculateUserRating(
   });
 
   const prefix = role === "SELLER" ? "seller" : "buyer";
-  const update: any = {
-    userId,
-    updatedAt: now,
-  };
+  const docRef = db.collection("user_ratings").doc(userId);
 
-  // Build the nested update object using dot notation to avoid overwriting order stats
-  Object.keys(buckets).forEach((key) => {
-    const b = (buckets as any)[key];
-    const avg = b.count === 0 ? 0 : Math.round((b.total / b.count) * 100) / 100;
+  await db.runTransaction(async (transaction) => {
+    const doc = await transaction.get(docRef);
+    const existingData = doc.data() || {};
 
-    update[`${key}.${prefix}AverageRating`] = avg;
-    update[`${key}.${prefix}ReviewCount`] = b.count;
-    update[`${key}.${prefix}CommentCount`] = b.commentCount;
-    update[`${key}.${prefix}OneStarCount`] = b.dist.oneStarCount;
-    update[`${key}.${prefix}TwoStarCount`] = b.dist.twoStarCount;
-    update[`${key}.${prefix}ThreeStarCount`] = b.dist.threeStarCount;
-    update[`${key}.${prefix}FourStarCount`] = b.dist.fourStarCount;
-    update[`${key}.${prefix}FiveStarCount`] = b.dist.fiveStarCount;
+    const update: any = {
+      userId,
+      updatedAt: now,
+    };
+
+    // ── Legacy Migration ──
+    // If we detect legacy fields at the root, we migrate them and delete the old ones.
+    const hasLegacyFields = existingData.sellerAverageRating !== undefined ||
+                          existingData.buyerAverageRating !== undefined ||
+                          existingData.sellerReviewCount !== undefined;
+
+    if (hasLegacyFields) {
+      logger.info(`Migrating legacy user_ratings document for ${userId}.`);
+
+      // Ensure root-level totals are initialized if we are moving from flat schema
+      if (existingData.totalCompletedTransactionCount === undefined) {
+        update.totalCompletedTransactionCount =
+          (Number(existingData.sellerCompletedTransactionCount) || 0) +
+          (Number(existingData.buyerCompletedTransactionCount) || 0);
+      }
+
+      if (existingData.totalSalesCount === undefined) {
+        update.totalSalesCount = Number(existingData.sellerSalesCount) || 0;
+      }
+
+      // Mark legacy fields for deletion
+      const fieldsToDelete = [
+        "sellerAverageRating", "sellerReviewCount", "sellerCommentCount",
+        "sellerCompletedTransactionCount", "sellerSalesCount",
+        "sellerFiveStarCount", "sellerFourStarCount", "sellerThreeStarCount",
+        "sellerTwoStarCount", "sellerOneStarCount",
+        "buyerAverageRating", "buyerReviewCount", "buyerCommentCount",
+        "buyerCompletedTransactionCount",
+        "buyerFiveStarCount", "buyerFourStarCount", "buyerThreeStarCount",
+        "buyerTwoStarCount", "buyerOneStarCount"
+      ];
+
+      fieldsToDelete.forEach(f => {
+        if (existingData[f] !== undefined) {
+          update[f] = FieldValue.delete();
+        }
+      });
+    }
+
+    // ── Apply New Stats ──
+    Object.keys(buckets).forEach((key) => {
+      const b = (buckets as any)[key];
+      const avg = b.count === 0 ? 0 : Math.round((b.total / b.count) * 100) / 100;
+
+      update[`${key}.${prefix}AverageRating`] = avg;
+      update[`${key}.${prefix}ReviewCount`] = b.count;
+      update[`${key}.${prefix}CommentCount`] = b.commentCount;
+
+      // Consistent naming matching Kotlin model: sellerFiveStarCount, etc.
+      update[`${key}.${prefix}FiveStarCount`] = b.dist.fiveStarCount;
+      update[`${key}.${prefix}FourStarCount`] = b.dist.fourStarCount;
+      update[`${key}.${prefix}ThreeStarCount`] = b.dist.threeStarCount;
+      update[`${key}.${prefix}TwoStarCount`] = b.dist.twoStarCount;
+      update[`${key}.${prefix}OneStarCount`] = b.dist.oneStarCount;
+    });
+
+    // Use set with merge to ensure nested objects are updated correctly
+    transaction.set(docRef, update, {merge: true});
   });
-
-  await db.collection("user_ratings").doc(userId).set(update, {merge: true});
 
   logger.info(`Updated rating summary for ${userId} (${role}).`);
 }
