@@ -7,6 +7,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isActive() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    function isActive() {
+      let uid = request.auth.uid;
+      let userPath = /databases/$(database)/documents/users/$(uid);
+      return signedIn() && (!exists(userPath) || get(userPath).data.get('isActive', true) == true);
+    }
+
     function isValidReviewRating(rating) {
       return rating is number &&
         rating in [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
@@ -75,14 +85,15 @@ service cloud.firestore {
         );
     }
 
+
     match /users/{uid} {
-      allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+      allow read: if isActive();
+      allow write: if isAdmin() || (isActive() && request.auth.uid == uid);
     }
 
     match /orders/{orderId} {
-      allow read: if signedIn();
-      allow create, update: if signedIn() && (
+      allow read: if isActive();
+      allow create, update: if isActive() && (
         !isCancelling() || canCancelOrder()
       );
 
@@ -104,8 +115,8 @@ service cloud.firestore {
     }
 
     match /incidents/{incidentId} {
-      allow read: if signedIn() && resource.data.reporterId == request.auth.uid;
-      allow create: if signedIn() &&
+      allow read: if isActive() && resource.data.reporterId == request.auth.uid;
+      allow create: if isActive() &&
         request.resource.data.reporterId == request.auth.uid &&
         request.resource.data.orderId is string &&
         request.resource.data.orderId != '' &&
@@ -117,15 +128,15 @@ service cloud.firestore {
     }
 
     match /notifications/{notificationId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow update: if signedIn() &&
+      allow read: if isActive() && resource.data.userId == request.auth.uid;
+      allow update: if isActive() &&
         resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow create, delete: if false;
     }
 
     match /notifications_preferences/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read, write: if isActive() && request.auth.uid == uid;
     }
 
     match /mail/{mailId} {
@@ -133,11 +144,11 @@ service cloud.firestore {
     }
 
     match /reviews/{reviewId} {
-      allow read, write: if signedIn();
+      allow read, write: if isActive();
     }
 
     match /user_ratings/{userId} {
-      allow read, write: if signedIn();
+      allow read, write: if isActive();
     }
 
     match /sobres/{sobresId} {
@@ -146,44 +157,44 @@ service cloud.firestore {
 
     match /envelopes/{envelopeId} {
 
-      allow create: if request.auth != null
+      allow create: if isActive()
         && request.resource.data.userId == request.auth.uid;
 
-      allow read: if request.auth != null
+      allow read: if isActive()
         && resource.data.userId == request.auth.uid;
 
-      allow write: if request.auth != null
+      allow write: if isActive()
         && resource.data.userId == request.auth.uid;
 
-      allow update: if request.auth != null
+      allow update: if isActive()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId;
 
-      allow delete: if request.auth != null
+      allow delete: if isActive()
         && resource.data.userId == request.auth.uid;
     }
 
     match /game_cards/{cardId} {
-      allow read: if signedIn();
-      allow write: if signedIn();
+      allow read: if isActive();
+      allow write: if isActive();
     }
 
-    match /expansions/{doc} { allow read: if signedIn(); allow write: if false; }
-    match /stores/{storeId} { allow read: if signedIn(); allow write: if false; }
-    match /rarities/{doc}   { allow read: if signedIn(); allow write: if false; }
+    match /expansions/{doc} { allow read: if isActive(); allow write: if false; }
+    match /stores/{storeId} { allow read: if isActive(); allow write: if false; }
+    match /rarities/{doc}   { allow read: if isActive(); allow write: if false; }
 
     match /batches/{batchId} {
-      allow read, write: if signedIn();
+      allow read, write: if isActive();
     }
 
     match /batch_group/{groupId} {
-      allow read, write: if signedIn();
+      allow read, write: if isActive();
     }
 
     match /exchanges/{exchangeId} {
 
       function isParticipant() {
-        return signedIn() && (
+        return isActive() && (
           request.auth.uid == resource.data.buyerId ||
           request.auth.uid == resource.data.sellerId
         );
@@ -226,13 +237,13 @@ service cloud.firestore {
 
       allow read: if isParticipant();
 
-      allow create: if signedIn() &&
+      allow create: if isActive() &&
         request.resource.data.buyerId == request.auth.uid &&
         request.resource.data.status == 'WAITING_STORE_DELIVERY' &&
         request.resource.data.sellerEvidenceUrl == '' &&
         request.resource.data.sinpeProofUrl == '';
 
-      allow update: if signedIn() && coreUnchanged() && (
+      allow update: if isActive() && coreUnchanged() && (
         sellerSubmitsEvidence() ||
         buyerSubmitsProof() ||
         movesToShipping()

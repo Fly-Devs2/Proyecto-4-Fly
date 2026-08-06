@@ -211,7 +211,7 @@ private fun getBottomNavOptions(
                 BottomNavOption(
                     destination =
                         FlyNavDestination.AdminIncidents,
-                    label = "Disputas",
+                    label = "Reportes",
                     icon = Icons.Default.WarningAmber
                 ),
                 BottomNavOption(
