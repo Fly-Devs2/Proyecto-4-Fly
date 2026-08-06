@@ -48,6 +48,9 @@ import ucenfotec.ac.cr.flydevs.navigation.StorePickupScan
 import ucenfotec.ac.cr.flydevs.navigation.StorePickups
 import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidents
+import ucenfotec.ac.cr.flydevs.navigation.AdminRoles
+import ucenfotec.ac.cr.flydevs.navigation.AdminSettings
+
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidentDetail
 import ucenfotec.ac.cr.flydevs.navigation.AdminUserDetail
@@ -61,7 +64,10 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminIncidentsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUserDetailScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.AdminUsersScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.RolePermissionScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardDetailScreen
+import ucenfotec.ac.cr.flydevs.presentation.screens.AdminSettingsScreen
+
 import ucenfotec.ac.cr.flydevs.presentation.screens.CardMarketplaceScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.CompleteProfileScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.DeliverToStoreScreen
@@ -395,6 +401,20 @@ fun App(
                     }
                 )
             }
+            composable<AdminRoles> {
+                RolePermissionScreen(
+                    navController = navController
+                )
+            }
+
+            composable<AdminSettings> {
+                AdminSettingsScreen(
+                    userRole = userRole,
+                    onBack = { navController.popBackStack() },
+                    onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) },
+                    navController = navController
+                )
+            }
             composable<AdminUsers> {
                 AdminUsersScreen(
                     userRole = userRole,
@@ -585,6 +605,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.AdminUsers -> {
             navController.navigate(AdminUsers) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.AdminSettings -> {
+            navController.navigate(AdminSettings) {
                 launchSingleTop = true
             }
         }

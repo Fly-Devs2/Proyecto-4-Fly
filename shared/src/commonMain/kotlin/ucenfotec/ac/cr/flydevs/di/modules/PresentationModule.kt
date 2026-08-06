@@ -31,6 +31,8 @@ import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.purchaseHistory.PurchaseHistoryViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IRoleRepository
+import ucenfotec.ac.cr.flydevs.presentation.rolePermission.RolePermissionViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncident.AdminIncidentsViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncidentDetail.AdminIncidentDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.adminUserDetail.AdminUserDetailViewModel
@@ -71,6 +73,7 @@ val presentationModule = module {
     viewModel { ReputationViewModel(get()) }
     viewModel { AdminIncidentsViewModel(get(), get()) }
     viewModel {(incidentId: String)->  AdminIncidentDetailViewModel(get(), get(), get(), incidentId = incidentId) }
+    viewModel { RolePermissionViewModel(get<IRoleRepository>()) }
     viewModel { AdminUsersViewModel(get()) }
     viewModel { (userId: String) -> AdminUserDetailViewModel(get(), get(), userId) }
 }

@@ -99,6 +99,10 @@ data class AdminIncidentDetail(
 
 @Serializable
 object AdminSettings
+
+@Serializable
+object AdminRoles
+
 @Serializable data class Reputation(
     val userId: String
 )
