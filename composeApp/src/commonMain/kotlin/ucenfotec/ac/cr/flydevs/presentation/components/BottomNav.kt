@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -60,6 +64,13 @@ enum class FlyNavDestination {
     StoreBatchesScreen,
     StoreScan,
     StorePickups,
+
+    // Administrador
+    AdminDashboard,
+    AdminUsers,
+    AdminOrders,
+    AdminIncidents,
+    AdminSettings
 
 }
 
@@ -180,19 +191,34 @@ private fun getBottomNavOptions(
         UserRole.ADMIN -> {
             listOf(
                 BottomNavOption(
-                    destination = FlyNavDestination.Home,
-                    label = "Inicio",
-                    icon = Icons.Default.Home
+                    destination =
+                        FlyNavDestination.AdminDashboard,
+                    label = "Dashboard",
+                    icon = Icons.Default.BarChart
                 ),
                 BottomNavOption(
-                    destination = FlyNavDestination.Orders,
+                    destination =
+                        FlyNavDestination.AdminUsers,
+                    label = "Usuarios",
+                    icon = Icons.Default.People
+                ),
+                BottomNavOption(
+                    destination =
+                        FlyNavDestination.AdminOrders,
                     label = "Pedidos",
-                    icon = Icons.AutoMirrored.Filled.ListAlt
+                    icon = Icons.Default.Inventory2
                 ),
                 BottomNavOption(
-                    destination = FlyNavDestination.Profile,
-                    label = "Perfil",
-                    icon = Icons.Default.Person
+                    destination =
+                        FlyNavDestination.AdminIncidents,
+                    label = "Disputas",
+                    icon = Icons.Default.WarningAmber
+                ),
+                BottomNavOption(
+                    destination =
+                        FlyNavDestination.AdminSettings,
+                    label = "Config",
+                    icon = Icons.Default.Settings
                 )
             )
         }

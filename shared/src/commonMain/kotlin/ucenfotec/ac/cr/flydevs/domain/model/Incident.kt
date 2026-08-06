@@ -7,17 +7,86 @@ import kotlinx.serialization.Transient
 const val INCIDENT_DESCRIPTION_MAX_LENGTH = 1000
 
 @Serializable
-enum class IncidentStatus(val label: String) {
+enum class IncidentStatus(
+    val label: String
+) {
     OPEN("Abierta"),
-    IN_REVIEW("En revisión"),
+    IN_REVIEW("En investigación"),
+
+    /**
+     * Se conserva para mantener compatibilidad
+     * con incidencias y código existentes.
+     *
+     * Para filtros administrativos se tratará
+     * como una incidencia abierta urgente.
+     */
     URGENT("Urgente"),
+
     RESOLVED("Resuelta");
 
     companion object {
-        fun fromString(value: String?): IncidentStatus =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: OPEN
+        fun fromString(
+            value: String?
+        ): IncidentStatus {
+            return entries.find {
+                it.name.equals(
+                    value,
+                    ignoreCase = true
+                )
+            } ?: OPEN
+        }
     }
 }
+
+@Serializable
+enum class IncidentPriority(
+    val label: String
+) {
+    LOW("Baja"),
+    MEDIUM("Media"),
+    HIGH("Alta"),
+    URGENT("Urgente");
+
+    companion object {
+        fun fromString(
+            value: String?
+        ): IncidentPriority {
+            return entries.find {
+                it.name.equals(
+                    value,
+                    ignoreCase = true
+                )
+            } ?: MEDIUM
+        }
+    }
+}
+
+@Serializable
+enum class IncidentType(
+    val label: String
+) {
+    DAMAGED("Carta dañada"),
+    LOST("Extraviada"),
+    NOT_DELIVERED("No entregada"),
+    AUTHENTICITY("Autenticidad"),
+    WRONG_CARD("Carta incorrecta"),
+    INCOMPLETE_ORDER("Pedido incompleto"),
+    OTHER("Otro");
+
+    companion object {
+        fun fromString(
+            value: String?
+        ): IncidentType {
+            return entries.find {
+                it.name.equals(
+                    value,
+                    ignoreCase = true
+                )
+            } ?: OTHER
+        }
+    }
+}
+
 
 @Serializable
 data class Incident(
@@ -37,6 +106,11 @@ data class Incident(
 
     val description: String = "",
     val orderStatusAtReport: String = "",
+
+    // Nuevos campos
+    val type: IncidentType = IncidentType.OTHER,
+    val priority: IncidentPriority = IncidentPriority.MEDIUM,
+    val evidenceUrls: List<String> = emptyList(),
 
     val status: IncidentStatus = IncidentStatus.OPEN,
     val createdAt: Long = 0L,

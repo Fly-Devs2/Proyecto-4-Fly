@@ -77,6 +77,27 @@ import kotlinx.serialization.Serializable
 @Serializable data class BatchPickupEvidence(val batchId: String)
 @Serializable data class BatchDeliveryEvidence(val batchId: String)
 
+@Serializable
+object AdminDashboard
+
+@Serializable
+object AdminUsers
+
+@Serializable
+object AdminOrders
+
+
+@Serializable
+data class AdminIncidentDetail(
+    val incidentId: String
+)
+
+@Serializable
+object AdminSettings
 @Serializable data class Reputation(
     val userId: String
 )
+
+
+@Serializable
+object AdminIncidents
