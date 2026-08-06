@@ -5,6 +5,7 @@ import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import org.koin.dsl.module
 import ucenfotec.ac.cr.flydevs.data.remote.createHttpClient
+import ucenfotec.ac.cr.flydevs.data.repository.AdminUserRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.StorageImageRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreExpansionRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreRarityRepository
@@ -19,6 +20,7 @@ import ucenfotec.ac.cr.flydevs.data.repository.OrderRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.ReputationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.ReviewRepositoryImpl
 import ucenfotec.ac.cr.flydevs.data.repository.StoreRepositoryImpl
+import ucenfotec.ac.cr.flydevs.domain.repository.IAdminUserRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.ICardCatalogRepository
@@ -57,6 +59,7 @@ val dataModule = module {
     }
     single<IReviewRepository> { ReviewRepositoryImpl(get(), get()) }
     single<IReputationRepository> { ReputationRepositoryImpl(get()) }
+    single<IAdminUserRepository> { AdminUserRepositoryImpl(get()) }
     single<IRoleRepository> { RoleRepositoryImpl() }
 
     single<IIncidentRepository> { IncidentRepositoryImpl() }

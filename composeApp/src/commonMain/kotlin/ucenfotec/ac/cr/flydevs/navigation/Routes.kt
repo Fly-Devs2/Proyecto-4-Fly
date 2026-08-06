@@ -84,6 +84,11 @@ object AdminDashboard
 object AdminUsers
 
 @Serializable
+data class AdminUserDetail(
+    val userId: String
+)
+
+@Serializable
 object AdminOrders
 
 

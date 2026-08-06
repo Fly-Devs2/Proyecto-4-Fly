@@ -55,6 +55,18 @@ class SessionViewModel(
 
                 val user = authRepository.getUserProfile(uid)
 
+                if (user?.isActive == false) {
+                    authRepository.signOut()
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            user = null,
+                            errorMessage = "Usuario bloqueado"
+                        )
+                    }
+                    return@launch
+                }
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
