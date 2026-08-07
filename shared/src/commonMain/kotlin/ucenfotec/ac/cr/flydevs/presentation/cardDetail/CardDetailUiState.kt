@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.cardDetail
 
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.ScryfallCard
 import ucenfotec.ac.cr.flydevs.domain.model.User
 
 data class CardDetailUiState(
@@ -21,5 +22,7 @@ data class CardDetailUiState(
     val currentImageIndex: Int = 0,
     val sellerAverageRating: Double = 0.0,
     val sellerReviewCount: Int = 0,
-    val isLoadingSellerRating: Boolean = false
+    val isLoadingSellerRating: Boolean = false,
+    val scryfallVersions: List<ScryfallCard> = emptyList(),
+    val isLoadingScryfall: Boolean = false
 )
