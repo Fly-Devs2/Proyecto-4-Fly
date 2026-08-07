@@ -86,8 +86,8 @@ fun ShipmentLocationScreen(
                  * que la API key y Google Maps funcionan.
                  */
                 GoogleShipmentMap(
-                    latitude = 9.9281,
-                    longitude = -84.0907,
+                    latitude = 9.930050,
+                    longitude = -84.239348,
                     markerTitle = "Envío FlyDevs",
                     modifier = Modifier.fillMaxSize()
                 )

@@ -46,6 +46,10 @@ fun ShipmentDetailScreen(
     onTakePickupPhoto: (String) -> Unit = {},
     onTakeDeliveryPhoto: (String) -> Unit = {},
     onViewLocation: (String) -> Unit = {},
+    onStartShipmentTracking: (
+        batchDocumentId: String,
+        courierId: String
+    ) -> Unit = { _, _ -> },
     viewModel: ShipmentDetailViewModel = koinViewModel(parameters = { parametersOf(batchId) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -112,7 +116,12 @@ fun ShipmentDetailScreen(
                         userRole = userRole,
                         onTakePickupPhoto = onTakePickupPhoto,
                         onTakeDeliveryPhoto = onTakeDeliveryPhoto,
-                        onStartRoute = viewModel::startRoute,
+                        onStartRoute = {
+                            viewModel.startRoute(
+                                onTrackingReady =
+                                    onStartShipmentTracking
+                            )},
+
                         onViewLocation = {
                             onViewLocation(batch.id)
                         }

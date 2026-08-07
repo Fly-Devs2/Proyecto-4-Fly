@@ -27,4 +27,9 @@ interface IShipmentLocationRepository {
         batchDocumentId: String,
         finalStatus: BatchStatus
     )
+    suspend fun initializeTracking(
+        batchDocumentId: String,
+        courierId: String,
+        buyerIds: List<String>
+    )
 }

@@ -15,17 +15,38 @@ import ucenfotec.ac.cr.flydevs.di.initKoin
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var shipmentTrackingLauncher:
+            ShipmentTrackingLauncher
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        shipmentTrackingLauncher =
+            ShipmentTrackingLauncher(this)
 
         requestNotificationPermission()
 
         setContent {
-            App()
+            App(
+                onStartShipmentTracking = {
+                        batchDocumentId,
+                        courierId ->
+
+                    shipmentTrackingLauncher
+                        .startTracking(
+                            batchDocumentId =
+                                batchDocumentId,
+                            courierId =
+                                courierId
+                        )
+                }
+            )
         }
     }
 
@@ -44,5 +65,8 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+    App(
+
+
+    )
 }

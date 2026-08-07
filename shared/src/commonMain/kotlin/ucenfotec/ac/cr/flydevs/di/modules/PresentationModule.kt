@@ -60,7 +60,7 @@ val presentationModule = module {
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { MyBatchesViewModel(get(), get()) }
-    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), get(), batchDocumentId) }
+    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), get(), get(), batchDocumentId) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
     viewModel { SessionViewModel(get()) }
     viewModel { MessengerHomeViewModel(get(), get()) }

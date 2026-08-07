@@ -101,4 +101,47 @@ class ShipmentLocationRepositoryImpl :
             )
         )
     }
+    override suspend fun initializeTracking(
+        batchDocumentId: String,
+        courierId: String,
+        buyerIds: List<String>
+    ) {
+        require(batchDocumentId.isNotBlank()) {
+            "El identificador del lote es obligatorio."
+        }
+
+        require(courierId.isNotBlank()) {
+            "El mensajero es obligatorio."
+        }
+
+        val now = getEpochMillis()
+
+        val shipmentLocation =
+            ShipmentLocation(
+                batchDocumentId = batchDocumentId,
+                courierId = courierId,
+                buyerIds = buyerIds
+                    .filter { it.isNotBlank() }
+                    .distinct(),
+
+                /*
+                 * Todavía no tenemos GPS.
+                 * El servicio reemplazará estos valores
+                 * cuando reciba la primera posición.
+                 */
+                latitude = 0.0,
+                longitude = 0.0,
+                accuracyMeters = 0.0,
+
+                batchStatus =
+                    BatchStatus.IN_TRANSIT.name,
+
+                trackingActive = true,
+                updatedAt = now
+            )
+
+        locationsCollection
+            .document(batchDocumentId)
+            .set(shipmentLocation)
+    }
 }

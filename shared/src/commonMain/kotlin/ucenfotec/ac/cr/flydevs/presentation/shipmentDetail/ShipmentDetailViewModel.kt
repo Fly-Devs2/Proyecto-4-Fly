@@ -10,11 +10,13 @@ import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IShipmentLocationRepository
 
 class ShipmentDetailViewModel(
     private val batchRepository: IBatchRepository,
     private val orderRepository: IOrderRepository,
     private val authRepository: IAuthRepository,
+    private val shipmentLocationRepository: IShipmentLocationRepository,
     private val batchId: String,
 ) : ViewModel() {
 
@@ -28,18 +30,89 @@ class ShipmentDetailViewModel(
         observeBatch()
     }
 
-    fun startRoute() {
-        val courierId = authRepository.getCurrentUserUid() ?: return
-        _uiState.value = _uiState.value.copy(isLoading = true)
+    fun startRoute(
+        onTrackingReady: (
+            batchDocumentId: String,
+            courierId: String
+        ) -> Unit
+    ) {
+        val courierId =
+            authRepository.getCurrentUserUid()
+                ?: return
+
+        val batch =
+            _uiState.value.batch
+                ?: return
+
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null
+            )
 
         viewModelScope.launch {
+
             runCatching {
-                batchRepository.startDeliveryRoute(batchId, courierId)
-            }.onFailure { error ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error al iniciar ruta: ${error.message}",
+
+                val orders =
+                    orderRepository.getOrdersByIds(
+                        batch.orderIds
+                    )
+
+                val buyerIds =
+                    orders
+                        .map { order ->
+                            order.buyerId
+                        }
+                        .filter {
+                            it.isNotBlank()
+                        }
+                        .distinct()
+
+                /*
+                 * PICKED_UP -> IN_TRANSIT
+                 */
+                batchRepository.startDeliveryRoute(
+                    batchId = batch.id,
+                    courierId = courierId
                 )
+
+                /*
+                 * Creamos shipment_locations/{batch.id}
+                 * antes de iniciar el servicio GPS.
+                 */
+                shipmentLocationRepository
+                    .initializeTracking(
+                        batchDocumentId = batch.id,
+                        courierId = courierId,
+                        buyerIds = buyerIds
+                    )
+
+            }.onSuccess {
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
+
+                /*
+                 * Ahora sí Android puede solicitar
+                 * permiso e iniciar el GPS.
+                 */
+                onTrackingReady(
+                    batch.id,
+                    courierId
+                )
+
+            }.onFailure { error ->
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage =
+                            "Error al iniciar ruta: ${error.message}"
+                    )
             }
         }
     }

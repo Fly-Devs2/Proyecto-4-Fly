@@ -19,15 +19,7 @@ actual fun GoogleShipmentMap(
     markerTitle: String,
     modifier: Modifier
 ) {
-    val currentPosition = remember(
-        latitude,
-        longitude
-    ) {
-        LatLng(
-            latitude,
-            longitude
-        )
-    }
+    val currentPosition = LatLng(latitude, longitude)
 
     val markerState =
         rememberUpdatedMarkerState(
@@ -42,18 +34,7 @@ actual fun GoogleShipmentMap(
             )
         }
 
-    /*
-     * Cuando Firestore entregue una posición nueva,
-     * el mapa moverá suavemente la cámara.
-     */
-    LaunchedEffect(currentPosition) {
-        cameraPositionState.animate(
-            update = CameraUpdateFactory.newLatLng(
-                currentPosition
-            ),
-            durationMs = CAMERA_ANIMATION_DURATION
-        )
-    }
+
 
     GoogleMap(
         modifier = modifier,
@@ -68,4 +49,3 @@ actual fun GoogleShipmentMap(
 }
 
 private const val DEFAULT_ZOOM = 15f
-private const val CAMERA_ANIMATION_DURATION = 800

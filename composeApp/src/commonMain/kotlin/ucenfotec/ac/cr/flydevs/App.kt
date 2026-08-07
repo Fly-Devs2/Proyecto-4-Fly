@@ -106,6 +106,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 @Composable
 @Preview
 fun App(
+    onStartShipmentTracking: (batchDocumentId: String, courierId: String) -> Unit = { _, _ -> },
     loginViewModel: LoginViewModel = koinViewModel(),
     sessionViewModel: SessionViewModel = koinViewModel()
 ) {
@@ -551,6 +552,8 @@ fun App(
                     onTakeDeliveryPhoto = { batchId ->
                         navController.navigate(BatchDeliveryEvidence(batchId))
                     },
+                    onStartShipmentTracking =
+                        onStartShipmentTracking,
                     onViewLocation = { currentBatchId ->
                         navController.navigate(
                             ShipmentLocationRoute(
