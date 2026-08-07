@@ -40,9 +40,15 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRoleRepository
 import ucenfotec.ac.cr.flydevs.data.repository.RoleRepositoryImpl
 
+import ucenfotec.ac.cr.flydevs.data.remote.ScryfallApiService
+import ucenfotec.ac.cr.flydevs.data.repository.ScryfallRepositoryImpl
+import ucenfotec.ac.cr.flydevs.domain.repository.IScryfallRepository
+
 val dataModule = module {
     single<IAuthRepository> { AuthRepositoryImpl(get()) }
     single { createHttpClient() }
+    single { ScryfallApiService(get()) }
+    single<IScryfallRepository> { ScryfallRepositoryImpl(get()) }
     single<IGameCardRepository> { GameCardRepositoryImpl() }
     single<IImageStorageRepository> { StorageImageRepository(get()) }
     single<IRarityRepository> { FirestoreRarityRepository() }
