@@ -45,6 +45,7 @@ fun ShipmentDetailScreen(
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onTakePickupPhoto: (String) -> Unit = {},
     onTakeDeliveryPhoto: (String) -> Unit = {},
+    onViewLocation: (String) -> Unit = {},
     viewModel: ShipmentDetailViewModel = koinViewModel(parameters = { parametersOf(batchId) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,7 +112,10 @@ fun ShipmentDetailScreen(
                         userRole = userRole,
                         onTakePickupPhoto = onTakePickupPhoto,
                         onTakeDeliveryPhoto = onTakeDeliveryPhoto,
-                        onStartRoute = viewModel::startRoute
+                        onStartRoute = viewModel::startRoute,
+                        onViewLocation = {
+                            onViewLocation(batch.id)
+                        }
                     )
 
                     Spacer(Modifier.height(28.dp))
@@ -213,7 +217,8 @@ private fun ShipmentDataSection(
     userRole: UserRole,
     onTakePickupPhoto: (String) -> Unit,
     onTakeDeliveryPhoto: (String) -> Unit,
-    onStartRoute: () -> Unit
+    onStartRoute: () -> Unit,
+    onViewLocation: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle("DATOS DEL LOTE")
@@ -263,6 +268,31 @@ private fun ShipmentDataSection(
         }
         if (batch.deliveredAt != null) {
             DataItem("Entregado el", formatDateTime(batch.deliveredAt!!), valueColor = AccentMint)
+        }
+        if (
+            batch.status == BatchStatus.IN_TRANSIT &&
+            userRole in listOf(
+                UserRole.DELIVERY,
+                UserRole.ADMIN
+            )
+        ) {
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            OutlinedButton(
+                onClick = onViewLocation,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = "Ver ubicación del envío",
+                    color = AccentVioletLight,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

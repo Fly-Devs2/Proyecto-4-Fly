@@ -12,7 +12,7 @@ import kotlin.time.Clock
 object BatchTestDataSeeder {
 
     private const val TEST_ORDER_ID =
-        "GvLYmudq9cbsQ24aUdcj"
+        "12vJgSEcA5viMQ3wAOdc"
 
     private val batchesCollection =
         Firebase.firestore.collection("batches")

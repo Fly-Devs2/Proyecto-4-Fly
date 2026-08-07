@@ -356,14 +356,14 @@ class BatchRepositoryImpl(
                         note = evidence.note
                     ),
                     pickupAt = now,
-                    status = BatchStatus.IN_TRANSIT,
+                    status = BatchStatus.PICKED_UP,
                     updatedAt = now
                 )
             )
 
-            currentBatch.orderIds.forEach { orderId ->
-                orderRepository.updateOrderStatus(orderId, OrderStatus.IN_TRANSIT)
-            }
+//            currentBatch.orderIds.forEach { orderId ->
+//                orderRepository.updateOrderStatus(orderId, OrderStatus.IN_TRANSIT)
+//            }
         }
     }
 
@@ -408,6 +408,12 @@ class BatchRepositoryImpl(
                     updatedAt = now
                 )
             )
+            currentBatch.orderIds.forEach { orderId ->
+                orderRepository.updateOrderStatus(
+                    orderId = orderId,
+                    status = OrderStatus.IN_TRANSIT
+                )
+            }
         }
     }
 

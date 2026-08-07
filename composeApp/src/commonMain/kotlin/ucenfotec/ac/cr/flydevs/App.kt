@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.data.debug.BatchTestDataSeeder
+import ucenfotec.ac.cr.flydevs.navigation.ShipmentLocationRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentLocationScreen
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
@@ -211,6 +214,18 @@ fun App(
                     }
                 )
             }
+
+            composable<ShipmentLocationRoute> { backStackEntry ->
+                val route =
+                    backStackEntry.toRoute<ShipmentLocationRoute>()
+
+                ShipmentLocationScreen(
+                    batchId = route.batchId,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
             composable<PublishCard> {
                 PublishGameCardScreen(
                     userRole=userRole,
@@ -282,6 +297,7 @@ fun App(
             }
 
             composable<MessengerHome> {
+
 
 
                 MessengerHomeRoute(
@@ -480,8 +496,17 @@ fun App(
                     },
                     onTakeDeliveryPhoto = { batchId ->
                         navController.navigate(BatchDeliveryEvidence(batchId))
+                    },
+                    onViewLocation = { currentBatchId ->
+                        navController.navigate(
+                            ShipmentLocationRoute(
+                                batchId = currentBatchId
+                            )
+                        )
                     }
+
                 )
+
             }
 
 

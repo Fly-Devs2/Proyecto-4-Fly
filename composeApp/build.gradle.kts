@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+
 }
 
 kotlin {
@@ -36,6 +37,8 @@ kotlin {
             implementation(libs.androidx.camera.lifecycle)
             implementation(libs.androidx.camera.view)
             implementation(libs.google.code.scanner)
+            implementation(libs.google.maps.compose)
+            implementation(libs.google.play.services.maps)
         }
         commonMain.dependencies {
             implementation(projects.shared)

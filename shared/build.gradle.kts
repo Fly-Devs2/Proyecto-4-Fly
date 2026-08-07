@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.androidx.auth.credentials)
             implementation(libs.androidx.auth.credentials.play)
             implementation(libs.androidx.auth.googleid)
+            implementation(libs.google.maps.compose)
+            implementation(libs.google.play.services.location)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
