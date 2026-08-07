@@ -1,78 +1,73 @@
-# QR Code Store Acceptance Flow
+# Global Transaction Count and Time-Based Reputation Filters
 
-This plan implements a QR-based acceptance system for stores and couriers. Stores can display a QR code representing all their outgoing batches, and couriers can scan it to accept them all at once.
+This plan implements a global transaction count for each user (combining purchases and sales) and adds time-based filters (Last 30 Days, Last Year, All) to the reputation view.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Store Identification**: I'm adding an optional `storeId` and `storeName` to the `User` model to link store admins to their respective stores.
-> - **QR Generation**: Since there's no built-in KMP QR generator, I'll use `api.qrserver.com` to display the QR image in the `StoreBatchesScreen`.
-> - **Navigation**: I'll add the `StoreBatches` route to `Routes.kt` and integrate it into `App.kt`. For now, I'll add a trigger in the `ProfileScreen` to access this view.
+> - **Transaction Definition**: A "Transaction" is counted if the order is SINPE paid **AND** seller delivery evidence exists. I will update the backend trigger to reflect this logic.
+> - **Time-Based Summary**: The `UserRatingSummary` document in Firestore will now store multiple summaries (e.g., `last30Days`, `lastYear`, `allTime`) to support efficient filtering without recalculating on the fly from the mobile app.
 
 ## Proposed Changes
 
 ### Domain & Data Layer
 
-#### [User.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/User.kt)
-- Add optional `storeId` and `storeName` fields to the `User` data class.
+#### [UserRatingSummary.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/UserRatingSummary.kt)
+- Add `totalCompletedTransactionCount` (Global sum).
+- Refactor to include nested summaries for timeframes: `last30Days`, `lastYear`, and `allTime`.
 
-#### [IBatchRepository.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/repository/IBatchRepository.kt)
-- Add `observeOutgoingStoreBatches(storeId: String): Flow<List<DeliveryBatch>>`.
-- Add `acceptAllStoreBatches(storeId: String, courierId: String, courierName: String): Int`.
+#### [RoleReputationSummary.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/model/RoleReputationSummary.kt)
+- Add `totalCompletedTransactionCount` to the summary.
 
-#### [BatchRepositoryImpl.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/data/repository/BatchRepositoryImpl.kt)
-- Implement `observeOutgoingStoreBatches` querying by `sourceStoreId` and `status: READY_FOR_PICKUP`.
-- Implement `acceptAllStoreBatches` using a Firestore transaction to update all eligible batches.
+#### [IReputationRepository.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/domain/repository/IReputationRepository.kt)
+- Update `getReviews` to accept a `timeframe` parameter for filtering.
+
+---
+
+### Backend (Cloud Functions)
+
+#### [updateOrderReputation.ts](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/firebase-backend/src/reviews/updateOrderReputation.ts)
+- Update criteria for "Completed Transaction": `order.sinpePaid === true && order.sellerEvidenceUrls.length > 0`.
+- Update `recalculateCompletedTransactions` to calculate both role-specific and global counts.
+- **New Logic**: Calculate counts for the 3 timeframes (30d, 1y, All).
+
+#### [updateUserRatingSummary.ts](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/firebase-backend/src/reviews/updateUserRatingSummary.ts)
+- Update `recalculateUserRating` to update the nested timeframe summaries (Average rating, review count, distribution) for the 3 periods.
 
 ---
 
 ### Presentation Layer (Shared)
 
-#### [NEW] [StoreBatchesUiState.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/storeBatches/StoreBatchesUiState.kt)
-- Define state for the store view: `batches`, `isLoading`, `errorMessage`, `storeName`, `storeId`.
+#### [ReputationUiState.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/reputation/ReputationUiState.kt)
+- Add `selectedTimeframe` enum (LAST_30_DAYS, LAST_YEAR, ALL).
+- Update `roleSummary` getter to return the summary corresponding to the selected timeframe.
 
-#### [NEW] [StoreBatchesViewModel.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/storeBatches/StoreBatchesViewModel.kt)
-- Logic to fetch outgoing batches and calculate summaries (total batches, total cards).
-- Construct the QR payload: `flydevs://store-qr?sid=STORE_ID`.
-
-#### [ScanQrViewModel.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/batch/ScanQrViewModel.kt)
-- Update `onQrScanned` to handle `store-qr?sid=STORE_ID`.
-- Call `acceptAllStoreBatches` when a store QR is scanned.
+#### [ReputationViewModel.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/shared/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/reputation/ReputationViewModel.kt)
+- Add `setTimeframe(timeframe: ReputationTimeframe)` method.
+- Update `loadReviews` to pass the timeframe to the repository.
 
 ---
 
 ### UI Layer (Compose)
 
-#### [Routes.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/navigation/Routes.kt)
-- Add `@Serializable object StoreBatches` to the navigation routes.
-
-#### [NEW] [StoreBatchesScreen.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/screens/StoreBatchesScreen.kt)
-- Implement the screen as shown in the screenshots:
-    - QR Code Card with store name.
-    - Summary section (X lotes, Y cartas).
-    - List of "Lotes Salientes" using the requested compact style.
-
-#### [App.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/App.kt)
-- Add the `composable<StoreBatches>` route to the `NavHost`.
-- Integrate `StoreBatchesScreen` with its ViewModel and navigation.
+#### [ReputationContent.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/components/ReputationContent.kt)
+- **New Component**: `ReputationTimeframeSelector` (segmented control or chips).
+- **ReputationSummaryCard**: Display the "Global Transactions" count (Compras + Ventas) in a prominent way.
+- Ensure pluralization logic is applied correctly ("1 transacción" vs "X transacciones").
 
 #### [ProfileScreen.kt](file:///C:/Users/Sebbie/Desktop/Cenfotec/Proyecto-4-Fly/composeApp/src/commonMain/kotlin/ucenfotec/ac/cr/flydevs/presentation/screens/ProfileScreen.kt)
-- Add a "Gestionar Lotes" button or row that navigates to `StoreBatches`.
+- Display the global transaction count in the profile header or statistics section.
 
 ## Verification Plan
 
 ### Automated Tests
-- No new automated tests planned due to UI/Firestore dependency, but manual verification will be thorough.
+- Run `shared:assemble` to verify compilation.
+- **Backend**: Test the trigger locally with `firebase functions:shell` using orders that meet/don't meet the new criteria.
 
 ### Manual Verification
-1. **Store View**:
-   - Navigate to the Store Batches screen via Profile.
-   - Verify the summary matches the list of batches.
-   - Verify the QR code is displayed correctly.
-2. **Scanner Flow**:
-   - Use a second device or an emulator with a QR image to scan the store QR.
-   - Verify that all `READY_FOR_PICKUP` batches for that store are assigned to the courier.
-   - Verify the courier sees a success message "X lotes asignados".
-   - Verify the batches now appear in the courier's "Mis Lotes" screen.
-3. **UI Consistency**:
-   - Verify colors and typography match the design tokens in `AGENTS.md`.
+1. **Global Count**: Complete a purchase and a sale; verify the total count in Profile is 2.
+2. **Filters**:
+   - Add a review from 2 months ago and one from today.
+   - Select "Ultimos 30 dias": Only the today review and its rating should show.
+   - Select "Ultimo anno": Both should show.
+3. **UI Consistency**: Verify all labels use correct Spanish grammar and pluralization.

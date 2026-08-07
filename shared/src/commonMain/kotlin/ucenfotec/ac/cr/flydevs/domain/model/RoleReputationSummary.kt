@@ -1,10 +1,14 @@
 package ucenfotec.ac.cr.flydevs.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class RoleReputationSummary(
     val averageRating: Double = 0.0,
     val reviewCount: Int = 0,
     val commentCount: Int = 0,
-    val completedTransactionCount: Int = 0,
+    val completedTransactionCount: Int = 0, // Count for specific role (Buyer/Seller)
+    val salesCount: Int = 0, // Count for status PICKED_UP (Only for Seller role)
 
     val fiveStarCount: Int = 0,
     val fourStarCount: Int = 0,
@@ -25,38 +29,43 @@ data class RoleReputationSummary(
 }
 
 fun UserRatingSummary.toRoleSummary(
-    role: ReviewRole
+    role: ReviewRole,
+    timeframe: ReputationTimeframe = ReputationTimeframe.ALL_TIME
 ): RoleReputationSummary {
+    val summary = when (timeframe) {
+        ReputationTimeframe.LAST_30_DAYS -> last30Days
+        ReputationTimeframe.LAST_YEAR -> lastYear
+        ReputationTimeframe.ALL_TIME -> allTime
+    }
+
     return when (role) {
         ReviewRole.SELLER -> {
             RoleReputationSummary(
-                averageRating = sellerAverageRating,
-                reviewCount = sellerReviewCount,
-                commentCount = sellerCommentCount,
-                completedTransactionCount =
-                    sellerCompletedTransactionCount,
-
-                fiveStarCount = sellerFiveStarCount,
-                fourStarCount = sellerFourStarCount,
-                threeStarCount = sellerThreeStarCount,
-                twoStarCount = sellerTwoStarCount,
-                oneStarCount = sellerOneStarCount
+                averageRating = summary.sellerAverageRating,
+                reviewCount = summary.sellerReviewCount,
+                commentCount = summary.sellerCommentCount,
+                completedTransactionCount = summary.sellerCompletedTransactionCount,
+                salesCount = summary.sellerSalesCount,
+                fiveStarCount = summary.sellerFiveStarCount,
+                fourStarCount = summary.sellerFourStarCount,
+                threeStarCount = summary.sellerThreeStarCount,
+                twoStarCount = summary.sellerTwoStarCount,
+                oneStarCount = summary.sellerOneStarCount
             )
         }
 
         ReviewRole.BUYER -> {
             RoleReputationSummary(
-                averageRating = buyerAverageRating,
-                reviewCount = buyerReviewCount,
-                commentCount = buyerCommentCount,
-                completedTransactionCount =
-                    buyerCompletedTransactionCount,
-
-                fiveStarCount = buyerFiveStarCount,
-                fourStarCount = buyerFourStarCount,
-                threeStarCount = buyerThreeStarCount,
-                twoStarCount = buyerTwoStarCount,
-                oneStarCount = buyerOneStarCount
+                averageRating = summary.buyerAverageRating,
+                reviewCount = summary.buyerReviewCount,
+                commentCount = summary.buyerCommentCount,
+                completedTransactionCount = summary.buyerCompletedTransactionCount,
+                salesCount = 0, // Only sellers have sales
+                fiveStarCount = summary.buyerFiveStarCount,
+                fourStarCount = summary.buyerFourStarCount,
+                threeStarCount = summary.buyerThreeStarCount,
+                twoStarCount = summary.buyerTwoStarCount,
+                oneStarCount = summary.buyerOneStarCount
             )
         }
     }

@@ -15,6 +15,7 @@ import kotlin.math.roundToInt
 import ucenfotec.ac.cr.flydevs.presentation.components.HalfStarRating
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +36,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.ScryfallCard
 import ucenfotec.ac.cr.flydevs.domain.model.User
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.cardDetail.CardDetailViewModel
@@ -138,7 +144,9 @@ fun CardDetailScreen(
 
                 ImageCarousel(
                     imageUrls = card.imageUrls,
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.714f), // Proporción estándar de trading cards (2.5:3.5)
                     onImageIndexChange = { viewModel.onImageSwipe(it) }
                 )
 
@@ -199,7 +207,10 @@ fun CardDetailScreen(
 
                     CardTagPills(card, state.sourceStoreName)
 
-                    //MarketDataSection()
+                    ScryfallPricesSection(
+                        versions = state.scryfallVersions,
+                        isLoading = state.isLoadingScryfall
+                    )
 
                     SellerSection(
                         seller = state.seller,
@@ -297,19 +308,186 @@ private fun TagPill(
     )
 }
 
-//@Composable
-//private fun MarketDataSection() {
-//    Column(
-//        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(16.dp),
-//        verticalArrangement = Arrangement.spacedBy(10.dp),
-//    ) {
-//        Text("DATOS DE MERCADO · MOXFIELD API", color = AccentGold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-//        HorizontalDivider(color = BgSurface)
-//        MarketRow("Precio promedio mercado", "₡298 000", TextPrimary)
-//        MarketRow("Tendencia 30 días", "+4.2%", AccentMint)
-//        MarketRow("Última venta registrada", "₡310 000", TextPrimary)
-//    }
-//}
+@Composable
+private fun ScryfallPricesSection(
+    versions: List<ScryfallCard>,
+    isLoading: Boolean
+) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(BgCard)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AccentViolet, modifier = Modifier.size(24.dp))
+        }
+        return
+    }
+
+    if (versions.isEmpty()) return
+
+    val title = if (versions.size > 1) "Versiones" else "Precio"
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "$title · Scryfall".uppercase(),
+            color = AccentGold,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        HorizontalDivider(color = BgSurface, thickness = 1.dp)
+
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                "VERSIÓN",
+                modifier = Modifier.weight(1.5f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "USD",
+                modifier = Modifier.weight(1f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "EUR",
+                modifier = Modifier.weight(1f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "TIX",
+                modifier = Modifier.weight(0.8f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        versions.take(5).forEach { version ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Version Column with Tooltip
+                Box(modifier = Modifier.weight(1.5f)) {
+                    PriceTooltip(text = "${version.setName} #${version.collectorNumber}") {
+                        Column {
+                            Text(
+                                text = version.setCode.uppercase(),
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "#${version.collectorNumber}",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+
+                // USD Price with Foil check and Tooltip
+                Box(modifier = Modifier.weight(1f)) {
+                    val isFoil = version.prices.usd == null && version.prices.usdFoil != null
+                    val price = version.prices.usd ?: version.prices.usdFoil
+                    if (price != null) {
+                        PriceTooltip(text = if (isFoil) "Foil: $$price" else "Non-foil: $$price") {
+                            Text(
+                                text = buildString {
+                                    if (isFoil) append("✶ ")
+                                    append("$")
+                                    append(price)
+                                },
+                                color = AccentVioletLight,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    } else {
+                        Text("-", color = AccentVioletLight, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                // EUR Price with Foil check and Tooltip
+                Box(modifier = Modifier.weight(1f)) {
+                    val isFoil = version.prices.eur == null && version.prices.eurFoil != null
+                    val price = version.prices.eur ?: version.prices.eurFoil
+                    if (price != null) {
+                        PriceTooltip(text = if (isFoil) "Foil: €$price" else "Non-foil: €$price") {
+                            Text(
+                                text = buildString {
+                                    if (isFoil) append("✶ ")
+                                    append("€")
+                                    append(price)
+                                },
+                                color = AccentVioletLight,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    } else {
+                        Text("-", color = AccentVioletLight, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                // TIX Price
+                Text(
+                    text = version.prices.tix ?: "-",
+                    modifier = Modifier.weight(0.8f),
+                    color = AccentGold,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun PriceTooltip(
+    text: String,
+    content: @Composable () -> Unit
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            positioning = TooltipAnchorPosition.Above
+        ),
+        tooltip = {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.8f))
+                    .padding(8.dp)
+            ) {
+                Text(text, color = Color.White, style = MaterialTheme.typography.labelSmall)
+            }
+        },
+        state = rememberTooltipState()
+    ) {
+        content()
+    }
+}
 
 @Composable
 private fun MarketRow(label: String, value: String, valueColor: Color) {

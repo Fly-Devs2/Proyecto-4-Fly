@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import ucenfotec.ac.cr.flydevs.domain.model.ReputationReviewItem
+import ucenfotec.ac.cr.flydevs.domain.model.ReputationTimeframe
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewRole
 import ucenfotec.ac.cr.flydevs.domain.model.RoleReputationSummary
 import ucenfotec.ac.cr.flydevs.presentation.components.HalfStarRating
@@ -49,6 +50,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 fun ReputationContent(
     state: ReputationUiState,
     onRoleSelected: (ReviewRole) -> Unit,
+    onTimeframeSelected: (ReputationTimeframe) -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -93,9 +95,15 @@ fun ReputationContent(
             onRoleSelected = onRoleSelected
         )
 
+        ReputationTimeframeSelector(
+            selectedTimeframe = state.selectedTimeframe,
+            onTimeframeSelected = onTimeframeSelected
+        )
+
         ReputationSummaryCard(
             role = state.selectedRole,
-            summary = state.roleSummary
+            summary = state.roleSummary,
+            globalTransactions = state.ratingSummary.totalCompletedTransactionCount
         )
 
         RatingDistribution(
@@ -261,9 +269,69 @@ private fun ReputationRoleTab(
 }
 
 @Composable
+private fun ReputationTimeframeSelector(
+    selectedTimeframe: ReputationTimeframe,
+    onTimeframeSelected: (ReputationTimeframe) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(BgSurface)
+            .padding(4.dp)
+    ) {
+        ReputationTimeframeTab(
+            text = "30 días",
+            selected = selectedTimeframe == ReputationTimeframe.LAST_30_DAYS,
+            onClick = { onTimeframeSelected(ReputationTimeframe.LAST_30_DAYS) },
+            modifier = Modifier.weight(1f)
+        )
+
+        ReputationTimeframeTab(
+            text = "1 año",
+            selected = selectedTimeframe == ReputationTimeframe.LAST_YEAR,
+            onClick = { onTimeframeSelected(ReputationTimeframe.LAST_YEAR) },
+            modifier = Modifier.weight(1f)
+        )
+
+        ReputationTimeframeTab(
+            text = "Todo",
+            selected = selectedTimeframe == ReputationTimeframe.ALL_TIME,
+            onClick = { onTimeframeSelected(ReputationTimeframe.ALL_TIME) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ReputationTimeframeTab(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(11.dp))
+            .background(if (selected) AccentViolet else BgSurface)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) TextPrimary else TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+        )
+    }
+}
+
+@Composable
 private fun ReputationSummaryCard(
     role: ReviewRole,
-    summary: RoleReputationSummary
+    summary: RoleReputationSummary,
+    globalTransactions: Int
 ) {
     Column(
         modifier = Modifier
@@ -348,14 +416,30 @@ private fun ReputationSummaryCard(
             )
 
             ReputationStatistic(
-                value =
-                    summary.completedTransactionCount,
+                value = if (role == ReviewRole.SELLER) summary.salesCount else summary.completedTransactionCount,
                 label = if (role == ReviewRole.SELLER) {
-                    "Ventas"
+                    pluralize(summary.salesCount, "venta", "ventas", showCount = false)
                 } else {
-                    "Compras"
+                    pluralize(summary.completedTransactionCount, "compra", "compras", showCount = false)
                 },
                 modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Global Transactions Row
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(BgSurface)
+                .padding(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = pluralize(globalTransactions, "transacción total", "transacciones totales"),
+                color = AccentGold,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -708,11 +792,9 @@ private fun formatRating(
 private fun pluralize(
     count: Int,
     singular: String,
-    plural: String
+    plural: String,
+    showCount: Boolean = true
 ): String {
-    return if (count == 1) {
-        "$count $singular"
-    } else {
-        "$count $plural"
-    }
+    val word = if (count == 1) singular else plural
+    return if (showCount) "$count $word" else word
 }

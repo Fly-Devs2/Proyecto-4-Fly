@@ -34,12 +34,26 @@ class AuthRepositoryImpl(
 
     override suspend fun login(email: String, password: String) {
         auth.signInWithEmailAndPassword(email, password)
+        val uid = auth.currentUser?.uid ?: throw Exception("Error al obtener el UID")
+        val profile = getUserProfile(uid)
+        if (profile?.isActive == false) {
+            auth.signOut()
+            throw Exception("Usuario bloqueado")
+        }
     }
 
     override suspend fun signInWithGoogle(idToken: String): String {
         val credential = GoogleAuthProvider.credential(idToken, null)
         val authResult = auth.signInWithCredential(credential)
-        return authResult.user?.uid ?: throw Exception("Error al obtener el UID de Google")
+        val uid = authResult.user?.uid ?: throw Exception("Error al obtener el UID de Google")
+
+        val profile = getUserProfile(uid)
+        if (profile?.isActive == false) {
+            auth.signOut()
+            throw Exception("Usuario bloqueado")
+        }
+
+        return uid
     }
 
     override suspend fun getUserProfile(uid: String): User? {

@@ -91,12 +91,10 @@ fun ReputationScreen(
         ) {
             ReputationContent(
                 state = state,
-                onRoleSelected =
-                    viewModel::selectRole,
-                onLoadMore =
-                    viewModel::loadMoreReviews,
-                onRetry =
-                    viewModel::retry,
+                onRoleSelected = viewModel::selectRole,
+                onTimeframeSelected = viewModel::selectTimeframe,
+                onLoadMore = viewModel::loadMoreReviews,
+                onRetry = viewModel::retry,
                 showIdentity = true
             )
         }

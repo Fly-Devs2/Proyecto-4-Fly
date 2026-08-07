@@ -84,6 +84,16 @@ object AdminDashboard
 object AdminUsers
 
 @Serializable
+data class AdminUserDetail(
+    val userId: String
+)
+
+@Serializable
+data class AdminTraceability(
+    val userId: String
+)
+
+@Serializable
 object AdminOrders
 
 
@@ -94,6 +104,10 @@ data class AdminIncidentDetail(
 
 @Serializable
 object AdminSettings
+
+@Serializable
+object AdminRoles
+
 @Serializable data class Reputation(
     val userId: String
 )

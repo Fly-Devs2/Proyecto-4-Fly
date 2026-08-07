@@ -31,8 +31,13 @@ import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.purchaseHistory.PurchaseHistoryViewModel
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IRoleRepository
+import ucenfotec.ac.cr.flydevs.presentation.rolePermission.RolePermissionViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncident.AdminIncidentsViewModel
 import ucenfotec.ac.cr.flydevs.presentation.AdminIncidentDetail.AdminIncidentDetailViewModel
+import ucenfotec.ac.cr.flydevs.presentation.adminTraceability.AdminTraceabilityViewModel
+import ucenfotec.ac.cr.flydevs.presentation.adminUserDetail.AdminUserDetailViewModel
+import ucenfotec.ac.cr.flydevs.presentation.adminUsers.AdminUsersViewModel
 import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.reputation.ReputationViewModel
 import ucenfotec.ac.cr.flydevs.presentation.review.OrderReviewViewModel
@@ -48,7 +53,7 @@ val presentationModule = module {
     viewModel { MyCollectionViewModel(get<ICardCatalogRepository>(), get<IAuthRepository>()) }
     viewModel { ExchangeSellerViewModel(get(), get()) }
     viewModel { ExchangeBuyerViewModel(get(), get()) }
-    viewModel { CardDetailViewModel(get(), get(), get(), get(), get()) }
+    viewModel { CardDetailViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CardEnvelopeViewModel(get(), get()) }
     viewModel { CardEnvelopesViewModel(get(), get(), get()) }
     viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(), orderId) }
@@ -69,5 +74,8 @@ val presentationModule = module {
     viewModel { ReputationViewModel(get()) }
     viewModel { AdminIncidentsViewModel(get(), get()) }
     viewModel {(incidentId: String)->  AdminIncidentDetailViewModel(get(), get(), get(), incidentId = incidentId) }
-
+    viewModel { RolePermissionViewModel(get<IRoleRepository>()) }
+    viewModel { AdminUsersViewModel(get()) }
+    viewModel { (userId: String) -> AdminUserDetailViewModel(get(), get(), userId) }
+    viewModel { (userId: String) -> AdminTraceabilityViewModel(get(), userId) }
 }

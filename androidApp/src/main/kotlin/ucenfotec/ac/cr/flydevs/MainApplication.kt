@@ -3,6 +3,7 @@ package ucenfotec.ac.cr.flydevs
 import android.app.Application
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.koin.androidContext
 import ucenfotec.ac.cr.flydevs.di.initKoin
 
@@ -16,5 +17,8 @@ class MainApplication : Application() {
         initKoin {
             androidContext(this@MainApplication)
         }
+
+        val activityProvider: ucenfotec.ac.cr.flydevs.util.ActivityProvider = getKoin().get()
+        registerActivityLifecycleCallbacks(activityProvider)
     }
 }

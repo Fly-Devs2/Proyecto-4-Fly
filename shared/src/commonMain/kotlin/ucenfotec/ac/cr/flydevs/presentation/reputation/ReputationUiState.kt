@@ -1,6 +1,7 @@
 package ucenfotec.ac.cr.flydevs.presentation.reputation
 
 import ucenfotec.ac.cr.flydevs.domain.model.ReputationReviewItem
+import ucenfotec.ac.cr.flydevs.domain.model.ReputationTimeframe
 import ucenfotec.ac.cr.flydevs.domain.model.ReviewRole
 import ucenfotec.ac.cr.flydevs.domain.model.RoleReputationSummary
 import ucenfotec.ac.cr.flydevs.domain.model.UserRatingSummary
@@ -12,6 +13,9 @@ data class ReputationUiState(
 
     val selectedRole: ReviewRole =
         ReviewRole.SELLER,
+
+    val selectedTimeframe: ReputationTimeframe =
+        ReputationTimeframe.ALL_TIME,
 
     val ratingSummary: UserRatingSummary =
         UserRatingSummary(),
@@ -37,7 +41,8 @@ data class ReputationUiState(
 
     val roleSummary: RoleReputationSummary
         get() = ratingSummary.toRoleSummary(
-            selectedRole
+            role = selectedRole,
+            timeframe = selectedTimeframe
         )
 
     val hasReviews: Boolean
