@@ -6,6 +6,8 @@ import dev.gitlive.firebase.firestore.firestore
 import org.koin.dsl.module
 import ucenfotec.ac.cr.flydevs.data.remote.createHttpClient
 import ucenfotec.ac.cr.flydevs.data.repository.AdminUserRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.TraceabilityRepositoryImpl
+import ucenfotec.ac.cr.flydevs.domain.repository.ITraceabilityRepository
 import ucenfotec.ac.cr.flydevs.data.repository.StorageImageRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreExpansionRepository
 import ucenfotec.ac.cr.flydevs.data.repository.FirestoreRarityRepository
@@ -60,6 +62,7 @@ val dataModule = module {
     single<IReviewRepository> { ReviewRepositoryImpl(get(), get()) }
     single<IReputationRepository> { ReputationRepositoryImpl(get()) }
     single<IAdminUserRepository> { AdminUserRepositoryImpl(get()) }
+    single<ITraceabilityRepository> { TraceabilityRepositoryImpl(get(), get(), get()) }
     single<IRoleRepository> { RoleRepositoryImpl() }
 
     single<IIncidentRepository> { IncidentRepositoryImpl() }

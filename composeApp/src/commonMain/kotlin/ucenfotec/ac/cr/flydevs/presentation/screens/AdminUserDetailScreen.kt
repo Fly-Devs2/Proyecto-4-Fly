@@ -35,6 +35,7 @@ fun AdminUserDetailScreen(
     userId: String,
     onBack: () -> Unit,
     onDeleted: () -> Unit,
+    onTraceability: () -> Unit,
     onNavSelect: (FlyNavDestination) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AdminUserDetailViewModel = koinViewModel(parameters = { parametersOf(userId) })
@@ -129,6 +130,7 @@ fun AdminUserDetailScreen(
                 SectionTitle("ACCIONES ADMIN")
                 AdminButton(Icons.Default.Edit, "Editar datos del usuario", AccentVioletLight) { /* TODO */ }
                 AdminButton(Icons.Default.Group, "Cambiar rol o permisos", AccentVioletLight) { /* TODO */ }
+                AdminButton(Icons.Default.Timeline, "Ver trazabilidad", AccentVioletLight, onClick = onTraceability)
                 AdminButton(
                     icon = if (user.isActive) Icons.Default.Lock else Icons.Default.LockOpen,
                     label = if (user.isActive) "Bloquear cuenta" else "Desbloquear cuenta",
