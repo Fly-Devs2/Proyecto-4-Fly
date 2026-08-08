@@ -10,6 +10,7 @@ export { groupOrdersIntoBatches, triggerGroupOrdersIntoBatches } from "./exchang
 // ── Notificaciones ──
 export { onOrderStatusChange } from "./notifications/onOrderStatusChange";
 export { scheduledSinpeReminder } from "./notifications/scheduledSinpeReminder";
+export { scheduledPickupReminder } from "./notifications/scheduledPickupReminder";
 
 //── Reviews ──
 export {updateUserRatingSummary} from "./reviews/updateUserRatingSummary";

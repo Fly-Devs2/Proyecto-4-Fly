@@ -11,6 +11,15 @@ export const onOrderStatusChange = onDocumentUpdatedWithAuthContext(
     const after = event.data?.after.data();
     if (!before || !after || before.status === after.status) return;
 
+    // Si falla no se corta la notificación; el recordatorio cae al fallback de modifiedAt.
+    if (after.status === status.DELIVERED_TO_STORE && !after.deliveredToStoreAt) {
+      try {
+        await event.data?.after.ref.update({ deliveredToStoreAt: Date.now() });
+      } catch (error) {
+        logger.error(`No se pudo sellar deliveredToStoreAt en la orden ${event.params.orderId}`, error);
+      }
+    }
+
     // Lógica optimizada para enviar email con QR vía Firestore
     const isPaid = after.sinpePaid === true && after.sinpeReceiptUrl;
     const isReadyForShipment = after.status === status.WAITING_STORE_SHIPMENT;
