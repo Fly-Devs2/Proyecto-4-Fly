@@ -52,6 +52,15 @@ class NotificationPreferencesViewModel(
         }
     }
 
+    fun onPickupRemindersToggle(enabled: Boolean) {
+        _uiState.update {
+            it.copy(
+                preferences = it.preferences.copy(pickupReminders = enabled),
+                saveSuccess = false
+            )
+        }
+    }
+
     fun savePreferences() {
         val userId = authRepository.getCurrentUserUid() ?: return
         viewModelScope.launch {

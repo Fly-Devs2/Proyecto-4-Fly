@@ -28,4 +28,7 @@ data class Order(
     val destinationStore: String = "",
     val sourceStore: String = "",
     val batchId: String? = null,
+    val deliveredToStoreAt: Long? = null,
+    val lastPickupReminderAt: Long? = null,
+    val pickupRemindersSent: Int = 0,
 )
