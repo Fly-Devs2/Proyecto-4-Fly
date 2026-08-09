@@ -29,6 +29,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.DeliveryBatch
 import ucenfotec.ac.cr.flydevs.getEpochMillis
 
+
 class ShipmentLocationService: Service() {
 
     private val serviceScope =
@@ -38,6 +39,7 @@ class ShipmentLocationService: Service() {
     private val firestore by lazy {
         Firebase.firestore
     }
+    private var trackingStopping = false
 
     private val fusedLocationClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
@@ -56,11 +58,28 @@ class ShipmentLocationService: Service() {
      * mediante FusedLocationProviderClient.
      */
 
+
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(
             result: LocationResult
         ) {
-            val location = result.lastLocation ?: return
+            println(
+                "GPS_TEST | onLocationResult recibido | " +
+                        "locations=${result.locations.size}"
+            )
+            val location = result.lastLocation ?:run{
+                println(
+                    "GPS_TEST | lastLocation = null"
+                )
+             return
+            }
+            println(
+                "GPS_TEST | " +
+                        "lat=${location.latitude} | " +
+                        "lng=${location.longitude} | " +
+                        "accuracy=${location.accuracy}"
+            )
             if (
                 batchDocumentId.isBlank() || courierId.isBlank()
             ) {
@@ -96,12 +115,9 @@ class ShipmentLocationService: Service() {
                             )
                         )
                     println(
-                        "SHIPMENT_LOCATION | " +
-                                "batch=$batchDocumentId | " +
-                                "courier=$courierId | " +
+                        "GPS_TEST | FIRESTORE UPDATED | " +
                                 "lat=${location.latitude} | " +
-                                "lng=${location.longitude} | " +
-                                "accuracy=${location.accuracy}"
+                                "lng=${location.longitude}"
                     )
 
                 } catch (e: Exception) {
@@ -186,6 +202,8 @@ class ShipmentLocationService: Service() {
          */
         return START_REDELIVER_INTENT
     }
+
+
 
     /**
      * Empieza a recibir posiciones GPS.
@@ -333,10 +351,24 @@ class ShipmentLocationService: Service() {
         finalStatus: BatchStatus
     ) {
 
+        if (trackingStopping) {
+            return
+        }
+
+        trackingStopping = true
+
         if (batchDocumentId.isBlank()) {
+            stopLocationUpdates()
             stopSelf()
             return
         }
+
+        /*
+         * Primero detenemos el GPS para evitar que
+         * llegue otra posición mientras estamos
+         * cerrando el tracking.
+         */
+        stopLocationUpdates()
 
         serviceScope.launch {
 
@@ -377,7 +409,8 @@ class ShipmentLocationService: Service() {
 
             } finally {
 
-                stopLocationUpdates()
+                batchObserverJob?.cancel()
+                batchObserverJob = null
 
                 stopForeground(
                     STOP_FOREGROUND_REMOVE
@@ -498,24 +531,24 @@ class ShipmentLocationService: Service() {
 
         /**
          * Android intentará obtener una nueva
-         * posición aproximadamente cada 30 segundos.
+         * posición aproximadamente cada 15 segundos.
          */
         private const val LOCATION_INTERVAL_MS =
-            30_000L
+            15_000L
 
         /**
          * Permitimos una ubicación anticipada
          * si Android obtiene una buena posición.
          */
         private const val MIN_UPDATE_INTERVAL_MS =
-            15_000L
+            10_000L
 
         /**
          * Evita escrituras innecesarias si
          * el mensajero prácticamente no se mueve.
          */
         private const val MIN_DISTANCE_METERS =
-            50f
+            15f
     }
 
 

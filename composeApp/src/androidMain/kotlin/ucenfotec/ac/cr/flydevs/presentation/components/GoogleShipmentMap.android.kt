@@ -2,7 +2,10 @@ package ucenfotec.ac.cr.flydevs.presentation.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -19,7 +22,11 @@ actual fun GoogleShipmentMap(
     markerTitle: String,
     modifier: Modifier
 ) {
-    val currentPosition = LatLng(latitude, longitude)
+    val currentPosition =
+        LatLng(
+            latitude,
+            longitude
+        )
 
     val markerState =
         rememberUpdatedMarkerState(
@@ -28,17 +35,23 @@ actual fun GoogleShipmentMap(
 
     val cameraPositionState =
         rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(
-                currentPosition,
-                DEFAULT_ZOOM
-            )
+            position =
+                CameraPosition.fromLatLngZoom(
+                    currentPosition,
+                    DEFAULT_ZOOM
+                )
         }
 
-
+    var mapLoaded by remember {
+        mutableStateOf(false)
+    }
 
     GoogleMap(
         modifier = modifier,
-        cameraPositionState = cameraPositionState
+        cameraPositionState = cameraPositionState,
+        onMapLoaded = {
+            mapLoaded = true
+        }
     ) {
         Marker(
             state = markerState,
@@ -46,6 +59,25 @@ actual fun GoogleShipmentMap(
             snippet = "Posición actual del envío"
         )
     }
+
+    LaunchedEffect(
+        latitude,
+        longitude,
+        mapLoaded
+    ) {
+        if (!mapLoaded) {
+            return@LaunchedEffect
+        }
+
+        cameraPositionState.animate(
+            update =
+                CameraUpdateFactory.newLatLng(
+                    currentPosition
+                ),
+            durationMs = CAMERA_ANIMATION_DURATION
+        )
+    }
 }
 
 private const val DEFAULT_ZOOM = 15f
+private const val CAMERA_ANIMATION_DURATION = 900

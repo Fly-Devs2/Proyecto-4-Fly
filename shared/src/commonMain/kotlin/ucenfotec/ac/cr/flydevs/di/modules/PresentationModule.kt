@@ -42,6 +42,7 @@ import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.reputation.ReputationViewModel
 import ucenfotec.ac.cr.flydevs.presentation.review.OrderReviewViewModel
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
+import ucenfotec.ac.cr.flydevs.presentation.shipmentLocation.ShipmentLocationViewModel
 
 val presentationModule = module {
     viewModel { RegisterViewModel(get(), get()) }
@@ -78,4 +79,5 @@ val presentationModule = module {
     viewModel { AdminUsersViewModel(get()) }
     viewModel { (userId: String) -> AdminUserDetailViewModel(get(), get(), userId) }
     viewModel { (userId: String) -> AdminTraceabilityViewModel(get(), userId) }
+    viewModel { ShipmentLocationViewModel(get(), get()) }
 }
