@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.google.maps.secrets)
+
 }
 
 kotlin {
@@ -34,6 +36,9 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
     implementation("com.google.firebase:firebase-functions")
     implementation(libs.google.code.scanner)
+    implementation(
+        libs.google.play.services.location
+    )
 
 }
 

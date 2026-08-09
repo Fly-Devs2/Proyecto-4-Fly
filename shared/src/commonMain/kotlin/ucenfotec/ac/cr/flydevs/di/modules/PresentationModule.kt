@@ -42,6 +42,7 @@ import ucenfotec.ac.cr.flydevs.presentation.messenger.MessengerHomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.reputation.ReputationViewModel
 import ucenfotec.ac.cr.flydevs.presentation.review.OrderReviewViewModel
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
+import ucenfotec.ac.cr.flydevs.presentation.shipmentLocation.ShipmentLocationViewModel
 
 val presentationModule = module {
     viewModel { RegisterViewModel(get(), get()) }
@@ -56,11 +57,11 @@ val presentationModule = module {
     viewModel { CardDetailViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CardEnvelopeViewModel(get(), get()) }
     viewModel { CardEnvelopesViewModel(get(), get(), get()) }
-    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(), orderId) }
+    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(),get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { MyBatchesViewModel(get(), get()) }
-    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), get(), batchDocumentId) }
+    viewModel { (batchDocumentId: String) -> ShipmentDetailViewModel(get(), get(), get(), get(), batchDocumentId) }
     viewModel { NotificationPreferencesViewModel(get(), get()) }
     viewModel { SessionViewModel(get()) }
     viewModel { MessengerHomeViewModel(get(), get()) }
@@ -78,4 +79,5 @@ val presentationModule = module {
     viewModel { AdminUsersViewModel(get()) }
     viewModel { (userId: String) -> AdminUserDetailViewModel(get(), get(), userId) }
     viewModel { (userId: String) -> AdminTraceabilityViewModel(get(), userId) }
+    viewModel { ShipmentLocationViewModel(get(), get()) }
 }

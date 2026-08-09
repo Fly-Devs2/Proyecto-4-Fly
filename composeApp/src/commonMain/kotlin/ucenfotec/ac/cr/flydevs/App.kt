@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.data.debug.BatchTestDataSeeder
+import ucenfotec.ac.cr.flydevs.domain.model.ShipmentLocation
+import ucenfotec.ac.cr.flydevs.navigation.ShipmentLocationRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentLocationScreen
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
 import ucenfotec.ac.cr.flydevs.navigation.CardCatalog
 import ucenfotec.ac.cr.flydevs.navigation.CardDetail
@@ -103,6 +107,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.FlyAppTheme
 @Composable
 @Preview
 fun App(
+    onStartShipmentTracking: (batchDocumentId: String, courierId: String) -> Unit = { _, _ -> },
     loginViewModel: LoginViewModel = koinViewModel(),
     sessionViewModel: SessionViewModel = koinViewModel()
 ) {
@@ -223,6 +228,18 @@ fun App(
                     }
                 )
             }
+
+            composable<ShipmentLocationRoute> { backStackEntry ->
+                val route =
+                    backStackEntry.toRoute<ShipmentLocationRoute>()
+
+                ShipmentLocationScreen(
+                    batchId = route.batchId,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
             composable<PublishCard> {
                 PublishGameCardScreen(
                     userRole=userRole,
@@ -261,6 +278,10 @@ fun App(
                     onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
                     onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
                     onReportIncident = { id -> navController.navigate(ReportIncident(id)) },
+                    onViewShipmentLocation = { batchDocumentId ->
+                        navController.navigate(
+                ShipmentLocationRoute(batchDocumentId)
+                        )},
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }
@@ -294,6 +315,7 @@ fun App(
             }
 
             composable<MessengerHome> {
+
 
 
                 MessengerHomeRoute(
@@ -534,8 +556,19 @@ fun App(
                     },
                     onTakeDeliveryPhoto = { batchId ->
                         navController.navigate(BatchDeliveryEvidence(batchId))
+                    },
+                    onStartShipmentTracking =
+                        onStartShipmentTracking,
+                    onViewLocation = { currentBatchId ->
+                        navController.navigate(
+                            ShipmentLocationRoute(
+                                batchId = currentBatchId
+                            )
+                        )
                     }
+
                 )
+
             }
 
 

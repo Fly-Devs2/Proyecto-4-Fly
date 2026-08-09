@@ -112,6 +112,9 @@ object AdminRoles
     val userId: String
 )
 
-
+@Serializable
+data class ShipmentLocationRoute(
+    val batchId: String
+)
 @Serializable
 object AdminIncidents

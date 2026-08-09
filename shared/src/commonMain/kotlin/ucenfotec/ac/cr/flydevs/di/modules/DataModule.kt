@@ -42,7 +42,9 @@ import ucenfotec.ac.cr.flydevs.data.repository.RoleRepositoryImpl
 
 import ucenfotec.ac.cr.flydevs.data.remote.ScryfallApiService
 import ucenfotec.ac.cr.flydevs.data.repository.ScryfallRepositoryImpl
+import ucenfotec.ac.cr.flydevs.data.repository.ShipmentLocationRepositoryImpl
 import ucenfotec.ac.cr.flydevs.domain.repository.IScryfallRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IShipmentLocationRepository
 
 val dataModule = module {
     single<IAuthRepository> { AuthRepositoryImpl(get()) }
@@ -72,4 +74,5 @@ val dataModule = module {
     single<IRoleRepository> { RoleRepositoryImpl() }
 
     single<IIncidentRepository> { IncidentRepositoryImpl() }
+    single<IShipmentLocationRepository> { ShipmentLocationRepositoryImpl() }
 }
