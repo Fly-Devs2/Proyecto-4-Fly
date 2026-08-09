@@ -1,6 +1,8 @@
 package ucenfotec.ac.cr.flydevs.presentation.shipmentLocation
 
+import ucenfotec.ac.cr.flydevs.domain.model.BatchStatus
 import ucenfotec.ac.cr.flydevs.domain.model.ShipmentLocation
+
 
 data class ShipmentLocationUiState(
     val location: ShipmentLocation? = null,
@@ -9,9 +11,11 @@ data class ShipmentLocationUiState(
 ) {
     val hasValidLocation: Boolean
         get() {
-            val currentLocation = location ?: return false
+            val current = location ?: return false
 
-            return currentLocation.latitude != 0.0 &&
-                    currentLocation.longitude != 0.0
+            return current.latitude != 0.0 &&
+                    current.longitude != 0.0 &&
+                    current.trackingActive &&
+                    current.batchStatus == BatchStatus.IN_TRANSIT.name
         }
 }

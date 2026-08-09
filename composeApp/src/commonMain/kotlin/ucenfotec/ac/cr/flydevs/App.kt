@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.data.debug.BatchTestDataSeeder
+import ucenfotec.ac.cr.flydevs.domain.model.ShipmentLocation
 import ucenfotec.ac.cr.flydevs.navigation.ShipmentLocationRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.ShipmentLocationScreen
 import ucenfotec.ac.cr.flydevs.presentation.session.SessionViewModel
@@ -277,6 +278,10 @@ fun App(
                     onNavigateToPay = { id -> navController.navigate(PaySinpe(exchangeId = id)) },
                     onNavigateToDeliver = { id -> navController.navigate(DeliverToStore(exchangeId = id)) },
                     onReportIncident = { id -> navController.navigate(ReportIncident(id)) },
+                    onViewShipmentLocation = { batchDocumentId ->
+                        navController.navigate(
+                ShipmentLocationRoute(batchDocumentId)
+                        )},
                     onNavSelect = { destination -> handleBottomNavNavigation(navController, destination, userRole) }
                 )
             }

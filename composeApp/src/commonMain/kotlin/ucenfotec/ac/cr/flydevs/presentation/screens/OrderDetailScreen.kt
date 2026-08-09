@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
@@ -56,6 +57,7 @@ fun OrderDetailScreen(
     onNavigateToPay: (String) -> Unit = {},
     onNavigateToDeliver: (String) -> Unit = {},
     onReportIncident: (String) -> Unit = {},
+    onViewShipmentLocation: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) }), reviewViewModel: OrderReviewViewModel =
         koinViewModel()
@@ -142,6 +144,53 @@ fun OrderDetailScreen(
 
                     // Tracking Stepper
                     TrackingStepper(order.status, uiState.destinationStoreName)
+                    if (
+                        uiState.userRole == UserRole.BUYER &&
+                        order.status == OrderStatus.IN_TRANSIT &&
+                        !order.batchId.isNullOrBlank()
+                    ) {
+
+                        Spacer(
+                            modifier = Modifier.height(16.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.openShipmentLocation(
+                                    onResolved =
+                                        onViewShipmentLocation
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = AccentViolet
+                                ),
+                            shape =
+                                RoundedCornerShape(16.dp)
+                        ) {
+
+                            Icon(
+                                imageVector =
+                                    Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+
+                            Spacer(
+                                modifier = Modifier.width(10.dp)
+                            )
+
+                            Text(
+                                text =
+                                    "Ver ubicación del envío",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
                     Spacer(Modifier.height(32.dp))
 

@@ -57,7 +57,7 @@ val presentationModule = module {
     viewModel { CardDetailViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CardEnvelopeViewModel(get(), get()) }
     viewModel { CardEnvelopesViewModel(get(), get(), get()) }
-    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(), orderId) }
+    viewModel { (orderId: String) -> OrderDetailViewModel(get(), get(), get(), get(),get(), orderId) }
     viewModel { ProfileViewModel(get<IAuthRepository>()) }
     viewModel { PurchaseHistoryViewModel(get<IAuthRepository>(), get<IOrderRepository>()) }
     viewModel { MyBatchesViewModel(get(), get()) }

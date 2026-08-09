@@ -13,6 +13,7 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
@@ -22,6 +23,7 @@ class OrderDetailViewModel(
     private val authRepository: IAuthRepository,
     private val imageStorage: IImageStorageRepository,
     private val storeRepository: IStoreRepository,
+    private val batchRepository: IBatchRepository,
     private val orderId: String
 ) : ViewModel() {
 
@@ -56,6 +58,63 @@ class OrderDetailViewModel(
                     isLoading = false,
                     errorMessage = "Error al subir evidencia: ${error.message}"
                 )
+            }
+        }
+    }
+
+    fun openShipmentLocation(
+        onResolved: (String) -> Unit
+    ) {
+        val order = _uiState.value.order ?: return
+
+        if (order.status != OrderStatus.IN_TRANSIT) {
+            return
+        }
+
+        val batchLabel =
+            order.batchId
+                ?.trim()
+                .orEmpty()
+
+        if (batchLabel.isBlank()) {
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMessage =
+                        "Esta orden no tiene un lote de envío asociado."
+                )
+            return
+        }
+
+        viewModelScope.launch {
+
+            runCatching {
+
+                batchRepository
+                    .findBatchIdByLabel(batchLabel)
+                    ?: throw IllegalStateException(
+                        "No se encontró el lote $batchLabel."
+                    )
+
+            }.onSuccess { batchDocumentId ->
+
+                println(
+                    "ORDER_TRACKING | " +
+                            "label=$batchLabel | " +
+                            "documentId=$batchDocumentId"
+                )
+
+                onResolved(
+                    batchDocumentId
+                )
+
+            }.onFailure { error ->
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        errorMessage =
+                            "No se pudo abrir la ubicación: " +
+                                    error.message
+                    )
             }
         }
     }
