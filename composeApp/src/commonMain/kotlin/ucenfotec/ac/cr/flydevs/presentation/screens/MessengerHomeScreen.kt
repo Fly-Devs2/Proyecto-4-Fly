@@ -284,9 +284,9 @@ private fun MessengerHeader(
 
             Text(
                 text = if (courierRating > 0.0) {
-                    "Mensajero verificado ★ $courierRating"
+                    "Mensajero $courierRating"
                 } else {
-                    "Mensajero verificado"
+                    "Mensajero"
                 },
                 color = MessengerTextSecondary,
                 fontSize = 12.sp

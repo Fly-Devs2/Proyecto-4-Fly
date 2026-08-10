@@ -116,5 +116,8 @@ object AdminRoles
 data class ShipmentLocationRoute(
     val batchId: String
 )
+
+@Serializable
+data object DeliveryHistoryRoute
 @Serializable
 object AdminIncidents

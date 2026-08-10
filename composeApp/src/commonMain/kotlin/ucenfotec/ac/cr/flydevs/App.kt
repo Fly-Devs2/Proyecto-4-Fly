@@ -54,7 +54,7 @@ import ucenfotec.ac.cr.flydevs.navigation.NotificationSettings
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidents
 import ucenfotec.ac.cr.flydevs.navigation.AdminRoles
 import ucenfotec.ac.cr.flydevs.navigation.AdminSettings
-
+import ucenfotec.ac.cr.flydevs.navigation.DeliveryHistoryRoute
 import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.navigation.AdminIncidentDetail
 import ucenfotec.ac.cr.flydevs.navigation.AdminTraceability
@@ -99,6 +99,7 @@ import ucenfotec.ac.cr.flydevs.presentation.screens.StorePickupScanRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.StorePickupsScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchPickupEvidenceRoute
 import ucenfotec.ac.cr.flydevs.presentation.screens.BatchDeliveryEvidenceRoute
+import ucenfotec.ac.cr.flydevs.presentation.screens.DeliveryHistoryScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ReputationScreen
 import ucenfotec.ac.cr.flydevs.presentation.screens.ScanQrRoute
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
@@ -335,6 +336,25 @@ fun App(
 
                     onOpenBatch = { batchId ->
                         navController.navigate(ShipmentDetail(batchId))
+                    },
+
+                    onNavSelect = { destination ->
+                        handleBottomNavNavigation(
+                            navController,
+                            destination,
+                            userRole
+                        )
+                    }
+                )
+
+            }
+            composable<DeliveryHistoryRoute> {
+
+                DeliveryHistoryScreen(
+                    userRole = userRole,
+
+                    onBack = {
+                        navController.popBackStack()
                     },
 
                     onNavSelect = { destination ->
@@ -625,6 +645,11 @@ private fun handleBottomNavNavigation(
         }
         FlyNavDestination.Deliveries -> {
             navController.navigate(MessengerHome) {
+                launchSingleTop = true
+            }
+        }
+        FlyNavDestination.DeliveryHistory -> {
+            navController.navigate(DeliveryHistoryRoute) {
                 launchSingleTop = true
             }
         }
