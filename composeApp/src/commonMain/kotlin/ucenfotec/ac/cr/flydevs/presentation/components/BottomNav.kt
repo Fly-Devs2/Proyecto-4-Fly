@@ -56,7 +56,6 @@ enum class FlyNavDestination {
 
     // Mensajero
     Deliveries,
-    DeliveryMap,
     DeliveryHistory,
     Earnings,
 
@@ -133,21 +132,13 @@ private fun getBottomNavOptions(
                     label = "Entregas",
                     icon = Icons.Default.LocalShipping
                 ),
-                BottomNavOption(
-                    destination = FlyNavDestination.DeliveryMap,
-                    label = "Mapa",
-                    icon = Icons.Default.Map
-                ),
+
                 BottomNavOption(
                     destination = FlyNavDestination.DeliveryHistory,
                     label = "Historial",
                     icon = Icons.Default.History
                 ),
-                BottomNavOption(
-                    destination = FlyNavDestination.Earnings,
-                    label = "Ganancias",
-                    icon = Icons.Default.AttachMoney
-                ),
+
                 BottomNavOption(
                     destination = FlyNavDestination.Profile,
                     label = "Perfil",
