@@ -181,12 +181,7 @@ private fun getBottomNavOptions(
 
         UserRole.ADMIN -> {
             listOf(
-                BottomNavOption(
-                    destination =
-                        FlyNavDestination.AdminDashboard,
-                    label = "Dashboard",
-                    icon = Icons.Default.BarChart
-                ),
+
                 BottomNavOption(
                     destination =
                         FlyNavDestination.AdminUsers,
@@ -195,7 +190,7 @@ private fun getBottomNavOptions(
                 ),
                 BottomNavOption(
                     destination =
-                        FlyNavDestination.AdminOrders,
+                        FlyNavDestination.StorePickups,
                     label = "Pedidos",
                     icon = Icons.Default.Inventory2
                 ),
