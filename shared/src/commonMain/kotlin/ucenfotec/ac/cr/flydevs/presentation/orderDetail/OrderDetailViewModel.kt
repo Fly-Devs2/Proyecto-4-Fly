@@ -11,14 +11,19 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IBatchRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IOrderRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 
 class OrderDetailViewModel(
     private val orderRepository: IOrderRepository,
     private val authRepository: IAuthRepository,
     private val imageStorage: IImageStorageRepository,
+    private val storeRepository: IStoreRepository,
+    private val batchRepository: IBatchRepository,
     private val orderId: String
 ) : ViewModel() {
 
@@ -57,6 +62,63 @@ class OrderDetailViewModel(
         }
     }
 
+    fun openShipmentLocation(
+        onResolved: (String) -> Unit
+    ) {
+        val order = _uiState.value.order ?: return
+
+        if (order.status != OrderStatus.IN_TRANSIT) {
+            return
+        }
+
+        val batchLabel =
+            order.batchId
+                ?.trim()
+                .orEmpty()
+
+        if (batchLabel.isBlank()) {
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMessage =
+                        "Esta orden no tiene un lote de envío asociado."
+                )
+            return
+        }
+
+        viewModelScope.launch {
+
+            runCatching {
+
+                batchRepository
+                    .findBatchIdByLabel(batchLabel)
+                    ?: throw IllegalStateException(
+                        "No se encontró el lote $batchLabel."
+                    )
+
+            }.onSuccess { batchDocumentId ->
+
+                println(
+                    "ORDER_TRACKING | " +
+                            "label=$batchLabel | " +
+                            "documentId=$batchDocumentId"
+                )
+
+                onResolved(
+                    batchDocumentId
+                )
+
+            }.onFailure { error ->
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        errorMessage =
+                            "No se pudo abrir la ubicación: " +
+                                    error.message
+                    )
+            }
+        }
+    }
+
     fun markAsShipped() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -75,6 +137,54 @@ class OrderDetailViewModel(
         }
     }
 
+    fun approveSinpeProof() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val currentOrder = _uiState.value.order
+            if (currentOrder == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Orden no encontrada")
+                return@launch
+            }
+
+            runCatching { orderRepository.approveSinpeProof(currentOrder.id) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
+    fun rejectSinpeProof() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val currentOrder = _uiState.value.order
+            if (currentOrder == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Orden no encontrada")
+                return@launch
+            }
+
+            runCatching { orderRepository.rejectSinpeProof(currentOrder.id) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
+    fun cancelOrder() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val currentOrder = _uiState.value.order
+            if (currentOrder == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Orden no encontrada")
+                return@launch
+            }
+
+            runCatching { orderRepository.cancelOrder(currentOrder.id) }
+                .onSuccess { _uiState.value = _uiState.value.copy(isLoading = false) }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
     private fun loadOrder() {
         orderRepository.getOrder(orderId)
             .onEach { order ->
@@ -83,13 +193,14 @@ class OrderDetailViewModel(
                     val role = when {
                         order.buyerId == currentUid -> UserRole.BUYER
                         order.sellerId == currentUid -> UserRole.SELLER
-                        else -> UserRole.UNKNOWN
+                        else -> UserRole.USER
                     }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         order = order,
                         userRole = role
                     )
+                    loadStoreNames(order)
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -104,5 +215,22 @@ class OrderDetailViewModel(
                 )
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun loadStoreNames(order: ucenfotec.ac.cr.flydevs.domain.model.Order) {
+        viewModelScope.launch {
+            try {
+                val stores = storeRepository.getStores()
+                val sourceStore = stores.find { it.id == order.sourceStore }
+                val destStore = stores.find { it.id == order.destinationStore }
+                
+                _uiState.value = _uiState.value.copy(
+                    sourceStoreName = sourceStore?.name ?: "Tienda desconocida",
+                    destinationStoreName = destStore?.name ?: "Tienda desconocida"
+                )
+            } catch (e: Exception) {
+                println("ERROR_ORDER_DETAIL: Error loading store names: ${e.message}")
+            }
+        }
     }
 }

@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -60,17 +62,22 @@ import ucenfotec.ac.cr.flydevs.domain.model.GameCard
 import ucenfotec.ac.cr.flydevs.domain.model.ShippingMethod
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.FormField
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.envelope.CardEnvelopeViewModel
+import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentVioletLight
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 
 private const val DELIVERY_SHIPPING_COST = 600L
 @Composable
 fun MyEnvelopeScreen(
+    userRole: UserRole,
     userId: String,
     envelopeId: String,
     viewModel: CardEnvelopeViewModel = koinViewModel(),
@@ -115,6 +122,7 @@ fun MyEnvelopeScreen(
         },
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Orders,
                 onDestinationSelected = onNavSelect
             )
@@ -130,6 +138,7 @@ fun MyEnvelopeScreen(
         ) {
             MyEnvelopeTopBar(
                 cardCount = uiState.cardCount,
+                sourceStoreName = uiState.sourceStoreName,
                 onBack = onBack
             )
 
@@ -139,6 +148,7 @@ fun MyEnvelopeScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 24.dp)
+                   .navigationBarsPadding()
             ) {
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -171,8 +181,24 @@ fun MyEnvelopeScreen(
                         selectedShippingMethod = selectedShippingMethod,
                         onSelect = { method ->
                             selectedShippingMethod = method
+                            uiState.envelope?.let { envelope ->
+                                viewModel.onShippingMethodChange(envelope.id, method)
+                            }
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FormField("Tienda", required = true) {
+                        SearchableDropdown(
+                            selected = uiState.selectedStore,
+                            options = uiState.stores,
+                            label = { it.name },
+                            onSelect = { viewModel.onStoreChange(envelopeId, it) },
+                            placeholder = "Seleccionar tienda de destino",
+                            enabled = selectedShippingMethod != ShippingMethod.PICKUP
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -208,6 +234,7 @@ fun MyEnvelopeScreen(
 @Composable
 private fun MyEnvelopeTopBar(
     cardCount: Int,
+    sourceStoreName: String?,
     onBack: () -> Unit
 ) {
     Row(
@@ -227,12 +254,21 @@ private fun MyEnvelopeTopBar(
             )
         }
 
-        Text(
-            text = "Mi sobre",
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Mi sobre",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleLarge
+            )
+            if (sourceStoreName != null) {
+                Text(
+                    text = "Desde: $sourceStoreName",
+                    color = AccentGold,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
         Card(
             shape = RoundedCornerShape(50),
@@ -431,38 +467,26 @@ private fun MyEnvelopeCardRow(
 private fun MyEnvelopeAddMoreCardsButton(
     onClick: () -> Unit
 ) {
-    Box(
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
-            .dashedBorder(
-                color = AccentVioletLight,
-                radius = 14.dp
-            )
-            .clickable {
-                onClick()
-            },
-        contentAlignment = Alignment.Center
+                .defaultMinSize(minHeight = 52.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                tint = AccentVioletLight,
-                modifier = Modifier.size(18.dp)
-            )
 
-            Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = "Agregar más cartas",
-                color = AccentVioletLight,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
+        Text(
+            text = "Agregar más cartas",
+            style = MaterialTheme.typography.labelLarge
+        )
     }
+
 }
 
 @Composable
@@ -548,7 +572,7 @@ private fun MyEnvelopeDeliveryOptionCard(
 
     Card(
         modifier = modifier
-            .height(82.dp)
+            .height(96.dp)
             .clickable {
                 onClick()
             },
@@ -564,7 +588,7 @@ private fun MyEnvelopeDeliveryOptionCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -697,7 +721,7 @@ private fun MyEnvelopeReserveButton(
         enabled = enabled && !isLoading,
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+                        .defaultMinSize(minHeight = 52.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,

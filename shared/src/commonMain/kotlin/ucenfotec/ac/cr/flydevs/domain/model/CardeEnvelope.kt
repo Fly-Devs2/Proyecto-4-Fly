@@ -15,4 +15,6 @@ data class CardEnvelope(
     val shippingMethod: ShippingMethod = ShippingMethod.DELIVERY,
     val userId: String = "",
     val sellerId: String = "",
+    val destinationStore: String = "",
+    val sourceStore: String = "",
 )

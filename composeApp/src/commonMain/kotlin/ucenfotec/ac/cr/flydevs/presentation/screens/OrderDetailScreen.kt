@@ -9,13 +9,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,21 +44,43 @@ import ucenfotec.ac.cr.flydevs.domain.model.OrderCardSnapshot
 import ucenfotec.ac.cr.flydevs.domain.model.OrderStatus
 import ucenfotec.ac.cr.flydevs.presentation.components.*
 import ucenfotec.ac.cr.flydevs.presentation.orderDetail.OrderDetailViewModel
-import ucenfotec.ac.cr.flydevs.presentation.orderDetail.UserRole
+import ucenfotec.ac.cr.flydevs.presentation.review.OrderReviewViewModel
+
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 
 @Composable
 fun OrderDetailScreen(
+    userRole: UserRole,
     orderId: String,
     onBack: () -> Unit = {},
     onNavigateToPay: (String) -> Unit = {},
     onNavigateToDeliver: (String) -> Unit = {},
+    onReportIncident: (String) -> Unit = {},
+    onViewShipmentLocation: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
-    viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) })
+    viewModel: OrderDetailViewModel = koinViewModel(parameters = { parametersOf(orderId) }), reviewViewModel: OrderReviewViewModel =
+        koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val reviewUiState by
+    reviewViewModel.uiState.collectAsStateWithLifecycle()
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
     var showCamera by remember { mutableStateOf(false) }
+    var showQrDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        uiState.order?.id,
+        uiState.order?.sinpePaid
+    ) {
+        val currentOrder =
+            uiState.order ?: return@LaunchedEffect
+
+        reviewViewModel.loadReview(
+            orderId = currentOrder.id
+        )
+    }
+
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -67,6 +93,7 @@ fun OrderDetailScreen(
             },
             bottomBar = {
                 BottomNav(
+                    userRole = userRole,
                     currentDestination = FlyNavDestination.Orders,
                     onDestinationSelected = onNavSelect
                 )
@@ -89,7 +116,7 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(16.dp))
                     
                     Text(
-                        text = if (uiState.userRole == UserRole.SELLER) 
+                        text = if (uiState.userRole == UserRole.SELLER)
                             "Estás viendo la compra como vendedor. Ambas partes ven este detalle en tiempo real."
                         else 
                             "Estás viendo la compra como comprador. Ambas partes ven este detalle en tiempo real.",
@@ -111,12 +138,59 @@ fun OrderDetailScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Data Section
-                    OrderDataSection(order, uiState.userRole)
+                    OrderDataSection(order, uiState.userRole, uiState.sourceStoreName, uiState.destinationStoreName)
 
                     Spacer(Modifier.height(28.dp))
 
                     // Tracking Stepper
-                    TrackingStepper(order.status)
+                    TrackingStepper(order.status, uiState.destinationStoreName)
+                    if (
+                        uiState.userRole == UserRole.BUYER &&
+                        order.status == OrderStatus.IN_TRANSIT &&
+                        !order.batchId.isNullOrBlank()
+                    ) {
+
+                        Spacer(
+                            modifier = Modifier.height(16.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.openShipmentLocation(
+                                    onResolved =
+                                        onViewShipmentLocation
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = AccentViolet
+                                ),
+                            shape =
+                                RoundedCornerShape(16.dp)
+                        ) {
+
+                            Icon(
+                                imageVector =
+                                    Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+
+                            Spacer(
+                                modifier = Modifier.width(10.dp)
+                            )
+
+                            Text(
+                                text =
+                                    "Ver ubicación del envío",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
                     Spacer(Modifier.height(32.dp))
 
@@ -125,10 +199,55 @@ fun OrderDetailScreen(
                         order = order,
                         role = uiState.userRole,
                         onNavigateToPay = onNavigateToPay,
-                        onViewImage = { url -> fullScreenImageUrl = url }
+                        onViewImage = { url -> fullScreenImageUrl = url },
+                        onApprove = { viewModel.approveSinpeProof() },
+                        onReject = { viewModel.rejectSinpeProof() }
                     )
 
+                    /*
+ * Sección de calificación.
+ *
+ * Se muestra tanto antes como después de pagar.
+ * Cuando sinpePaid == false, el componente aparecerá
+ * deshabilitado y en escala de grises.
+ */
+                    if (
+                        uiState.userRole == UserRole.BUYER ||
+                        uiState.userRole == UserRole.SELLER
+                    ) {
+                        val reviewedUserName =
+                            if (uiState.userRole == UserRole.BUYER) {
+                                order.sellerName
+                            } else {
+                                order.buyerName
+                            }
+
+                        Spacer(Modifier.height(32.dp))
+
+                        OrderReviewSection(
+                            uiState = reviewUiState,
+                            reviewedUserName = reviewedUserName,
+                            onRatingChanged =
+                                reviewViewModel::onRatingChanged,
+                            onCommentChanged =
+                                reviewViewModel::onCommentChanged,
+                            onSaveClick =
+                                reviewViewModel::saveReview
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+                    }
+
+
                     Spacer(Modifier.height(24.dp))
+                    if (order.sinpePaid) {
+                        OrderQrAccessSection(
+                            order = order,
+                            onShowQr = { showQrDialog = true }
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+                    }
 
                     // --- Workflow Action Buttons ---
                     
@@ -148,7 +267,75 @@ fun OrderDetailScreen(
                         onAddEvidence = { showCamera = true },
                         onViewImage = { url -> fullScreenImageUrl = url }
                     )
+
+                    // --- Cancel Order Button (Buyer Only) ---
+                    if (uiState.userRole == UserRole.BUYER &&
+                        !order.sinpePaid &&
+                        order.status in listOf(
+                            OrderStatus.WAITING_SELLER_DELIVERY,
+                            OrderStatus.WAITING_PAYMENT,
+                            OrderStatus.AWAITING_SINPE_VALIDATION
+                        )) {
+                        Spacer(Modifier.height(16.dp))
+                        var showCancelConfirm by remember { mutableStateOf(false) }
+                        
+                        OutlinedButton(
+                            onClick = { showCancelConfirm = true },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AccentRed
+                            ),
+                            border = BorderStroke(1.5.dp, AccentRed)
+                        ) {
+                            Text("Cancelar orden", fontWeight = FontWeight.Bold)
+                        }
+
+                        if (showCancelConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showCancelConfirm = false },
+                                title = { Text("¿Cancelar esta orden?") },
+                                text = { Text("Esta acción no se puede deshacer. ¿Deseas continuar?") },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            showCancelConfirm = false
+                                            viewModel.cancelOrder()
+                                        }
+                                    ) {
+                                        Text("Cancelar orden", color = AccentRed)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showCancelConfirm = false }) {
+                                        Text("Mantener")
+                                    }
+                                }
+                            )
+                        }
+                    }
                     
+                    // Solo las partes de la orden pueden abrir una incidencia.
+                    if (uiState.userRole == UserRole.BUYER || uiState.userRole == UserRole.SELLER) {
+                        Spacer(Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { onReportIncident(order.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentRed),
+                            border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.55f)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WarningAmber,
+                                contentDescription = null,
+                                tint = AccentRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Reportar incidencia", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
                     Spacer(Modifier.height(40.dp))
                 }
             } else {
@@ -170,6 +357,12 @@ fun OrderDetailScreen(
                     viewModel.onImagePicked(image)
                 },
                 onCancel = { showCamera = false }
+            )
+        }
+        if (showQrDialog && uiState.order != null) {
+            OrderQrDialog(
+                order = uiState.order!!,
+                onDismiss = { showQrDialog = false }
             )
         }
     }
@@ -205,7 +398,7 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("#C-2041", color = AccentViolet, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(8.dp))
-                    Text("✦ " + status.label.uppercase(), color = AccentGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                    Text("✦ " + status.label.uppercase(), color = getOrderStatusAccent(status), fontSize = 9.sp, fontWeight = FontWeight.Black)
                 }
                 val cardDisplayName = if (card.name.length > 50) card.name.take(47) + "..." else card.name
                 Text(cardDisplayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
@@ -216,11 +409,13 @@ private fun OrderCardInfo(card: OrderCardSnapshot, status: OrderStatus) {
 }
 
 @Composable
-private fun OrderDataSection(order: Order, role: UserRole) {
+private fun OrderDataSection(order: Order, role: UserRole, sourceStore: String?, destinationStore: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle("DATOS DE LA COMPRA")
         DataItem("Vendedor", order.sellerName)
         DataItem("Comprador", if (role == UserRole.BUYER) "Tú (@${order.buyerName})" else order.buyerName)
+        DataItem("Tienda de origen", sourceStore ?: "Cargando...")
+        DataItem("Tienda de destino", destinationStore ?: "Cargando...")
         DataItem("Sobre", "Sobre #${order.sobreId.take(7).uppercase()}")
         DataItem("Monto Total", "₡${order.montoTotal}", valueColor = AccentGold)
         DataItem("SINPE pagado", if (order.sinpePaid) "✓ SÍ" else "PENDIENTE", if (order.sinpePaid) AccentMint else AccentRed)
@@ -241,12 +436,13 @@ private fun DataItem(label: String, value: String, valueColor: Color = TextPrima
 }
 
 @Composable
-private fun TrackingStepper(currentStatus: OrderStatus) {
+private fun TrackingStepper(currentStatus: OrderStatus, destinationStoreName: String?) {
     Column {
         SectionTitle("SEGUIMIENTO")
         val steps = listOf(
             OrderStatus.WAITING_SELLER_DELIVERY,
             OrderStatus.WAITING_PAYMENT,
+            OrderStatus.AWAITING_SINPE_VALIDATION,
             OrderStatus.WAITING_STORE_SHIPMENT,
             OrderStatus.IN_TRANSIT,
             OrderStatus.DELIVERED_TO_STORE,
@@ -254,18 +450,33 @@ private fun TrackingStepper(currentStatus: OrderStatus) {
         )
         
         steps.forEachIndexed { index, step ->
+            val dynamicMessage = if (step == OrderStatus.WAITING_STORE_SHIPMENT && currentStatus == step) {
+                "Esperando envío a '${destinationStoreName ?: "..."}'"
+            } else if (step == OrderStatus.IN_TRANSIT && currentStatus == step) {
+                "En camino a '${destinationStoreName ?: "..."}'"
+            } else if (step == OrderStatus.DELIVERED_TO_STORE && currentStatus == step) {
+                "Listo para retirar en '${destinationStoreName ?: "..."}'"
+            } else null
+
             TrackingStepItem(
                 status = step,
                 isCompleted = steps.indexOf(currentStatus) >= index,
                 isCurrent = currentStatus == step,
-                isLast = index == steps.size - 1
+                isLast = index == steps.size - 1,
+                dynamicMessage = dynamicMessage
             )
         }
     }
 }
 
 @Composable
-private fun TrackingStepItem(status: OrderStatus, isCompleted: Boolean, isCurrent: Boolean, isLast: Boolean) {
+private fun TrackingStepItem(
+    status: OrderStatus,
+    isCompleted: Boolean,
+    isCurrent: Boolean,
+    isLast: Boolean,
+    dynamicMessage: String? = null
+) {
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
@@ -285,12 +496,22 @@ private fun TrackingStepItem(status: OrderStatus, isCompleted: Boolean, isCurren
         Spacer(Modifier.width(16.dp))
         
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
-            Text(
-                text = status.label,
-                color = if (isCurrent) AccentGold else if (isCompleted) TextPrimary else TextMuted,
-                fontSize = 14.sp,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
-            )
+            val accent = getOrderStatusAccent(status)
+                        Text(
+                            text = status.label,
+                            color = if (isCurrent) accent else if (isCompleted) TextPrimary else TextMuted,
+                            fontSize = 14.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                        )
+            if (dynamicMessage != null) {
+                Text(
+                    text = dynamicMessage,
+                    color = AccentMint,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }
@@ -300,7 +521,9 @@ private fun ComprobanteSinpeSection(
     order: Order,
     role: UserRole,
     onNavigateToPay: (String) -> Unit,
-    onViewImage: (String) -> Unit
+    onViewImage: (String) -> Unit,
+    onApprove: () -> Unit,
+    onReject: () -> Unit
 ) {
     Surface(
         color = BgCard,
@@ -321,9 +544,56 @@ private fun ComprobanteSinpeSection(
 
             Spacer(Modifier.height(16.dp))
 
-            if (order.sinpePaid) {
+            if (!order.sinpeReceiptUrl.isNullOrBlank()) {
                 ComprobanteCardPolished(order, onViewImage)
-            } else if (role == UserRole.BUYER) {
+
+                if (order.status == OrderStatus.AWAITING_SINPE_VALIDATION) {
+                    Spacer(Modifier.height(8.dp))
+                    if (role == UserRole.BUYER) {
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado por el vendedor. Adjunta uno nuevo para continuar.", color = TextMuted, fontSize = 13.sp)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Button(
+                                onClick = { onNavigateToPay(order.id) },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text("Pagar con SINPE", style = Typography.labelLarge)
+                            }
+                        } else {
+                            Text("Esperando validación del vendedor.", color = TextMuted, fontSize = 13.sp)
+                        }
+                    } else if (role == UserRole.SELLER) {
+                        if (order.sinpeRejected) {
+                            Text("El comprobante fue rechazado. Esperando que el comprador suba uno nuevo.", color = TextMuted, fontSize = 13.sp)
+                        } else {
+                            Text("Revisa el comprobante antes de aprobarlo.", color = TextMuted, fontSize = 13.sp)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                PrimaryButton(
+                                    text = "Aprobar",
+                                    onClick = onApprove,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Button(
+                                    onClick = onReject,
+                                    modifier = Modifier.weight(1f).height(52.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Rechazar", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (role == UserRole.BUYER && order.sinpeReceiptUrl.isNullOrBlank()) {
                 Button(
                     onClick = { onNavigateToPay(order.id) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -528,6 +798,187 @@ private fun DashedAddButton(onClick: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.Add, contentDescription = null, tint = AccentVioletLight)
             Text("Añadir", color = AccentVioletLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun OrderQrAccessSection(
+    order: Order,
+    onShowQr: () -> Unit
+) {
+    Surface(
+        color = BgCard,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        "QR DE RETIRO",
+                        color = AccentGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        if (order.qrImageUrl.isNotBlank())
+                            "Disponible para retirar en tienda."
+                        else
+                            "QR en preparación. Intenta de nuevo en unos segundos.",
+                        color = TextMuted,
+                        fontSize = 12.sp
+                    )
+                }
+
+                if (order.qrImageUrl.isNotBlank()) {
+                    StatusBadge(text = "LISTO", color = AccentMint)
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = onShowQr,
+                enabled = order.qrImageUrl.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentViolet,
+                    disabledContainerColor = BgSurface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Visibility,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                Spacer(Modifier.width(10.dp))
+
+                Text(
+                    text = if (order.qrImageUrl.isNotBlank())
+                        "Ver QR de retiro"
+                    else
+                        "QR no disponible todavía",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderQrDialog(
+    order: Order,
+    onDismiss: () -> Unit
+) {
+    if (!order.sinpePaid) return
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            color = BgCard,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "QR DE RETIRO",
+                        color = AccentMint,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            tint = TextPrimary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                if (order.qrImageUrl.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Color.White)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = order.qrImageUrl,
+                            contentDescription = "QR de retiro",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Text(
+                        "Mostrá este código en la tienda destino para retirar tu pedido.",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Surface(
+                        color = BgDarkest,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(
+                                "Pedido #${order.id.take(7).uppercase()}",
+                                color = TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                "Vendedor: ${order.sellerName}",
+                                color = TextMuted,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "El pago ya está completo, pero el QR todavía no está disponible.",
+                        color = TextMuted,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }

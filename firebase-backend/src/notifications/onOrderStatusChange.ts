@@ -1,7 +1,8 @@
 import { onDocumentUpdatedWithAuthContext } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions/v2";
-import { Collections, statusLabels } from "../contract";
+import { Collections, status, statusLabels } from "../contract";
 import { notifyUser } from "./notifyUser";
+import { sendOrderQrEmail } from "./sendOrderQrEmail";
 
 export const onOrderStatusChange = onDocumentUpdatedWithAuthContext(
   `${Collections.orders}/{orderId}`,
@@ -9,6 +10,50 @@ export const onOrderStatusChange = onDocumentUpdatedWithAuthContext(
     const before = event.data?.before.data();
     const after = event.data?.after.data();
     if (!before || !after || before.status === after.status) return;
+
+    // Si falla no se corta la notificación; el recordatorio cae al fallback de modifiedAt.
+    if (after.status === status.DELIVERED_TO_STORE && !after.deliveredToStoreAt) {
+      try {
+        await event.data?.after.ref.update({ deliveredToStoreAt: Date.now() });
+      } catch (error) {
+        logger.error(`No se pudo sellar deliveredToStoreAt en la orden ${event.params.orderId}`, error);
+      }
+    }
+
+    // Lógica optimizada para enviar email con QR vía Firestore
+    const isPaid = after.sinpePaid === true && after.sinpeReceiptUrl;
+    const isReadyForShipment = after.status === status.WAITING_STORE_SHIPMENT;
+    const alreadySent = after.qrEmailSent === true;
+
+    if (isReadyForShipment && isPaid && !alreadySent) {
+      const buyerId = after.buyerId;
+      const db = event.data?.after.ref.firestore;
+      if (db && buyerId) {
+        const userSnap = await db.collection(Collections.users).doc(buyerId).get();
+        const userEmail = userSnap.data()?.email;
+        const qrImageUrl = after.qrImageUrl;
+        const qrBase64 = after.qrBase64;
+
+        if (userEmail && (qrBase64 || qrImageUrl)) {
+          try {
+            await sendOrderQrEmail({
+              email: userEmail,
+              orderId: event.params.orderId,
+              qrImageUrl: qrImageUrl,
+              qrBase64: qrBase64,
+            });
+            // Marcar como enviado para evitar duplicados
+            await event.data?.after.ref.update({ qrEmailSent: true });
+          } catch (error) {
+            logger.error(`Falló la creación del doc de email para la orden ${event.params.orderId}`, error);
+          }
+        } else {
+          logger.warn(
+            `Email no encolado para ${event.params.orderId}: Falta email (${!!userEmail}) o QR (${!!qrImageUrl})`
+          );
+        }
+      }
+    }
 
     const label = statusLabels[after.status] ?? after.status;
     const orderId = event.params.orderId;

@@ -103,6 +103,15 @@ fun NotificationPreferencesScreen(
                 onCheckedChange = viewModel::onSinpeRemindersToggle
             )
 
+            Spacer(Modifier.height(16.dp))
+
+            PreferenceToggle(
+                title = "Recordatorios de retiro",
+                description = "Te avisamos si dejaste una carta sin retirar en la tienda.",
+                checked = state.preferences.pickupReminders,
+                onCheckedChange = viewModel::onPickupRemindersToggle
+            )
+
             Spacer(Modifier.height(32.dp))
 
             if (state.saveSuccess) {

@@ -1,5 +1,6 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,14 +24,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import flyapp.composeapp.generated.resources.Res
+
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.OrdersSection
 
-@Preview
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
@@ -40,6 +45,8 @@ fun HomeScreen(
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToOrders: () -> Unit = {},
+    userRole: UserRole,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -54,6 +61,7 @@ fun HomeScreen(
         containerColor = BgDarkest,
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Home,
                 onDestinationSelected = onNavSelect
             )
@@ -66,7 +74,7 @@ fun HomeScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             
             // Header
             HeaderSection(
@@ -77,7 +85,7 @@ fun HomeScreen(
                 onNotificationsClick = onNavigateToNotifications,
             )
             
-            Spacer(Modifier.height(24.dp))
+            //Spacer(Modifier.height(24.dp))
             
             // Search Bar
             //SearchBar()
@@ -86,7 +94,7 @@ fun HomeScreen(
             
             // Featured Section
             
-            Spacer(Modifier.height(28.dp))
+           // Spacer(Modifier.height(28.dp))
             
             // Categories
 //            SectionTitle("CATEGORÍAS")
@@ -95,7 +103,22 @@ fun HomeScreen(
 //            Spacer(Modifier.height(28.dp))
             
             // Orders
-            SectionTitle("MIS PEDIDOS")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionTitle("MIS ÚLTIMOS PEDIDOS")
+                Text(
+                    "Ver todos",
+                    color = AccentViolet,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { onNavigateToOrders() }
+                        .padding(bottom = 16.dp),
+                )
+            }
             OrdersSection(
                 orders = uiState.orders,
                 onOrderClick = onNavigateToOrder
@@ -144,27 +167,41 @@ private fun HeaderSection(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+ 
+        Row(
             modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(BgSurface)
+                .weight(1f)
                 .clickable { onNavigateToProfile() },
-            contentAlignment = Alignment.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = TextSecondary)
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BgSurface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                        color = AccentVioletLight,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = "Hola, $userName",
+                    style = Typography.titleLarge,
+                    color = TextPrimary
+                )
+            }
         }
-        
-        Spacer(Modifier.width(12.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Hola, $userName",
-                style = Typography.titleLarge,
-                color = TextPrimary
-            )
-        }
-        
+
         IconButton(onClick = onSignOutClick) {
             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
         }

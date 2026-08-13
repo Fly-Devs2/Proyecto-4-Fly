@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +35,7 @@ fun <T> Dropdown(
     modifier: Modifier = Modifier,
     placeholder: String? = null,
 ) {
+    var query by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val isPlaceholder = selected == null
     val text = selected?.let(label) ?: placeholder.orEmpty()

@@ -18,5 +18,6 @@ data class AppNotification(
 ) {
     companion object {
         const val TYPE_ORDER_STATUS_CHANGED = "ORDER_STATUS_CHANGED"
+        const val TYPE_PICKUP_REMINDER = "PICKUP_REMINDER"
     }
 }

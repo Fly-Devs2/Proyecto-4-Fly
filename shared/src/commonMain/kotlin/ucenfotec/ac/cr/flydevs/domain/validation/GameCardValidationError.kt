@@ -7,4 +7,5 @@ enum class GameCardValidationError {
     RARITY_REQUIRED,
     PRICE_NOT_POSITIVE,
     IMAGE_REQUIRED,
+    SOURCE_STORE_REQUIRED,
 }

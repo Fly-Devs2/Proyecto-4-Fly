@@ -37,10 +37,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable object MyCollection
 
-@Serializable data class CardDetail(val cardId: String)
+@Serializable data class CardDetail(val cardId: String, val fromCollection: Boolean = false)
 @Serializable object PublishCard
 
 @Serializable data class OrderDetail(val orderId: String)
+@Serializable data class ReportIncident(val orderId: String)
 @Serializable data class DeliverStore(val orderId: String)
 
 @Serializable object MyEnvelope
@@ -54,3 +55,69 @@ import kotlinx.serialization.Serializable
 @Serializable object MyOrders
 @Serializable data class DeliverToStore(val exchangeId: String)
 @Serializable data class PaySinpe(val exchangeId: String)
+
+@Serializable object PurchaseHistory
+
+@Serializable object MessengerHome
+
+@Serializable object MyBatches
+
+@Serializable object StoreBatches
+
+@Serializable object StoreHome
+
+@Serializable object StorePickups
+
+@Serializable object StorePickupScan
+
+@Serializable data class ShipmentDetail(val batchId: String)
+
+@Serializable object ScanQr
+
+@Serializable data class BatchPickupEvidence(val batchId: String)
+@Serializable data class BatchDeliveryEvidence(val batchId: String)
+
+@Serializable
+object AdminDashboard
+
+@Serializable
+object AdminUsers
+
+@Serializable
+data class AdminUserDetail(
+    val userId: String
+)
+
+@Serializable
+data class AdminTraceability(
+    val userId: String
+)
+
+@Serializable
+object AdminOrders
+
+
+@Serializable
+data class AdminIncidentDetail(
+    val incidentId: String
+)
+
+@Serializable
+object AdminSettings
+
+@Serializable
+object AdminRoles
+
+@Serializable data class Reputation(
+    val userId: String
+)
+
+@Serializable
+data class ShipmentLocationRoute(
+    val batchId: String
+)
+
+@Serializable
+data object DeliveryHistoryRoute
+@Serializable
+object AdminIncidents

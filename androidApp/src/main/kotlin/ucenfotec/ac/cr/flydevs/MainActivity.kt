@@ -11,26 +11,42 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
-import org.koin.android.ext.koin.androidContext
 import ucenfotec.ac.cr.flydevs.di.initKoin
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var shipmentTrackingLauncher:
+            ShipmentTrackingLauncher
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        initKoin {
-            androidContext(this@MainActivity)
-        }
+        shipmentTrackingLauncher =
+            ShipmentTrackingLauncher(this)
 
         requestNotificationPermission()
 
         setContent {
-            App()
+            App(
+                onStartShipmentTracking = {
+                        batchDocumentId,
+                        courierId ->
+
+                    shipmentTrackingLauncher
+                        .startTracking(
+                            batchDocumentId =
+                                batchDocumentId,
+                            courierId =
+                                courierId
+                        )
+                }
+            )
         }
     }
 
@@ -49,5 +65,8 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+    App(
+
+
+    )
 }

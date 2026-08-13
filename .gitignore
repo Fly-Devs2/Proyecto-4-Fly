@@ -19,6 +19,7 @@ captures
 node_modules/
 androidApp/google-services.json
 
+
 # Firebase CLI
 .firebase/
 firebase-debug.log

@@ -32,6 +32,7 @@ class MyCollectionViewModel(
             }
                 .onSuccess { cards ->
                     _uiState.value = _uiState.value.copy(isLoading = false, cards = cards)
+                    println("DEBUG_COLLECTION: Loaded ${cards.size} cards: ${cards.map { it.id }}")
                 }
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(

@@ -7,6 +7,7 @@ enum class OrderStatus(val label: String) {
     RESERVED("Reservado"),
     WAITING_SELLER_DELIVERY("Esperando entrega del vendedor"),
     WAITING_PAYMENT("Esperando pago"),
+    AWAITING_SINPE_VALIDATION("Esperando validación del SINPE"),
     WAITING_STORE_SHIPMENT("Esperando envío entre tiendas"),
     IN_TRANSIT("Tránsito entre tiendas"),
     DELIVERED_TO_STORE("Entregado en destino"),

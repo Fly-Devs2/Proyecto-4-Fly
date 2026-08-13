@@ -67,23 +67,44 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 import androidx.compose.material.icons.automirrored.filled.Logout
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
+import ucenfotec.ac.cr.flydevs.navigation.StoreBatches
+import androidx.compose.material.icons.filled.Storefront
+import ucenfotec.ac.cr.flydevs.presentation.components.ReputationContent
+import ucenfotec.ac.cr.flydevs.presentation.reputation.ReputationViewModel
 
 @Composable
 fun ProfileScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel(),
+    reputationViewModel: ReputationViewModel =
+        koinViewModel(),
     onBack: () -> Unit = {},
     onSignOutSuccess: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
     onNavigateToNotificationSettings: () -> Unit = {},
+    onNavigateToStoreBatches: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val reputationState by
+    reputationViewModel
+        .uiState
+        .collectAsStateWithLifecycle()
 
     var editingName by remember { mutableStateOf(false) }
     var editingPhone by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isSignedOut) {
         if (state.isSignedOut) onSignOutSuccess()
+    }
+    LaunchedEffect(state.user?.uid) {
+        state.user?.uid?.let { userId ->
+            reputationViewModel.loadReputation(
+                userId = userId
+            )
+        }
     }
 
     Column(
@@ -176,18 +197,37 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = AccentGold,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text("4.9", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text("·", color = TextSecondary, fontSize = 14.sp)
-                Text("32 ventas", color = TextSecondary, fontSize = 14.sp)
+//                Icon(
+//                    imageVector = Icons.Default.Person,
+//                    contentDescription = null,
+//                    tint = AccentGold,
+//                    modifier = Modifier.size(16.dp),
+//                )
+//                Text("4.9", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+//                Text("·", color = TextSecondary, fontSize = 14.sp)
+//                Text("32 ventas", color = TextSecondary, fontSize = 14.sp)
             }
 
             Spacer(Modifier.height(28.dp))
+            ReputationContent(
+                state = reputationState,
+                onRoleSelected =
+                    reputationViewModel::selectRole,
+                onTimeframeSelected =
+                    reputationViewModel::selectTimeframe,
+                onLoadMore =
+                    reputationViewModel::loadMoreReviews,
+                onRetry =
+                    reputationViewModel::retry,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                showIdentity = false
+            )
+
+            Spacer(
+                modifier = Modifier.height(28.dp)
+            )
 
             // ── Información personal ──────────────────────────────────────────
             Column(
@@ -237,7 +277,7 @@ fun ProfileScreen(
             state.saveSuccess.let {
                 if (it) {
                     Text(
-                        "✓ Cambios guardados",
+                        "Cambios guardados",
                         color = AccentMint,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -304,6 +344,35 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            // ── Gestión de Lotes (Tienda) ──────────────────────────────────
+            if (state.user?.storeId != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(BgCard)
+                        .clickable { onNavigateToStoreBatches() }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Storefront,
+                        contentDescription = null,
+                        tint = AccentMint,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Gestionar Lotes (Tienda)",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
             // ── Cerrar sesión ─────────────────────────────────────────────────
             Row(
                 modifier = Modifier.clickable { viewModel.signOut() },
@@ -328,6 +397,7 @@ fun ProfileScreen(
         }
 
         BottomNav(
+            userRole = userRole,
             currentDestination = FlyNavDestination.Profile,
             onDestinationSelected = onNavSelect,
         )

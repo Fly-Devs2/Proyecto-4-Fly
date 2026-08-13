@@ -5,6 +5,7 @@ import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import ucenfotec.ac.cr.flydevs.domain.model.User
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.domain.repository.IAuthRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.INotificationRepository
 import ucenfotec.ac.cr.flydevs.getEpochMillis
@@ -24,6 +25,7 @@ class AuthRepositoryImpl(
             name = name,
             email = email,
             phone = phone,
+            role = UserRole.USER.name,
             createdAt = getEpochMillis()
         )
 
@@ -32,12 +34,26 @@ class AuthRepositoryImpl(
 
     override suspend fun login(email: String, password: String) {
         auth.signInWithEmailAndPassword(email, password)
+        val uid = auth.currentUser?.uid ?: throw Exception("Error al obtener el UID")
+        val profile = getUserProfile(uid)
+        if (profile?.isActive == false) {
+            auth.signOut()
+            throw Exception("Usuario bloqueado")
+        }
     }
 
     override suspend fun signInWithGoogle(idToken: String): String {
         val credential = GoogleAuthProvider.credential(idToken, null)
         val authResult = auth.signInWithCredential(credential)
-        return authResult.user?.uid ?: throw Exception("Error al obtener el UID de Google")
+        val uid = authResult.user?.uid ?: throw Exception("Error al obtener el UID de Google")
+
+        val profile = getUserProfile(uid)
+        if (profile?.isActive == false) {
+            auth.signOut()
+            throw Exception("Usuario bloqueado")
+        }
+
+        return uid
     }
 
     override suspend fun getUserProfile(uid: String): User? {
@@ -50,16 +66,46 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun saveUserProfile(user: User) {
-        val existing = getUserProfile(user.uid)
-        val userToSave = if (existing != null && user.createdAt == 0L) {
-            user.copy(createdAt = existing.createdAt)
-        } else if (user.createdAt == 0L) {
-            user.copy(createdAt = getEpochMillis())
+        val existingUser = getUserProfile(user.uid)
+
+        val userToSave = if (existingUser != null) {
+
+            user.copy(
+                // El rol existente en Firestore no se modifica
+                role = UserRole.fromFirestore(existingUser.role).name,
+
+                // Conservamos la fecha original
+                createdAt = if (existingUser.createdAt > 0L) {
+                    existingUser.createdAt
+                } else if (user.createdAt > 0L) {
+                    user.createdAt
+                } else {
+                    getEpochMillis()
+                }
+            )
+
         } else {
-            user
+
+            user.copy(
+                // Los perfiles nuevos comienzan como USER
+                role = UserRole.USER.name,
+
+                createdAt = if (user.createdAt > 0L) {
+                    user.createdAt
+                } else {
+                    getEpochMillis()
+                }
+            )
         }
 
-        firestore.collection("users").document(user.uid).set(User.serializer(), userToSave, merge = true)
+        firestore
+            .collection("users")
+            .document(user.uid)
+            .set(
+                User.serializer(),
+                userToSave,
+                merge = true
+            )
     }
 
     override fun getCurrentUserUid(): String? {

@@ -36,6 +36,7 @@ kotlin {
             implementation(libs.gitlive.firebase.auth)
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.analytics)
+            implementation(libs.gitlive.firebase.functions)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
@@ -49,6 +50,8 @@ kotlin {
             implementation(libs.androidx.auth.credentials)
             implementation(libs.androidx.auth.credentials.play)
             implementation(libs.androidx.auth.googleid)
+            implementation(libs.google.maps.compose)
+            implementation(libs.google.play.services.location)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

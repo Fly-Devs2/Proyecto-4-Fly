@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -51,9 +53,12 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.Envelopes.CardEnvelopesViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.FormField
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentMint
@@ -71,6 +76,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun MyEnvelopesScreen(
+    userRole: UserRole,
     userId: String,
     onBack: () -> Unit = {},
     onEnvelopeClick: (String) -> Unit = {},
@@ -83,6 +89,7 @@ fun MyEnvelopesScreen(
     var envelopeToDelete by remember {
         mutableStateOf<CardEnvelope?>(null)
     }
+    var showBulkWarning by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         viewModel.loadPendingEnvelopes(userId)
@@ -103,6 +110,7 @@ fun MyEnvelopesScreen(
         },
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Orders,
                 onDestinationSelected = onNavSelect
             )
@@ -139,7 +147,7 @@ fun MyEnvelopesScreen(
 
                 else -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
                             horizontal = 16.dp,
                             vertical = 12.dp
@@ -154,12 +162,24 @@ fun MyEnvelopesScreen(
                             )
                             
                             Spacer(modifier = Modifier.height(16.dp))
+
+                            FormField("Tienda de destino para todos los sobres") {
+                                SearchableDropdown(
+                                    selected = uiState.selectedGlobalStore,
+                                    options = uiState.stores,
+                                    label = { it.name },
+                                    onSelect = { viewModel.onGlobalStoreChange(userId, it) },
+                                    placeholder = "Seleccionar para todos"
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
                             
                             ReserveAllButton(
                                 isLoading = uiState.isGeneratingOrders,
                                 enabled = uiState.envelopes.isNotEmpty(),
                                 onClick = {
-                                    viewModel.generateOrdersForAllEnvelopes(userId)
+                                    showBulkWarning = true
                                 }
                             )
                         }
@@ -167,17 +187,27 @@ fun MyEnvelopesScreen(
                         items(
                             items = uiState.envelopes,
                             key = { envelope -> envelope.id }
-                        ) { envelope -> EnvelopeListItem(
-                            envelope = envelope,
-                            isDeleting = uiState.deletingEnvelopeId == envelope.id,
-                            onClick = {
-                                onEnvelopeClick(envelope.id)
-                            },
-                            onDeleteClick = {
-                                envelopeToDelete = envelope
-                            }
-                        )
+                        ) { envelope ->
 
+                            val sellerName = uiState
+                                .sellerNames[envelope.sellerId]
+                                ?.takeIf { name -> name.isNotBlank() }
+                                ?: "Vendedor desconocido"
+                            
+                            val sourceStoreName = uiState.sourceStoreNames[envelope.sourceStore] ?: "Tienda desconocida"
+
+                            EnvelopeListItem(
+                                envelope = envelope,
+                                sellerName = sellerName,
+                                sourceStoreName = sourceStoreName,
+                                isDeleting = uiState.deletingEnvelopeId == envelope.id,
+                                onClick = {
+                                    onEnvelopeClick(envelope.id)
+                                },
+                                onDeleteClick = {
+                                    envelopeToDelete = envelope
+                                }
+                            )
                         }
 
                         item {
@@ -188,6 +218,53 @@ fun MyEnvelopesScreen(
             }
         }
     }
+
+    if (showBulkWarning) {
+        AlertDialog(
+            onDismissRequest = { showBulkWarning = false },
+            title = {
+                Text(
+                    "Confirmar generación masiva",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Se generarán órdenes para todos los sobres pendientes.",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (uiState.selectedGlobalStore != null) {
+                        Text(
+                            "IMPORTANTE: Todos los sobres serán entregados en la tienda: ${uiState.selectedGlobalStore?.name}",
+                            color = AccentGold,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBulkWarning = false
+                        viewModel.generateOrdersForAllEnvelopes(userId)
+                    }
+                ) {
+                    Text("Confirmar", color = AccentViolet, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkWarning = false }) {
+                    Text("Cancelar", color = TextSecondary)
+                }
+            },
+            containerColor = BgCard
+        )
+    }
+
     envelopeToDelete?.let { envelope ->
         AlertDialog(
             onDismissRequest = {
@@ -391,7 +468,9 @@ private fun EnvelopeListItem(
     envelope: CardEnvelope,
     isDeleting: Boolean,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    sellerName: String,
+    sourceStoreName: String
 ) {
     val cardCount = if (envelope.cards.isNotEmpty()) {
         envelope.cards.size
@@ -418,7 +497,7 @@ private fun EnvelopeListItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SellerAvatar(
-                    sellerId = envelope.sellerId
+                    sellerName = sellerName
                 )
 
                 Column(
@@ -433,9 +512,16 @@ private fun EnvelopeListItem(
                     )
 
                     Text(
-                        text = envelope.sellerId.ifBlank { "Vendedor desconocido" },
+                        text = sellerName,
                         color = TextPrimary,
                         style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "Tienda de origen: $sourceStoreName",
+                        color = AccentGold,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -492,7 +578,7 @@ private fun EnvelopeListItem(
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                                        .defaultMinSize(minHeight = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentViolet,
                         contentColor = TextPrimary
@@ -511,7 +597,7 @@ private fun EnvelopeListItem(
                     enabled = !isDeleting,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                                        .defaultMinSize(minHeight = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentRed,
                         contentColor = TextPrimary,
@@ -541,7 +627,7 @@ private fun EnvelopeListItem(
 
 @Composable
 private fun SellerAvatar(
-    sellerId: String
+    sellerName: String
 ) {
     Box(
         modifier = Modifier
@@ -551,7 +637,7 @@ private fun SellerAvatar(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = sellerId.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
+            text = sellerName.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
             color = AccentVioletLight,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
@@ -681,7 +767,7 @@ private fun ReserveAllButton(
         enabled = enabled && !isLoading,
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .defaultMinSize(minHeight = 54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AccentViolet,

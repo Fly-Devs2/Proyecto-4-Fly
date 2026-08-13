@@ -3,6 +3,7 @@ package ucenfotec.ac.cr.flydevs.presentation.envelope
 import kotlinx.serialization.Serializable
 import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.Store
 
 
 @Serializable
@@ -15,7 +16,10 @@ data class CardEnvelopeUiState(
     val envelope: CardEnvelope? = null,
     val cards: List<GameCard> = emptyList(),
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val stores: List<Store> = emptyList(),
+    val selectedStore: Store? = null,
+    val sourceStoreName: String? = null
 ) {
 
     val cardCount: Int

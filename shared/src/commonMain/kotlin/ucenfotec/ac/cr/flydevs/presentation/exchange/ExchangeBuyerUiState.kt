@@ -21,7 +21,9 @@ data class ExchangeBuyerUiState(
     val feedback: SinpeProofFeedback? = null,
 ) {
     val isReadyForSinpe: Boolean
-        get() = order?.status == OrderStatus.WAITING_PAYMENT || order?.status == OrderStatus.WAITING_SELLER_DELIVERY
+        get() = order?.status == OrderStatus.WAITING_PAYMENT ||
+            order?.status == OrderStatus.WAITING_SELLER_DELIVERY ||
+            (order?.status == OrderStatus.AWAITING_SINPE_VALIDATION && order?.sinpeRejected == true)
 
     val canSubmit: Boolean
         get() = isReadyForSinpe && proofUrl != null && confirmChecked && !isUploadingImage && !isSubmitting
