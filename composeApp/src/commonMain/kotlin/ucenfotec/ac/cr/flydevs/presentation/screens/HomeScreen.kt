@@ -1,12 +1,15 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -21,19 +24,29 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import flyapp.composeapp.generated.resources.Res
+
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.home.HomeViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.OrdersSection
 
-@Preview
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onSignOutSuccess: () -> Unit = {},
     onNavigateToMyCollection: () -> Unit = {},
+    onNavigateToOrder: (String) -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToOrders: () -> Unit = {},
+    userRole: UserRole,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -48,6 +61,7 @@ fun HomeScreen(
         containerColor = BgDarkest,
         bottomBar = {
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Home,
                 onDestinationSelected = onNavSelect
             )
@@ -60,36 +74,57 @@ fun HomeScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             
             // Header
             HeaderSection(
                 userName = uiState.user?.name ?: "Usuario",
-                onSignOutClick = { viewModel.signOut() }
+                unreadNotifications = uiState.unreadNotifications,
+                onSignOutClick = { viewModel.signOut() },
+                onNavigateToProfile = onNavigateToProfile,
+                onNotificationsClick = onNavigateToNotifications,
             )
             
-            Spacer(Modifier.height(24.dp))
+            //Spacer(Modifier.height(24.dp))
             
             // Search Bar
-            SearchBar()
+//            SearchBar()
             
-            Spacer(Modifier.height(28.dp))
+          //  Spacer(Modifier.height(28.dp))
             
             // Featured Section
-            SectionTitle("DESTACADAS DE LA SEMANA")
-            FeaturedCards()
+//            SectionTitle("DESTACADAS DE LA SEMANA")
+//            FeaturedCards()
             
-            Spacer(Modifier.height(28.dp))
+           // Spacer(Modifier.height(28.dp))
             
-            // Categories
-            SectionTitle("CATEGORÍAS")
-            CategoryChips()
+//            // Categories
+//            SectionTitle("CATEGORÍAS")
+//            CategoryChips()
             
             Spacer(Modifier.height(28.dp))
             
             // Orders
-            SectionTitle("MIS PEDIDOS")
-            OrdersSection()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionTitle("MIS ÚLTIMOS PEDIDOS")
+                Text(
+                    "Ver todos",
+                    color = AccentViolet,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { onNavigateToOrders() }
+                        .padding(bottom = 16.dp),
+                )
+            }
+            OrdersSection(
+                orders = uiState.orders,
+                onOrderClick = onNavigateToOrder
+            )
             
             Spacer(Modifier.height(32.dp))
             
@@ -100,20 +135,21 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+
                 Spacer(Modifier.width(8.dp))
                 Text("Publicar carta en venta", style = Typography.labelLarge)
             }
             
             Spacer(Modifier.height(16.dp))
             
-            OutlinedButton(
+            Button(
                 onClick = { onNavigateToMyCollection() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 border = androidx.compose.foundation.BorderStroke(1.dp, TextMuted.copy(alpha = 0.3f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Ver mi colección (132 cartas)", color = TextPrimary)
+                Text("Ver mi colección", color = TextPrimary)
             }
             
             Spacer(Modifier.height(40.dp))
@@ -124,53 +160,66 @@ fun HomeScreen(
 @Composable
 private fun HeaderSection(
     userName: String,
-    onSignOutClick: () -> Unit
+    unreadNotifications: Int,
+    onSignOutClick: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.size(48.dp).clip(CircleShape).background(BgSurface),
-            contentAlignment = Alignment.Center
+ 
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onNavigateToProfile() },
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = TextSecondary)
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BgSurface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                        color = AccentVioletLight,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = "Hola, $userName",
+                    style = Typography.titleLarge,
+                    color = TextPrimary
+                )
+            }
         }
-        
-        Spacer(Modifier.width(12.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Hola, $userName",
-                style = Typography.titleLarge,
-                color = TextPrimary
-            )
-            Text(
-                text = "Coleccionista · Nivel 4",
-                style = Typography.bodySmall,
-                color = TextSecondary
-            )
-        }
-        
+
         IconButton(onClick = onSignOutClick) {
-            Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = AccentRed)
         }
         
-        IconButton(onClick = { }) {
-            Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary)
-        }
-        
-        Surface(
-            color = AccentViolet,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                "USUARIO",
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
+        IconButton(onClick = onNotificationsClick) {
+            BadgedBox(
+                badge = {
+                    if (unreadNotifications > 0) {
+                        Badge(containerColor = AccentRed) {
+                            Text(if (unreadNotifications > 9) "9+" else "$unreadNotifications")
+                        }
+                    }
+                }
+            ) {
+                Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = TextPrimary)
+            }
         }
     }
 }
@@ -213,6 +262,7 @@ private fun FeaturedCards() {
 
 @Composable
 private fun FeaturedCardItem(name: String, price: String, tag: String) {
+    val displayName = if (name.length > 20) name.take(17) + "..." else name
     Surface(
         color = BgCard,
         shape = RoundedCornerShape(20.dp),
@@ -229,7 +279,7 @@ private fun FeaturedCardItem(name: String, price: String, tag: String) {
                         .background(BgSurface)
                 )
                 Spacer(Modifier.height(12.dp))
-                Text(name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                Text(displayName, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Text(price, color = AccentViolet, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
             }
             
@@ -273,60 +323,5 @@ private fun CategoryChip(text: String, isSelected: Boolean = false) {
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
-    }
-}
-
-@Composable
-private fun OrdersSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OrderItem("Pedido #FA-1042", "3 cartas · Vendedor: CardKingCR", "EN RUTA", AccentGold)
-        OrderItem("Pedido #FA-1037", "1 carta · Entregado 08 jun", "ENTREGADO", AccentMint)
-        OrderItem("Pedido #FA-1029", "Disputa abierta · En revisión", "DISPUTA", AccentRed)
-    }
-}
-
-@Composable
-private fun OrderItem(id: String, desc: String, status: String, statusColor: Color) {
-    Surface(
-        color = BgCard,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(BgSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (status == "DISPUTA") Icons.Default.Warning else Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(id, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text(desc, color = TextSecondary, fontSize = 12.sp)
-            }
-            
-            Surface(
-                color = statusColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    status,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = statusColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
     }
 }

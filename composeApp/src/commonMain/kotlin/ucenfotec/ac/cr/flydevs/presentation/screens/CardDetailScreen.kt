@@ -8,11 +8,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
+import kotlin.math.roundToInt
+import ucenfotec.ac.cr.flydevs.presentation.components.HalfStarRating
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,26 +36,34 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.ScryfallCard
+import ucenfotec.ac.cr.flydevs.domain.model.User
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.cardDetail.CardDetailViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
+import ucenfotec.ac.cr.flydevs.presentation.components.ImageCarousel
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentGold
 import ucenfotec.ac.cr.flydevs.presentation.theme.AccentMint
@@ -64,22 +79,39 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun CardDetailScreen(
+    userRole: UserRole,
+    userId: String,
     cardId: String,
+    fromCollection: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = koinViewModel(),
     onBack: () -> Unit = {},
     onNavSelect: (FlyNavDestination) -> Unit = {},
+    onGoToEnvelope: (String) -> Unit = {},
+    onSellerReputationClick: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(cardId) { viewModel.loadCard(cardId) }
+    LaunchedEffect(cardId) { viewModel.loadCard(cardId, userId, fromCollection) }
 
     LaunchedEffect(state.idCopied) {
         if (state.idCopied) {
             snackbarHostState.showSnackbar("ID copiado al portapapeles")
             viewModel.clearIdCopied()
+        }
+    }
+    LaunchedEffect(state.actionErrorMessage) {
+        state.actionErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearEnvelopeNavigation()
+        }
+    }
+    LaunchedEffect(state.targetEnvelopeId) {
+        state.targetEnvelopeId?.let { envelopeId ->
+            viewModel.clearEnvelopeNavigation()
+            onGoToEnvelope(envelopeId)
         }
     }
 
@@ -89,14 +121,7 @@ fun CardDetailScreen(
             TopBar(
                 title = "Detalle de carta",
                 onBack = onBack,
-                trailingIcon = {
-                    Text(
-                        text = if (state.isFavorite) "♥" else "♡",
-                        color = if (state.isFavorite) AccentRed else TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.clickable { viewModel.toggleFavorite() }
-                    )
-                }
+
             )
 
             if (state.isLoading) {
@@ -115,26 +140,29 @@ fun CardDetailScreen(
 
             val card = state.card ?: return@Column
 
-            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).navigationBarsPadding()) {
 
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(240.dp).background(BgSurface),
-                ) {
-                    AsyncImage(
-                        model = card.imageUrl,
-                        contentDescription = card.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    card.rarity?.let { rarity ->
+                ImageCarousel(
+                    imageUrls = card.imageUrls,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.714f), // Proporción estándar de trading cards (2.5:3.5)
+                    onImageIndexChange = { viewModel.onImageSwipe(it) }
+                )
+
+                card.rarity?.let { rarity ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
                         Text(
                             text = rarity.uppercase(),
                             color = Color.Black,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(10.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(AccentGold)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -177,42 +205,66 @@ fun CardDetailScreen(
                         )
                     }
 
-                    CardTagPills(card)
+                    CardTagPills(card, state.sourceStoreName)
 
-                    MarketDataSection()
+                    ScryfallPricesSection(
+                        versions = state.scryfallVersions,
+                        isLoading = state.isLoadingScryfall
+                    )
 
-                    SellerSection(card.sellerId)
+                    SellerSection(
+                        seller = state.seller,
+                        averageRating = state.sellerAverageRating,
+                        reviewCount = state.sellerReviewCount,
+                        isLoadingRating = state.isLoadingSellerRating,
+                        onClick = {
+                            state.seller
+                                ?.uid
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let(onSellerReputationClick)
+                        }
+                    )
 
                     Button(
-                        onClick = { viewModel.addToEnvelope() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                        onClick = {
+                            viewModel.addToEnvelope(
+                                userId = userId,
+                                cardId = card.id
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentViolet
+                        ),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = !state.addedToEnvelope,
+                        enabled = !fromCollection && !state.addedToEnvelope && !state.isAddingToEnvelope,
                     ) {
-                        Text(
-                            if (state.addedToEnvelope) "✓ Agregado al sobre" else "✉  Agregar al sobre",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        if (state.isAddingToEnvelope) {
+                            CircularProgressIndicator(
+                                color = TextPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        } else {
+                            Text(
+                                if (state.addedToEnvelope) {
+                                    "Agregado al sobre"
+                                } else {
+                                    "Agregar al sobre"
+                                },
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
 
-                    OutlinedButton(
-                        onClick = { viewModel.reserveCard() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp).border(1.dp, if (state.reserved) AccentMint else TextMuted, RoundedCornerShape(12.dp)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (state.reserved) AccentMint else TextSecondary),
-                        shape = RoundedCornerShape(12.dp),
-                        border = null,
-                        enabled = !state.reserved,
-                    ) {
-                        Text(if (state.reserved) "✓ Carta reservada" else "☐  Reservar carta (48 h)")
-                    }
 
-                    Spacer(Modifier.height(8.dp))
                 }
             }
 
-            BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
+            BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect, userRole = userRole)
         }
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
@@ -221,36 +273,219 @@ fun CardDetailScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CardTagPills(card: GameCard) {
-    val tags = buildList {
-        card.expansion?.let { add(it) }
-        card.rarity?.let { add(it) }
-        add(card.condition.label)
-        add(card.language.label)
-    }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        tags.forEach { tag ->
-            Text(
-                text = tag,
-                color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(BgSurface).padding(horizontal = 12.dp, vertical = 5.dp),
-            )
-        }
+private fun CardTagPills(card: GameCard, sourceStoreName: String? = null) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TagPill(
+            text = ("Tienda de origen: " + sourceStoreName) ?: "Desconocido",
+            backgroundColor = AccentMint.copy(alpha = 0.2f),
+            textColor = AccentMint
+        )
+        card.expansion?.let { TagPill(it) }
+        card.rarity?.let { TagPill(it) }
+        TagPill(card.condition.label)
+        TagPill(card.language.label)
     }
 }
 
 @Composable
-private fun MarketDataSection() {
+private fun TagPill(
+    text: String,
+    backgroundColor: Color = BgSurface,
+    textColor: Color = TextSecondary
+) {
+    Text(
+        text = text,
+        color = textColor,
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    )
+}
+
+@Composable
+private fun ScryfallPricesSection(
+    versions: List<ScryfallCard>,
+    isLoading: Boolean
+) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(BgCard)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AccentViolet, modifier = Modifier.size(24.dp))
+        }
+        return
+    }
+
+    if (versions.isEmpty()) return
+
+    val title = if (versions.size > 1) "Versiones" else "Precio"
+
     Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("DATOS DE MERCADO · MOXFIELD API", color = AccentGold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        HorizontalDivider(color = BgSurface)
-        MarketRow("Precio promedio mercado", "₡298 000", TextPrimary)
-        MarketRow("Tendencia 30 días", "+4.2%", AccentMint)
-        MarketRow("Última venta registrada", "₡310 000", TextPrimary)
+        Text(
+            text = "$title · Scryfall".uppercase(),
+            color = AccentGold,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        HorizontalDivider(color = BgSurface, thickness = 1.dp)
+
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                "VERSIÓN",
+                modifier = Modifier.weight(1.5f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "USD",
+                modifier = Modifier.weight(1f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "EUR",
+                modifier = Modifier.weight(1f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "TIX",
+                modifier = Modifier.weight(0.8f),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        versions.take(5).forEach { version ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Version Column with Tooltip
+                Box(modifier = Modifier.weight(1.5f)) {
+                    PriceTooltip(text = "${version.setName} #${version.collectorNumber}") {
+                        Column {
+                            Text(
+                                text = version.setCode.uppercase(),
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "#${version.collectorNumber}",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+
+                // USD Price with Foil check and Tooltip
+                Box(modifier = Modifier.weight(1f)) {
+                    val isFoil = version.prices.usd == null && version.prices.usdFoil != null
+                    val price = version.prices.usd ?: version.prices.usdFoil
+                    if (price != null) {
+                        PriceTooltip(text = if (isFoil) "Foil: $$price" else "Non-foil: $$price") {
+                            Text(
+                                text = buildString {
+                                    if (isFoil) append("✶ ")
+                                    append("$")
+                                    append(price)
+                                },
+                                color = AccentVioletLight,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    } else {
+                        Text("-", color = AccentVioletLight, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                // EUR Price with Foil check and Tooltip
+                Box(modifier = Modifier.weight(1f)) {
+                    val isFoil = version.prices.eur == null && version.prices.eurFoil != null
+                    val price = version.prices.eur ?: version.prices.eurFoil
+                    if (price != null) {
+                        PriceTooltip(text = if (isFoil) "Foil: €$price" else "Non-foil: €$price") {
+                            Text(
+                                text = buildString {
+                                    if (isFoil) append("✶ ")
+                                    append("€")
+                                    append(price)
+                                },
+                                color = AccentVioletLight,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    } else {
+                        Text("-", color = AccentVioletLight, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                // TIX Price
+                Text(
+                    text = version.prices.tix ?: "-",
+                    modifier = Modifier.weight(0.8f),
+                    color = AccentGold,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun PriceTooltip(
+    text: String,
+    content: @Composable () -> Unit
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            positioning = TooltipAnchorPosition.Above
+        ),
+        tooltip = {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.8f))
+                    .padding(8.dp)
+            ) {
+                Text(text, color = Color.White, style = MaterialTheme.typography.labelSmall)
+            }
+        },
+        state = rememberTooltipState()
+    ) {
+        content()
     }
 }
 
@@ -263,33 +498,172 @@ private fun MarketRow(label: String, value: String, valueColor: Color) {
 }
 
 @Composable
-private fun SellerSection(sellerId: String) {
+private fun SellerSection(
+    seller: User?,
+    averageRating: Double,
+    reviewCount: Int,
+    isLoadingRating: Boolean,
+    onClick: () -> Unit
+) {
+    val sellerName = seller
+        ?.name
+        ?.trim()
+        ?.ifBlank { "Vendedor desconocido" }
+        ?: "Vendedor desconocido"
+
+    val sellerInitial = sellerName
+        .firstOrNull()
+        ?.uppercaseChar()
+        ?.toString()
+        ?: "V"
+
+    val canOpenReputation =
+        seller?.uid?.isNotBlank() == true
+
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgCard).padding(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .clickable(
+                enabled = canOpenReputation,
+                onClick = onClick
+            )
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
-            modifier = Modifier.size(44.dp).clip(CircleShape).background(BgSurface),
-            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(BgSurface),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                sellerId.firstOrNull()?.uppercaseChar()?.toString() ?: "V",
+                text = sellerInitial,
                 color = AccentVioletLight,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
         }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(sellerId, color = TextPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-            Text("⭐⭐⭐⭐☆  4.8 · 132 ventas", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Vendedor",
+                color = AccentGold,
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            Text(
+                text = sellerName,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            SellerRatingRow(
+                averageRating = averageRating,
+                reviewCount = reviewCount,
+                isLoading = isLoadingRating
+            )
         }
-        Text(
-            "VERIFICADO",
-            color = AccentViolet,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(BgSurface).padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+
+        if (canOpenReputation) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Ver reputación del vendedor",
+                tint = TextMuted,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+@Composable
+private fun SellerRatingRow(
+    averageRating: Double,
+    reviewCount: Int,
+    isLoading: Boolean
+) {
+    when {
+        isLoading -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                CircularProgressIndicator(
+                    color = AccentViolet,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(14.dp)
+                )
+
+                Text(
+                    text = "Cargando reputación...",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+
+        reviewCount == 0 -> {
+            Text(
+                text = "Sin reseñas todavía",
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        else -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(0.2.dp)
+            ) {
+                HalfStarRating(
+                    rating = averageRating,
+                    onRatingChanged = {},
+                    enabled = true,
+                    readOnly = true,
+                    starSize = 15.dp,
+                    activeColor = AccentGold,
+                    inactiveColor = TextMuted.copy(
+                        alpha = 0.45f
+                    ),
+                    disabledColor = TextMuted.copy(
+                        alpha = 0.25f
+                    )
+                )
+
+                Text(
+                    text = buildString {
+                        append(formatSellerRating(averageRating))
+                        append(" · ")
+                        append(reviewCount)
+
+                        if (reviewCount == 1) {
+                            append(" reseña")
+                        } else {
+                            append(" reseñas")
+                        }
+                    },
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+private fun formatSellerRating(
+    rating: Double
+): String {
+    val rounded =
+        (rating * 10).roundToInt() / 10.0
+
+    return if (rounded % 1.0 == 0.0) {
+        "${rounded.toInt()}.0"
+    } else {
+        rounded.toString()
     }
 }

@@ -3,13 +3,22 @@ package ucenfotec.ac.cr.flydevs
 import android.app.Application
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
+import org.koin.android.ext.android.getKoin
+import org.koin.android.ext.koin.androidContext
+import ucenfotec.ac.cr.flydevs.di.initKoin
 
 class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
         Firebase.initialize(this)
+        FlyMessagingService.ensureChannel(this)
 
-        /* Koin se inicializa en MainActivity para asegurar el contexto de Activity */
+        initKoin {
+            androidContext(this@MainApplication)
+        }
+
+        val activityProvider: ucenfotec.ac.cr.flydevs.util.ActivityProvider = getKoin().get()
+        registerActivityLifecycleCallbacks(activityProvider)
     }
 }

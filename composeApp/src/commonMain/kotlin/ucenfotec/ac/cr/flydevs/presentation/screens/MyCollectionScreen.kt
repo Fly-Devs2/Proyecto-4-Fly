@@ -38,6 +38,7 @@ import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardStatus
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
@@ -50,12 +51,14 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.AccentViolet
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgCard
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgDarkest
 import ucenfotec.ac.cr.flydevs.presentation.theme.BgSurface
+import ucenfotec.ac.cr.flydevs.presentation.theme.TextLight
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextMuted
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextPrimary
 import ucenfotec.ac.cr.flydevs.presentation.theme.TextSecondary
 
 @Composable
 fun MyCollectionScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: MyCollectionViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -119,14 +122,14 @@ fun MyCollectionScreen(
             return@Column
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatChip("${state.totalActivas}", "Activas", TextPrimary, Modifier.weight(1f))
-            StatChip("${state.totalVendidas}", "Vendidas", TextPrimary, Modifier.weight(1f))
-            StatChip("${state.totalVistas}", "Vistas", AccentGold, Modifier.weight(1f))
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+//            horizontalArrangement = Arrangement.spacedBy(10.dp),
+//        ) {
+//            StatChip("${state.totalActivas}", "Activas", TextPrimary, Modifier.weight(1f))
+//            StatChip("${state.totalVendidas}", "Vendidas", TextPrimary, Modifier.weight(1f))
+//            StatChip("${state.totalVistas}", "Vistas", AccentGold, Modifier.weight(1f))
+//        }
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
@@ -146,7 +149,10 @@ fun MyCollectionScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            items(state.filteredCards, key = { it.id }) { card ->
+            items(
+                items = state.filteredCards,
+                key = { card -> card.id }
+            ){ card ->
                 CollectionCardItem(
                     card = card,
                     onClick = { onCardClick(card.id) },
@@ -155,7 +161,7 @@ fun MyCollectionScreen(
             }
         }
 
-        BottomNav(currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
+        BottomNav(userRole = userRole, currentDestination = FlyNavDestination.Explore, onDestinationSelected = onNavSelect)
     }
 }
 
@@ -220,13 +226,13 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             ) {
-                Text(card.name, color = TextPrimary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(card.name, color = TextLight, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 when (card.status) {
                     CardStatus.AVAILABLE -> StatusBadge("ACTIVA", AccentMint)
                     CardStatus.SOLD      -> StatusBadge("VENDIDA", BgSurface)
-                    CardStatus.RESERVED  -> StatusBadge("PAUSADA", BgSurface)
+                    CardStatus.RESERVED  -> StatusBadge("RESERVADA", AccentGold)
                 }
             }
             Text(
@@ -237,14 +243,14 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
             Spacer(Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("₡${card.price}", color = AccentViolet, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                if (card.status != CardStatus.SOLD) {
-                    Text(
-                        "🗑",
-                        modifier = Modifier.clickable(onClick = onDelete),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted,
-                    )
-                }
+//                if (card.status != CardStatus.SOLD) {
+//                    Text(
+//                        "🗑",
+//                        modifier = Modifier.clickable(onClick = onDelete),
+//                        style = MaterialTheme.typography.bodySmall,
+//                        color = TextMuted,
+//                    )
+//                }
             }
         }
     }
@@ -254,7 +260,7 @@ private fun CollectionCardItem(card: GameCard, onClick: () -> Unit, onDelete: ()
 private fun StatusBadge(text: String, color: Color) {
     Text(
         text = text,
-        color = if (color == AccentMint) BgDarkest else TextSecondary,
+        color =  TextPrimary,
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(color).padding(horizontal = 6.dp, vertical = 2.dp),
@@ -265,5 +271,5 @@ private val CollectionFilter.label: String get() = when (this) {
     CollectionFilter.TODAS    -> "Todas"
     CollectionFilter.ACTIVAS  -> "Activas"
     CollectionFilter.VENDIDAS -> "Vendidas"
-    CollectionFilter.PAUSADAS -> "Pausadas"
+    CollectionFilter.PAUSADAS -> "Reservadas"
 }

@@ -4,6 +4,8 @@ import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
 import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.PickedImage
+import ucenfotec.ac.cr.flydevs.domain.model.Store
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
 
@@ -24,9 +26,12 @@ data class PublishCardUiState(
     val rarityOptions: List<String> = emptyList(),
     val isLoadingRarities: Boolean = false,
 
-    // ── Imagen ──
-    val imageUrl: String? = null,
-    val isUploadingImage: Boolean = false,
+    val stores: List<Store> = emptyList(),
+    val selectedStore: Store? = null,
+
+    // ── Imágenes ──
+    val pendingImages: List<PickedImage> = emptyList(),
+    val isUploadingImages: Boolean = false,
     val imageError: ImageError? = null,
 
     // ── Proceso de publicación ──
@@ -34,7 +39,7 @@ data class PublishCardUiState(
     val feedback: PublishFeedback? = null,
 ) {
 
-    fun toDraftCard(): GameCard = GameCard(
+    fun toDraftCard(imageUrls: List<String> = emptyList()): GameCard = GameCard(
         name = name.trim(),
         game = game,
         expansion = expansion,
@@ -44,9 +49,15 @@ data class PublishCardUiState(
         price = price.toLongOrNull() ?: 0L,
         quantity = quantity,
         description = description.trim(),
-        imageUrl = imageUrl.orEmpty(),
+        imageUrls = imageUrls.takeIf { it.isNotEmpty() } ?: emptyList(),
+        sourceStore = selectedStore?.id ?: "",
     )
 
     val validationErrors: List<GameCardValidationError>
-        get() = GameCardValidator.validate(toDraftCard())
+        get() = GameCardValidator.validate(
+            toDraftCard(imageUrls = if (pendingImages.isNotEmpty()) listOf(LOCAL_IMAGE_MARKER) else emptyList())
+        )
 }
+
+private const val LOCAL_IMAGE_MARKER = "local"
+

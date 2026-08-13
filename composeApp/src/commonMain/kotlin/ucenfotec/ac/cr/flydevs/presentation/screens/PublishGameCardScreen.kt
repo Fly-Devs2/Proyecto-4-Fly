@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -25,15 +26,17 @@ import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.domain.model.CardCondition
 import ucenfotec.ac.cr.flydevs.domain.model.CardGame
 import ucenfotec.ac.cr.flydevs.domain.model.CardLanguage
+import ucenfotec.ac.cr.flydevs.domain.model.UserRole
 import ucenfotec.ac.cr.flydevs.presentation.components.BottomNav
 import ucenfotec.ac.cr.flydevs.presentation.components.CameraCaptureScreen
+import ucenfotec.ac.cr.flydevs.presentation.components.DraggablePhotoGrid
 import ucenfotec.ac.cr.flydevs.presentation.components.Dropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.FlyNavDestination
 import ucenfotec.ac.cr.flydevs.presentation.components.FormField
-import ucenfotec.ac.cr.flydevs.presentation.components.PhotoUploadZone
 import ucenfotec.ac.cr.flydevs.presentation.components.PriceField
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.components.QuantityStepper
+import ucenfotec.ac.cr.flydevs.presentation.components.SearchableDropdown
 import ucenfotec.ac.cr.flydevs.presentation.components.TextField
 import ucenfotec.ac.cr.flydevs.presentation.components.TopBar
 import ucenfotec.ac.cr.flydevs.presentation.publishGameCard.PublishCardUiState
@@ -43,6 +46,7 @@ import ucenfotec.ac.cr.flydevs.presentation.theme.*
 
 @Composable
 fun PublishGameCardScreen(
+    userRole: UserRole,
     modifier: Modifier = Modifier,
     viewModel: PublishGameCardViewModel = koinViewModel(),
     onBack: () -> Unit = {},
@@ -50,6 +54,7 @@ fun PublishGameCardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCamera by remember { mutableStateOf(false) }
+
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -63,9 +68,15 @@ fun PublishGameCardScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                                        .verticalScroll(rememberScrollState())
+                                        .navigationBarsPadding(),
             ) {
-                PhotoSection(state = state, onTakePhoto = { showCamera = true })
+                PhotoSection(
+                    state = state,
+                    onTakePhoto = { showCamera = true },
+                    onRemoveImage = viewModel::removeImage,
+                    onMoveImage = viewModel::moveImage
+                )
                 CardFormFields(state = state, viewModel = viewModel)
                 PublishStatus(state = state)
 
@@ -77,6 +88,7 @@ fun PublishGameCardScreen(
             }
 
             BottomNav(
+                userRole = userRole,
                 currentDestination = FlyNavDestination.Sell,
                 onDestinationSelected = onNavSelect
             )
@@ -95,14 +107,28 @@ fun PublishGameCardScreen(
 }
 
 @Composable
-private fun PhotoSection(state: PublishCardUiState, onTakePhoto: () -> Unit) {
-    PhotoUploadZone(
-        onClick = onTakePhoto,
-        title = photoTitle(state),
-        subtitle = photoSubtitle(state),
-        accentColor = if (state.imageUrl != null) AccentMint else AccentViolet,
-        modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp),
-    )
+private fun PhotoSection(
+    state: PublishCardUiState,
+    onTakePhoto: () -> Unit,
+    onRemoveImage: (Int) -> Unit,
+    onMoveImage: (Int, Int) -> Unit,
+) {
+    Column(modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp)) {
+        DraggablePhotoGrid(
+            images = state.pendingImages,
+            onAddImage = onTakePhoto,
+            onRemoveImage = onRemoveImage,
+            onMoveImage = onMoveImage,
+        )
+        if (state.pendingImages.isEmpty()) {
+            Text(
+                text = photoSubtitle(state),
+                color = TextSecondary,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
     state.imageError?.let { StatusText(imageErrorText(it), AccentRed) }
 }
 
@@ -115,43 +141,52 @@ private fun CardFormFields(state: PublishCardUiState, viewModel: PublishGameCard
         FormField("Nombre de la carta", required = true) {
             TextField(state.name, "Ej: Black Lotus", onValueChange = viewModel::onNameChange)
         }
+        FormField("Tienda de origen", required = true) {
+            SearchableDropdown(
+                selected = state.selectedStore,
+                options = state.stores,
+                label = { it.name },
+                onSelect = viewModel::onStoreChange,
+                placeholder = "Seleccionar tienda"
+            )
+        }
         FormField("Tipo de juego", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.game,
                 options = CardGame.entries,
                 label = { it.label },
-                placeholder = "Seleccionar juego",
                 onSelect = viewModel::onGameChange,
+                placeholder = "Seleccionar juego"
             )
         }
         FormField("Expansión / Set", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.expansion,
                 options = state.expansionOptions,
                 label = { it },
-                placeholder = expansionPlaceholder(state),
                 onSelect = viewModel::onExpansionChange,
+                placeholder = expansionPlaceholder(state),
             )
         }
         FormField("Rareza", required = true) {
-            Dropdown(
+            SearchableDropdown(
                 selected = state.rarity,
                 options = state.rarityOptions,
                 label = { it },
-                placeholder = rarityPlaceholder(state),
                 onSelect = viewModel::onRarityChange,
+                placeholder = rarityPlaceholder(state),
             )
         }
-        FormField("Condición") {
-            Dropdown(
+        FormField("Condición", required = true) {
+            SearchableDropdown(
                 selected = state.condition,
                 options = CardCondition.entries,
                 label = { it.label },
-                onSelect = viewModel::onConditionChange,
+                onSelect = viewModel::onConditionChange
             )
         }
-        FormField("Idioma") {
-            Dropdown(
+        FormField("Idioma", required = true) {
+            SearchableDropdown(
                 selected = state.language,
                 options = CardLanguage.entries,
                 label = { it.label },

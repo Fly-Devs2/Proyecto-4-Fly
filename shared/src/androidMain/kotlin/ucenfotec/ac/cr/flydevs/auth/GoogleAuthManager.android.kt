@@ -1,7 +1,6 @@
 package ucenfotec.ac.cr.flydevs.auth
 
 import android.content.Context
-import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -11,16 +10,18 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ucenfotec.ac.cr.flydevs.util.ActivityProvider
 
 class AndroidGoogleAuthManager(
     private val context: Context,
+    private val activityProvider: ActivityProvider,
     private val serverClientId: String,
 ) : GoogleAuthManager {
 
     private val credentialManager = CredentialManager.create(context)
 
     override suspend fun signIn(): String? = withContext(Dispatchers.Main) {
-        val activity = context.findActivity() 
+        val activity = activityProvider.getActivity() 
             ?: throw Exception("No se pudo encontrar el contexto de Activity")
 
         try {
@@ -60,15 +61,6 @@ class AndroidGoogleAuthManager(
         } catch (e: Exception) {
             throw e // Rethrow to let ViewModel handle the specific error
         }
-    }
-
-    private fun Context.findActivity(): ComponentActivity? {
-        var context = this
-        while (context is ContextWrapper) {
-            if (context is ComponentActivity) return context
-            context = context.baseContext
-        }
-        return null
     }
 
     suspend fun signOut() {

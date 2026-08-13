@@ -2,6 +2,8 @@ package ucenfotec.ac.cr.flydevs.presentation.publishGameCard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,22 +18,31 @@ import ucenfotec.ac.cr.flydevs.domain.repository.IExpansionRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IGameCardRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IImageStorageRepository
 import ucenfotec.ac.cr.flydevs.domain.repository.IRarityRepository
+import ucenfotec.ac.cr.flydevs.domain.repository.IStoreRepository
 import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidationError
-import ucenfotec.ac.cr.flydevs.domain.validation.GameCardValidator
-
-// TODO(auth): reemplazar por el id del vendedor autenticado cuando exista sesión.
-private const val TEMP_SELLER_ID = "seller-demo"
 
 class PublishGameCardViewModel(
     private val repository: IGameCardRepository,
     private val imageStorage: IImageStorageRepository,
     private val rarityRepository: IRarityRepository,
     private val expansionRepository: IExpansionRepository,
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val storeRepository: IStoreRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublishCardUiState())
     val uiState: StateFlow<PublishCardUiState> = _uiState.asStateFlow()
+
+    init {
+        loadStores()
+    }
+
+    private fun loadStores() {
+        viewModelScope.launch {
+            val stores = runCatching { storeRepository.getStores() }.getOrElse { emptyList() }
+            _uiState.update { it.copy(stores = stores) }
+        }
+    }
 
     private fun updateForm(transform: (PublishCardUiState) -> PublishCardUiState) =
         _uiState.update { transform(it).copy(feedback = null) }
@@ -75,42 +86,43 @@ class PublishGameCardViewModel(
     fun onLanguageChange(value: CardLanguage) = updateForm { it.copy(language = value) }
     fun onPriceChange(value: String) = updateForm { it.copy(price = value.filter(Char::isDigit)) }
     fun onDescriptionChange(value: String) = updateForm { it.copy(description = value) }
+    fun onStoreChange(value: ucenfotec.ac.cr.flydevs.domain.model.Store) = updateForm { it.copy(selectedStore = value) }
     fun increaseQuantity() = updateForm { it.copy(quantity = it.quantity + 1) }
     fun decreaseQuantity() = updateForm { it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) }
 
     fun onImagePicked(image: PickedImage) {
-        if (_uiState.value.isUploadingImage) return
-
         _uiState.update {
             it.copy(
-                isUploadingImage = true,
+                pendingImages = it.pendingImages + image,
                 imageError = null,
-                imageUrl = null,
-                feedback = null,
+                feedback = null
             )
         }
+    }
 
-        viewModelScope.launch {
-            runCatching { imageStorage.uploadCardImage(image) }
-                .onSuccess { url ->
-                    _uiState.update { it.copy(isUploadingImage = false, imageUrl = url) }
-                }
-                .onFailure { error ->
-                    println("[PublishGameCard] Falló la subida de imagen: ${error.message}")
-                    _uiState.update {
-                        it.copy(isUploadingImage = false, imageError = ImageError.UPLOAD_FAILED)
-                    }
-                }
+    fun removeImage(index: Int) {
+        _uiState.update {
+            it.copy(
+                pendingImages = it.pendingImages.filterIndexed { i, _ -> i != index }
+            )
+        }
+    }
+
+    fun moveImage(fromIndex: Int, toIndex: Int) {
+        val current = _uiState.value.pendingImages.toMutableList()
+        if (fromIndex >= 0 && fromIndex < current.size && toIndex >= 0 && toIndex < current.size) {
+            val item = current.removeAt(fromIndex)
+            current.add(toIndex, item)
+            _uiState.update { it.copy(pendingImages = current) }
         }
     }
 
     fun publish() {
         val current = _uiState.value
-        if (current.isLoading || current.isUploadingImage) return
+        if (current.isLoading) return
 
         // Validación de reglas de negocio
-        val draft = current.toDraftCard()
-        val errors = GameCardValidator.validate(draft)
+        val errors = current.validationErrors
         if (errors.isNotEmpty()) {
             _uiState.update {
                 it.copy(
@@ -121,11 +133,45 @@ class PublishGameCardViewModel(
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, feedback = null) }
+        if (current.pendingImages.isEmpty()) {
+            _uiState.update { it.copy(imageError = ImageError.REQUIRED, feedback = PublishFeedback.MISSING_FIELDS) }
+            return
+        }
 
-        val card = draft.copy(sellerId = authRepository.getCurrentUserUid().toString())
+        val currentUid = authRepository.getCurrentUserUid()
+        if (currentUid == null) {
+            _uiState.update { it.copy(feedback = PublishFeedback.PUBLISH_FAILED) }
+            return
+        }
+
+        _uiState.update {
+            it.copy(isLoading = true, isUploadingImages = true, feedback = null, imageError = null)
+        }
 
         viewModelScope.launch {
+            val uploadedUrls = coroutineScope {
+                current.pendingImages.mapIndexed { index, image ->
+                    async {
+                        index to (runCatching { imageStorage.uploadCardImage(image) }
+                            .getOrNull())
+                    }
+                }
+                    .map { it.await() }
+                    .filter { it.second != null }
+                    .sortedBy { it.first }
+                    .map { it.second!! }
+            }
+
+            if (uploadedUrls.isEmpty()) {
+                _uiState.update {
+                    it.copy(isLoading = false, isUploadingImages = false, imageError = ImageError.UPLOAD_FAILED)
+                }
+                return@launch
+            }
+
+            _uiState.update { it.copy(isUploadingImages = false) }
+
+            val card = current.toDraftCard(imageUrls = uploadedUrls).copy(sellerId = currentUid)
             runCatching { repository.saveGameCard(card) }
                 .onSuccess {
                     // Reset del formulario

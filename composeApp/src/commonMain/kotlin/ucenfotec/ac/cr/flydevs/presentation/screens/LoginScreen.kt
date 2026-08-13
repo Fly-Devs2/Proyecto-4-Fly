@@ -1,5 +1,6 @@
 package ucenfotec.ac.cr.flydevs.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,8 +25,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import flyapp.composeapp.generated.resources.Res
+import flyapp.composeapp.generated.resources.fly_logo
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import ucenfotec.ac.cr.flydevs.presentation.components.FormField
+import ucenfotec.ac.cr.flydevs.presentation.components.GoogleGLogo
 import ucenfotec.ac.cr.flydevs.presentation.components.PrimaryButton
 import ucenfotec.ac.cr.flydevs.presentation.login.LoginViewModel
 import ucenfotec.ac.cr.flydevs.presentation.theme.*
@@ -57,42 +62,38 @@ fun LoginScreen(
             .fillMaxSize()
             .background(BgDarkest)
             .padding(horizontal = 24.dp)
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Logo Spade representation
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(AccentViolet),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("♠", color = Color.White, fontSize = 36.sp)
-        }
+        Image(
+                painter = painterResource(Res.drawable.fly_logo),
+                contentDescription = "App Logo",
+                modifier = Modifier.size(150.dp)
+            )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(8.dp))
 
         Text(
             text = "Inicia sesión",
             style = Typography.titleLarge,
             color = TextPrimary,
-            fontSize = 26.sp,
+            fontSize =  24.sp,
             fontWeight = FontWeight.ExtraBold
         )
 
         Spacer(Modifier.height(8.dp))
 
-        Text(
-            text = "Una sola cuenta para comprar, vender, entregar o gestionar.",
-            style = Typography.bodyMedium,
-            color = TextSecondary,
-            textAlign = TextAlign.Center
-        )
+//        Text(
+//            text = "Una sola cuenta para comprar, vender, entregar o gestionar.",
+//            style = Typography.bodyMedium,
+//            color = TextSecondary,
+//            textAlign = TextAlign.Center
+//        )
 
-        Spacer(Modifier.height(36.dp))
+        //Spacer(Modifier.height(36.dp))
 
         if (uiState.errorMessage != null) {
             Text(
@@ -185,16 +186,15 @@ fun LoginScreen(
                 .clickable { viewModel.onGoogleSignInClicked() },
             contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("G", color = BgDarkest, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                androidx.compose.foundation.Image(
+                    imageVector = GoogleGLogo,
+                    contentDescription = "Google Logo",
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = "Continuar con Google",

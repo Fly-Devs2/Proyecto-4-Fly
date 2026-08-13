@@ -1,0 +1,42 @@
+package ucenfotec.ac.cr.flydevs.presentation.envelope
+
+import kotlinx.serialization.Serializable
+import ucenfotec.ac.cr.flydevs.domain.model.CardEnvelope
+import ucenfotec.ac.cr.flydevs.domain.model.GameCard
+import ucenfotec.ac.cr.flydevs.domain.model.Store
+
+
+@Serializable
+data class CardEnvelopeUiState(
+    val isLoading: Boolean = false,
+    val targetEnvelopeId: String? = null,
+    val isAddingToEnvelope: Boolean = false,
+    val actionErrorMessage: String? = null,
+    val isGeneratingOrder: Boolean = false,
+    val envelope: CardEnvelope? = null,
+    val cards: List<GameCard> = emptyList(),
+    val errorMessage: String? = null,
+    val successMessage: String? = null,
+    val stores: List<Store> = emptyList(),
+    val selectedStore: Store? = null,
+    val sourceStoreName: String? = null
+) {
+
+    val cardCount: Int
+        get() = cards.size
+
+    val subTotal: Long
+        get() = envelope?.subTotal ?: 0L
+
+    val total: Long
+        get() = envelope?.total ?: 0L
+
+    val shippingCost: Long
+        get() = (total - subTotal).coerceAtLeast(0L)
+
+    val isEnvelopeEmpty: Boolean
+        get() = cards.isEmpty()
+
+    val canGenerateOrder: Boolean
+        get() = cards.isNotEmpty() && !isLoading && !isGeneratingOrder
+}

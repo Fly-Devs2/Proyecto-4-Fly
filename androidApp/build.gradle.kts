@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.google.maps.secrets)
+
 }
 
 kotlin {
@@ -26,9 +28,17 @@ dependencies {
     implementation(project.dependencies.platform(libs.firebase.bom))
     implementation(libs.gitlive.firebase.common)
     implementation(libs.gitlive.firebase.analytics)
+    implementation(libs.gitlive.firebase.auth)
+    implementation(libs.gitlive.firebase.firestore)
+    implementation(libs.firebase.messaging)
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.android)
     debugImplementation(libs.compose.uiTooling)
+    implementation("com.google.firebase:firebase-functions")
+    implementation(libs.google.code.scanner)
+    implementation(
+        libs.google.play.services.location
+    )
 
 }
 

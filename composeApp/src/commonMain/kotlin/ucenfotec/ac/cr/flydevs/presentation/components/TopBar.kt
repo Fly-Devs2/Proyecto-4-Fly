@@ -26,7 +26,7 @@ fun TopBar(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onFilterClick: () -> Unit = {},
+    onFilterClick: (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     Row(
@@ -55,23 +55,29 @@ fun TopBar(
 
         trailingIcon?.invoke()
 
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(BgSurface)
-                .clickable { onFilterClick()
-                    println("DEBUG_FILTER: TopBar filter clicked")
 
-                }
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "☷",
-                color = AccentViolet,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+        onFilterClick?.let { filterAction ->
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BgSurface)
+                    .clickable {
+                        println("DEBUG_FILTER: TopBar filter clicked")
+                        filterAction()
+                    }
+                    .padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "☷",
+                    color = AccentViolet,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

@@ -1,0 +1,255 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isActive() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    function isActive() {
+      let uid = request.auth.uid;
+      let userPath = /databases/$(database)/documents/users/$(uid);
+      return signedIn() && (!exists(userPath) || get(userPath).data.get('isActive', true) == true);
+    }
+
+    function isValidReviewRating(rating) {
+      return rating is number &&
+        rating in [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+    }
+
+    function hasValidReviewFields(data) {
+      return data.keys().hasAll([
+          'id', 'orderId', 'reviewerId', 'reviewerRole', 'reviewedUserId',
+          'reviewedRole', 'rating', 'comment', 'createdAt', 'updatedAt'
+        ]) &&
+
+        // Impide guardar campos adicionales no contemplados en el modelo Review.
+        data.keys().hasOnly([
+          'id', 'orderId', 'reviewerId', 'reviewerRole', 'reviewedUserId',
+          'reviewedRole', 'rating', 'comment', 'createdAt', 'updatedAt'
+        ]) &&
+
+        data.id is string &&
+        data.orderId is string &&
+        data.reviewerId is string &&
+        data.reviewerRole is string &&
+        data.reviewedUserId is string &&
+        data.reviewedRole is string &&
+        data.rating is number &&
+        data.comment is string &&
+        data.createdAt is int &&
+        data.updatedAt is int &&
+
+        data.id.size() > 0 &&
+        data.orderId.size() > 0 &&
+        data.reviewerId.size() > 0 &&
+        data.reviewedUserId.size() > 0 &&
+
+        // El comentario es opcional, pero no puede superar los 500 caracteres.
+        data.comment.size() <= 500 &&
+
+        // updatedAt no puede ser anterior a createdAt.
+        data.updatedAt >= data.createdAt &&
+
+        isValidReviewRating(data.rating);
+    }
+
+    /** Solo las partes de una orden pagada pueden calificarse entre sí. */
+    function reviewMatchesOrder(data) {
+      let order = get(
+        /databases/$(database)/documents/orders/$(data.orderId)
+      ).data;
+
+      return order.sinpePaid == true &&
+        (
+          // El comprador está calificando al vendedor.
+          (
+            data.reviewerId == order.buyerId &&
+            data.reviewerRole == 'BUYER' &&
+            data.reviewedUserId == order.sellerId &&
+            data.reviewedRole == 'SELLER'
+          ) ||
+
+          // El vendedor está calificando al comprador.
+          (
+            data.reviewerId == order.sellerId &&
+            data.reviewerRole == 'SELLER' &&
+            data.reviewedUserId == order.buyerId &&
+            data.reviewedRole == 'BUYER'
+          )
+        );
+    }
+
+
+    match /users/{uid} {
+      allow read: if isActive();
+      allow write: if isAdmin() || (isActive() && request.auth.uid == uid);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isActive();
+      allow create, update: if isActive() && (
+        !isCancelling() || canCancelOrder()
+      );
+
+      function isCancelling() {
+        return request.resource.data.status == 'CANCELLED' && resource.data.status != 'CANCELLED';
+      }
+
+      function canCancelOrder() {
+        return request.auth.uid == resource.data.buyerId &&
+               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'modifiedAt']) &&
+               request.resource.data.status == 'CANCELLED' &&
+               resource.data.sinpePaid == false &&
+               resource.data.status in [
+                 'WAITING_SELLER_DELIVERY',
+                 'WAITING_PAYMENT',
+                 'AWAITING_SINPE_VALIDATION'
+               ];
+      }
+    }
+
+    match /incidents/{incidentId} {
+      allow read: if isActive() && (resource.data.reporterId == request.auth.uid || isAdmin());
+      allow create: if isActive() &&
+        request.resource.data.reporterId == request.auth.uid &&
+        request.resource.data.orderId is string &&
+        request.resource.data.orderId != '' &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() > 0 &&
+        request.resource.data.description.size() <= 1000 &&
+        request.resource.data.status == 'OPEN';
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isActive() && resource.data.userId == request.auth.uid;
+      allow update: if isActive() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+
+    match /notifications_preferences/{uid} {
+      allow read, write: if isActive() && request.auth.uid == uid;
+    }
+
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read, write: if isActive();
+    }
+
+    match /user_ratings/{userId} {
+      allow read, write: if isActive();
+    }
+
+    match /sobres/{sobresId} {
+      allow create, update, delete, read: if true;
+    }
+
+    match /envelopes/{envelopeId} {
+
+      allow create: if isActive()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow read: if isActive()
+        && resource.data.userId == request.auth.uid;
+
+      allow write: if isActive()
+        && resource.data.userId == request.auth.uid;
+
+      allow update: if isActive()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if isActive()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /game_cards/{cardId} {
+      allow read: if isActive();
+      allow write: if isActive();
+    }
+
+    match /expansions/{doc} { allow read: if isActive(); allow write: if false; }
+    match /stores/{storeId} { allow read: if isActive(); allow write: if false; }
+    match /rarities/{doc}   { allow read: if isActive(); allow write: if false; }
+
+    match /batches/{batchId} {
+      allow read, write: if isActive();
+    }
+
+    match /batch_group/{groupId} {
+      allow read, write: if isActive();
+    }
+
+    match /exchanges/{exchangeId} {
+
+      function isParticipant() {
+        return isActive() && (
+          request.auth.uid == resource.data.buyerId ||
+          request.auth.uid == resource.data.sellerId
+        );
+      }
+
+      function coreUnchanged() {
+        return request.resource.data.buyerId == resource.data.buyerId &&
+               request.resource.data.sellerId == resource.data.sellerId &&
+               request.resource.data.cardIds == resource.data.cardIds &&
+               request.resource.data.total == resource.data.total &&
+               request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      function sellerSubmitsEvidence() {
+        return request.auth.uid == resource.data.sellerId &&
+               resource.data.status == 'WAITING_STORE_DELIVERY' &&
+               request.resource.data.status == 'WAITING_SINPE_PROOF' &&
+               request.resource.data.sellerEvidenceUrl != '';
+      }
+
+      function buyerSubmitsProof() {
+        return request.auth.uid == resource.data.buyerId &&
+               resource.data.status == 'WAITING_SINPE_PROOF' &&
+               resource.data.sellerEvidenceUrl != '' &&
+               request.resource.data.status == 'PROOF_RECEIVED' &&
+               request.resource.data.sinpeProofUrl != '';
+      }
+
+      function movesToShipping() {
+        return resource.data.status == 'PROOF_RECEIVED' &&
+               resource.data.sinpeProofUrl != '' &&
+               request.resource.data.status == 'SHIPPING';
+      }
+
+      function orderExists(orderId) {
+        return exists(
+          /databases/$(database)/documents/orders/$(orderId)
+        );
+      }
+
+      allow read: if isParticipant();
+
+      allow create: if isActive() &&
+        request.resource.data.buyerId == request.auth.uid &&
+        request.resource.data.status == 'WAITING_STORE_DELIVERY' &&
+        request.resource.data.sellerEvidenceUrl == '' &&
+        request.resource.data.sinpeProofUrl == '';
+
+      allow update: if isActive() && coreUnchanged() && (
+        sellerSubmitsEvidence() ||
+        buyerSubmitsProof() ||
+        movesToShipping()
+      );
+
+      allow delete: if false;
+    }
+  }
+}
