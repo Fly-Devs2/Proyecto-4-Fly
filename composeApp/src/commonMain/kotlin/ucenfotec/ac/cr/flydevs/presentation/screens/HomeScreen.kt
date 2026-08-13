@@ -88,21 +88,19 @@ fun HomeScreen(
             //Spacer(Modifier.height(24.dp))
             
             // Search Bar
-//            SearchBar()
+            //SearchBar()
             
-          //  Spacer(Modifier.height(28.dp))
+            //Spacer(Modifier.height(28.dp))
             
             // Featured Section
-//            SectionTitle("DESTACADAS DE LA SEMANA")
-//            FeaturedCards()
             
            // Spacer(Modifier.height(28.dp))
             
-//            // Categories
+            // Categories
 //            SectionTitle("CATEGORÍAS")
 //            CategoryChips()
-            
-            Spacer(Modifier.height(28.dp))
+//
+//            Spacer(Modifier.height(28.dp))
             
             // Orders
             Row(
@@ -145,12 +143,12 @@ fun HomeScreen(
             Button(
                 onClick = { onNavigateToMyCollection() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TextMuted.copy(alpha = 0.3f)),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text("Ver mi colección", color = TextPrimary)
             }
+
             
             Spacer(Modifier.height(40.dp))
         }
@@ -251,77 +249,77 @@ private fun SectionTitle(title: String) {
         modifier = Modifier.padding(bottom = 16.dp)
     )
 }
-
-@Composable
-private fun FeaturedCards() {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        FeaturedCardItem("Charizard 1st Ed.", "₡320 000", "RARA")
-        FeaturedCardItem("Blue-Eyes W.D.", "₡95 500", "HOLO")
-    }
-}
-
-@Composable
-private fun FeaturedCardItem(name: String, price: String, tag: String) {
-    val displayName = if (name.length > 20) name.take(17) + "..." else name
-    Surface(
-        color = BgCard,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.width(160.dp).height(210.dp)
-    ) {
-        Box {
-            // Card Content Placeholder
-            Column(modifier = Modifier.padding(12.dp)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(BgSurface)
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(displayName, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-                Text(price, color = AccentViolet, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-            }
-            
-            // Tag
-            Surface(
-                color = AccentGold,
-                shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 20.dp),
-                modifier = Modifier.align(Alignment.TopEnd)
-            ) {
-                Text(
-                    tag,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    color = BgDarkest,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryChips() {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        CategoryChip("Todas", isSelected = true)
-        CategoryChip("Pokémon")
-        CategoryChip("Yu-Gi-Oh!")
-    }
-}
-
-@Composable
-private fun CategoryChip(text: String, isSelected: Boolean = false) {
-    Surface(
-        color = if (isSelected) AccentViolet else BgCard,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = if (isSelected) Color.White else TextSecondary,
-            fontSize = 14.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-        )
-    }
-}
+//
+//@Composable
+//private fun FeaturedCards() {
+//    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+//        FeaturedCardItem("Charizard 1st Ed.", "₡320 000", "RARA")
+//        FeaturedCardItem("Blue-Eyes W.D.", "₡95 500", "HOLO")
+//    }
+//}
+//
+//@Composable
+//private fun FeaturedCardItem(name: String, price: String, tag: String) {
+//    val displayName = if (name.length > 20) name.take(17) + "..." else name
+//    Surface(
+//        color = BgCard,
+//        shape = RoundedCornerShape(20.dp),
+//        modifier = Modifier.width(160.dp).height(210.dp)
+//    ) {
+//        Box {
+//            // Card Content Placeholder
+//            Column(modifier = Modifier.padding(12.dp)) {
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(120.dp)
+//                        .clip(RoundedCornerShape(14.dp))
+//                        .background(BgSurface)
+//                )
+//                Spacer(Modifier.height(12.dp))
+//                Text(displayName, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+//                Text(price, color = AccentViolet, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+//            }
+//
+//            // Tag
+//            Surface(
+//                color = AccentGold,
+//                shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 20.dp),
+//                modifier = Modifier.align(Alignment.TopEnd)
+//            ) {
+//                Text(
+//                    tag,
+//                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+//                    color = BgDarkest,
+//                    fontSize = 9.sp,
+//                    fontWeight = FontWeight.Black
+//                )
+//            }
+//        }
+//    }
+//}
+//
+//@Composable
+//private fun CategoryChips() {
+//    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+//        CategoryChip("Todas", isSelected = true)
+//        CategoryChip("Pokémon")
+//        CategoryChip("Yu-Gi-Oh!")
+//    }
+//}
+//
+//@Composable
+//private fun CategoryChip(text: String, isSelected: Boolean = false) {
+//    Surface(
+//        color = if (isSelected) AccentViolet else BgCard,
+//        shape = RoundedCornerShape(12.dp)
+//    ) {
+//        Text(
+//            text = text,
+//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+//            color = if (isSelected) Color.White else TextSecondary,
+//            fontSize = 14.sp,
+//            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+//        )
+//    }
+//}
